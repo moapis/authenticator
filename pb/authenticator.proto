@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package authenticator;
+
+service Authenticator {
+    // RegisterPwUser registers a new user which can authenticate using a PW.
+    // Server implementation should grant the user only a public role untill verification is complete.
+    // Authorization: Public
+    rpc RegisterPwUser (NewPwUser) returns (AuthReply) {}
+    
+    // PasswordAuth authenticates the user by its registered email or username and password.
+    // Authorization: Public
+    rpc AuthenticatePwUser (UserPassword) returns (AuthReply) {}
+
+    // ChangeUserPw changes the password for the user. It needs either the old password or a password reset token.
+    // Authorization: Public
+    rpc ChangeUserPw (NewUserPassword) returns (ChangePwReply) {}
+    
+    // CheckUserExists returns true for the UserID fields which already exists.
+    // Authorization: Basic
+    rpc CheckUserExists (UserData) returns (Exists) {}
+
+    // VerifyUser by previously transmitted (email) verification token
+    // Authorization: Public
+    rpc VerifyUser (AuthReply) returns (AuthReply) {}
+
+    // RefreshToken using an old (and valid!) token.
+    // The user id and its authorization level are verified against the database.
+    // Authorization: Public
+    rpc RefreshToken (AuthReply) returns (AuthReply) {}
+
+    // PublicUserToken generates a token for public and unauthenticated users.
+    // Such token can be used for API access and session tracking.
+    // Authorization: Internal
+    rpc PublicUserToken (PublicUser) returns (AuthReply) {}
+
+    // GetPubKeys retrieves registered public keys from the database, identified by KeyIDs.
+    // Authorization: Internal
+    rpc GetPubKey(KeyID) returns (PublicKey) {}
+}
+
+message UserData {
+    string email = 1;
+    string name = 2;
+}
+
+enum UserLevels {
+    PUBLIC = 0;
+    USER = 1;
+    EDITOR = 2;
+    MANAGER = 3;
+    ADMIN = 4;
+}
+
+message AuthReply {
+    // JSON Web Token
+    string jwt = 1;
+}
+
+message NewPwUser {
+    string email = 1;
+    string name = 2;
+    string password = 3;
+}
+
+// UserPassword holds the name or e-mail of the user and its password.
+message UserPassword {
+    oneof user {
+        string email = 1;
+        string name = 2;
+    }
+    string password = 3;
+}
+
+message NewUserPassword {
+    oneof user {
+        string email = 1;
+        string name = 2;
+    }
+    oneof credential {
+        string old_password = 3;
+        string reset_token = 4;
+    };
+    string new_password = 5;
+}
+
+message ChangePwReply {
+    bool success = 1;
+}
+
+message Exists {
+    bool email = 1;
+    bool name = 2;
+}
+
+message PublicUser {
+    string uuid = 1;
+}
+
+message KeyID {
+    int32 kid = 1;
+}
+
+message PublicKey {
+    bytes key = 1;
+}

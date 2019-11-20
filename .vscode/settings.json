@@ -1,0 +1,9 @@
+{
+        "go.toolsEnvVars": {
+            "GO111MODULE": "on"
+        },
+        "terminal.integrated.env.linux": {
+            "GO111MODULE": "on"
+        },
+        "cSpell.enabled": false
+}
