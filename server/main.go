@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"net"
 
+	pb "github.com/moapis/authenticator/pb"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	pb "github.com/moapis/authenticator/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -29,8 +29,6 @@ func main() {
 	s := grpc.NewServer(setOpts()...)
 	pb.RegisterAuthenticatorServer(s, new(authServer))
 	log.WithField("grpc", s.GetServiceInfo()).Debug("Registered services")
-
-	connectDB()
 
 	host, port := viper.GetString("Host"), viper.GetInt32("Port")
 	logger := log.WithFields(logrus.Fields{"host": host, "port": port})

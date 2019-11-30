@@ -1,54 +1,49 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
-	"sort"
-	"strings"
+	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/moapis/multidb"
+	"github.com/moapis/multidb/drivers/postgresql"
 	"github.com/spf13/viper"
 )
 
 func init() {
-	viper.SetDefault(
-		"pq",
-		map[string]interface{}{
-			"dbname":          "authenticator_test",
-			"user":            "postgres",
-			"host":            "/run/postgresql",
-			"port":            5432,
-			"sslmode":         "disable",
-			"connect_timeout": 60,
-		},
-	)
+	viper.SetDefault("DBHosts", map[string]uint16{"/run/postgresql": 5432})
+	viper.SetDefault("DBParams", map[string]string{
+		"dbname":          "authenticator_test",
+		"user":            "postgres",
+		"password":        "",
+		"sslmode":         "disable",
+		"connect_timeout": "30",
+	})
+	viper.SetDefault("DBRoutines", 3)
 }
 
-func connectDB() (*sql.DB, error) {
-	conf := viper.GetStringMap("pq")
-	log.WithFields(conf).Debug("Connecting to database")
-	return sql.Open("postgres", connStr(conf))
-}
-
-func connStr(conf map[string]interface{}) string {
-	if conf == nil {
-		return ""
-	}
-	// Sorting of map needed for unit tests
-	// Also, filters out empty entries
-	keys := make([]string, 0, len(conf))
-	for k, v := range conf {
-		if v != "" {
-			keys = append(keys, k)
+func parseDBHosts() []postgresql.Host {
+	var hosts []postgresql.Host
+	hm := viper.Get("DBHosts").(map[string]uint16)
+	for addr, port := range hm {
+		host := postgresql.Host{
+			Addr: addr,
+			Port: port,
 		}
+		hosts = append(hosts, host)
 	}
-	sort.Strings(keys)
+	return hosts
+}
 
-	nodes := make([]string, 0, len(keys))
-	for _, key := range keys {
-		nodes = append(nodes, fmt.Sprintf("%s=%v", key, conf[key]))
+func connectMDB() (*multidb.MultiDB, error) {
+	c := multidb.Config{
+		DBConf: postgresql.Config{
+			Hosts:  parseDBHosts(),
+			Params: viper.GetStringMapString("DBParams"),
+		},
+		StatsLen:      100,
+		MaxFails:      10,
+		ReconnectWait: 10 * time.Second,
 	}
-	s := strings.Join(nodes, " ")
-	log.WithField("string", s).Debug("Connection string")
-	return s
+	// Connect to all specified DB Hosts
+	return c.Open()
 }

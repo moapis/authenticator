@@ -8,12 +8,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/moapis/multidb"
 	"github.com/spf13/viper"
 )
 
 var (
 	testCtx context.Context
-	db      *sql.DB
+	mdb     *multidb.MultiDB
 )
 
 func testData() error {
@@ -26,7 +27,7 @@ func testData() error {
 			UNIQUE (public_key)
 		);`,
 	}
-	tx, err := db.BeginTx(testCtx, nil)
+	tx, err := mdb.MasterTx(testCtx, nil)
 	if err != nil {
 		return err
 	}
@@ -41,93 +42,38 @@ func testData() error {
 
 func TestMain(m *testing.M) {
 	var cancel context.CancelFunc
-	testCtx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+	testCtx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 
-	conf := viper.GetStringMap("pq")
-	testDB := conf["dbname"]
-	conf["dbname"] = "postgres"
+	param := viper.GetStringMapString("DBParams")
 
-	suDB, err := sql.Open("postgres", connStr(conf))
+	suDB, err := sql.Open("postgres", "host=/run/postgresql dbname=postgres user=postgres sslmode=disable connect_timeout=5")
 	if err != nil {
 		log.Fatal(err)
 	}
-	if _, err = suDB.ExecContext(testCtx, fmt.Sprintf("CREATE DATABASE %s;", testDB)); err != nil {
+	if _, err = suDB.ExecContext(testCtx, fmt.Sprintf("CREATE DATABASE %s;", param["dbname"])); err != nil {
 		log.WithError(err).Error("Create testDB failed")
-		_, err = suDB.ExecContext(testCtx, fmt.Sprintf("DROP DATABASE %s;", testDB))
+		_, err = suDB.ExecContext(testCtx, fmt.Sprintf("DROP DATABASE %s;", param["dbname"]))
 		log.WithError(err).Fatal("Drop testDB, terminating")
 	}
 
-	conf["dbname"] = testDB
-	if db, err = connectDB(); err != nil {
+	if mdb, err = connectMDB(); err != nil {
 		log.WithError(err).Error("Connect to testDB failed")
-		_, err = suDB.ExecContext(testCtx, fmt.Sprintf("DROP DATABASE %s;", testDB))
+		_, err = suDB.ExecContext(testCtx, fmt.Sprintf("DROP DATABASE %s;", param["dbname"]))
 		log.WithError(err).Fatal("Drop testDB, terminating")
 	}
 	if err = testData(); err != nil {
 		log.WithError(err).Error("Create testdata failed")
-		log.WithError(db.Close()).Info("Closed testDB")
-		_, err = suDB.ExecContext(testCtx, fmt.Sprintf("DROP DATABASE %s;", testDB))
+		log.WithError(mdb.Close()).Info("Closed testDB")
+		_, err = suDB.ExecContext(testCtx, fmt.Sprintf("DROP DATABASE %s;", param["dbname"]))
 		log.WithError(err).Fatal("Drop testDB, terminating")
 	}
 
 	code := m.Run()
 
-	log.WithError(db.Close()).Info("Closed testDB")
-	if _, err = suDB.ExecContext(testCtx, fmt.Sprintf("DROP DATABASE %s;", testDB)); err != nil {
+	log.WithError(mdb.Close()).Info("Closed testDB")
+	if _, err = suDB.ExecContext(testCtx, fmt.Sprintf("DROP DATABASE %s;", param["dbname"])); err != nil {
 		log.WithError(err).Fatal("Drop testDB failed")
 	}
 	cancel()
 	os.Exit(code)
-}
-
-func Test_connString(t *testing.T) {
-	type args struct {
-		conf map[string]interface{}
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "Single",
-			args: args{map[string]interface{}{
-				"foo": "bar",
-			}},
-			want: "foo=bar",
-		},
-		{
-			name: "Multiple",
-			args: args{map[string]interface{}{
-				"foo":   "bar",
-				"hello": "world",
-			}},
-			want: "foo=bar hello=world",
-		},
-		{
-			name: "With int",
-			args: args{map[string]interface{}{
-				"foo":   "bar",
-				"hello": "world",
-				"int":   5,
-			}},
-			want: "foo=bar hello=world int=5",
-		},
-		{
-			name: "Nil",
-			want: "",
-		},
-		{
-			name: "Empty",
-			args: args{map[string]interface{}{}},
-			want: "",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := connStr(tt.args.conf); got != tt.want {
-				t.Errorf("connString() = %v, want %v", got, tt.want)
-			}
-		})
-	}
 }

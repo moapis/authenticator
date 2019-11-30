@@ -4,16 +4,17 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
-	"github.com/pascaldekloe/jwt"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+	"github.com/friendsofgo/errors"
+
 	"github.com/moapis/authenticator/models"
 	pb "github.com/moapis/authenticator/pb"
 	"github.com/moapis/authenticator/tokens"
+	"github.com/pascaldekloe/jwt"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"github.com/volatiletech/sqlboiler/boil"
 	"github.com/volatiletech/sqlboiler/queries/qm"
 	"google.golang.org/grpc/codes"
@@ -27,20 +28,24 @@ func init() {
 
 // requestTx holds the request transaction, context and reference to authServer
 type requestTx struct {
-	tx     *sql.Tx
+	tx     boil.ContextTransactor
 	ctx    context.Context
 	cancel context.CancelFunc
 	log    *logrus.Entry
 	s      *authServer
 }
 
-func (s *authServer) newTx(ctx context.Context, method string) (*requestTx, error) {
+func (s *authServer) newTx(ctx context.Context, method string, master bool) (*requestTx, error) {
 	rt := &requestTx{
 		log: s.log.WithField("method", method),
 		s:   s,
 	}
 	var err error
-	rt.tx, err = s.db.BeginTx(ctx, nil)
+	if master {
+		rt.tx, err = s.mdb.MasterTx(ctx, nil)
+	} else {
+		rt.tx, err = s.mdb.MultiTx(ctx, nil, viper.GetInt("DBRoutines"))
+	}
 	if err != nil {
 		rt.log.WithError(err).Error("Begin TX")
 		return nil, err

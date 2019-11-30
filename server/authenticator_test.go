@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"crypto/ed25519"
-	"database/sql"
 	"io"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/moapis/authenticator/models"
+	"github.com/moapis/multidb"
 )
 
 const (
@@ -19,15 +19,9 @@ const (
 )
 
 func Test_authServer_updateKeyPair(t *testing.T) {
-	errDB, err := connectDB()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err = errDB.Close(); err != nil {
-		t.Fatal(err)
-	}
+	errMDB := new(multidb.MultiDB)
 	type fields struct {
-		db *sql.DB
+		mdb *multidb.MultiDB
 	}
 	type result struct {
 		privKey privateKey
@@ -47,7 +41,7 @@ func Test_authServer_updateKeyPair(t *testing.T) {
 		{
 			name: "Defined input reader",
 			fields: fields{
-				db: db,
+				mdb: mdb,
 			},
 			args: args{
 				testCtx,
@@ -64,7 +58,7 @@ func Test_authServer_updateKeyPair(t *testing.T) {
 		{
 			name: "Defunct input reader",
 			fields: fields{
-				db: db,
+				mdb: mdb,
 			},
 			args: args{
 				testCtx,
@@ -75,7 +69,7 @@ func Test_authServer_updateKeyPair(t *testing.T) {
 		{
 			name: "DB error",
 			fields: fields{
-				db: errDB,
+				mdb: errMDB,
 			},
 			args: args{
 				testCtx,
@@ -87,7 +81,7 @@ func Test_authServer_updateKeyPair(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &authServer{
-				db: tt.fields.db,
+				mdb: tt.fields.mdb,
 			}
 			err := s.updateKeyPair(tt.args.ctx, tt.args.r)
 			if (err != nil) != tt.wantErr {
@@ -98,7 +92,11 @@ func Test_authServer_updateKeyPair(t *testing.T) {
 				privKey: s.privKey,
 			}
 			if !tt.wantErr {
-				m, err := models.FindJWTKey(testCtx, db, i+1, "public_key")
+				n, err := mdb.Node()
+				if err != nil {
+					t.Fatal(err)
+				}
+				m, err := models.FindJWTKey(testCtx, n, i+1, "public_key")
 				if err != nil {
 					t.Fatal(err)
 				}

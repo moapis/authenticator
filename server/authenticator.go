@@ -4,15 +4,15 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
-	"database/sql"
 	"io"
 	"strconv"
 	"sync"
 
-	"github.com/sirupsen/logrus"
 	"github.com/moapis/authenticator/models"
 	pb "github.com/moapis/authenticator/pb"
 	"github.com/moapis/authenticator/tokens"
+	"github.com/moapis/multidb"
+	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/boil"
 )
 
@@ -23,7 +23,7 @@ type privateKey struct {
 
 type authServer struct {
 	pb.UnimplementedAuthenticatorServer
-	db *sql.DB
+	mdb *multidb.MultiDB
 
 	privKey privateKey
 	keyMtx  sync.RWMutex //Protects privKey during updates
@@ -40,7 +40,7 @@ func newAuthServer() (*authServer, error) {
 	}
 	log.SetLevel(logrus.DebugLevel)
 	var err error
-	if s.db, err = connectDB(); err != nil {
+	if s.mdb, err = connectMDB(); err != nil {
 		return nil, err
 	}
 	if err = s.updateKeyPair(context.Background(), rand.Reader); err != nil {
@@ -57,7 +57,11 @@ func (s *authServer) updateKeyPair(ctx context.Context, r io.Reader) error {
 	m := &models.JWTKey{
 		PublicKey: pub,
 	}
-	if err = m.Insert(ctx, s.db, boil.Infer()); err != nil {
+	db, err := s.mdb.Master(ctx)
+	if err != nil {
+		return err
+	}
+	if err = m.Insert(ctx, db, boil.Infer()); err != nil {
 		return err
 	}
 	pk := privateKey{
@@ -92,7 +96,7 @@ const (
 )
 
 func (s *authServer) RegisterPwUser(ctx context.Context, pu *pb.NewPwUser) (*pb.AuthReply, error) {
-	rt, err := s.newTx(ctx, "RegisterPwUser")
+	rt, err := s.newTx(ctx, "RegisterPwUser", true)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +122,7 @@ func (s *authServer) RegisterPwUser(ctx context.Context, pu *pb.NewPwUser) (*pb.
 }
 
 func (s *authServer) AuthenticatePwUser(ctx context.Context, up *pb.UserPassword) (*pb.AuthReply, error) {
-	rt, err := s.newTx(ctx, "AuthenticatePwUser")
+	rt, err := s.newTx(ctx, "AuthenticatePwUser", false)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +137,7 @@ func (s *authServer) AuthenticatePwUser(ctx context.Context, up *pb.UserPassword
 }
 
 func (s *authServer) ChangeUserPw(ctx context.Context, up *pb.NewUserPassword) (*pb.ChangePwReply, error) {
-	rt, err := s.newTx(ctx, "ChangeUserPw")
+	rt, err := s.newTx(ctx, "ChangeUserPw", true)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +161,7 @@ const (
 )
 
 func (s *authServer) CheckUserExists(ctx context.Context, ud *pb.UserData) (*pb.Exists, error) {
-	rt, err := s.newTx(ctx, "ChangeCheckUserExistsUserPw")
+	rt, err := s.newTx(ctx, "ChangeCheckUserExistsUserPw", false)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +170,7 @@ func (s *authServer) CheckUserExists(ctx context.Context, ud *pb.UserData) (*pb.
 }
 
 func (s *authServer) RefreshToken(ctx context.Context, old *pb.AuthReply) (*pb.AuthReply, error) {
-	rt, err := s.newTx(ctx, "RefreshToken")
+	rt, err := s.newTx(ctx, "RefreshToken", false)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +187,7 @@ func (s *authServer) RefreshToken(ctx context.Context, old *pb.AuthReply) (*pb.A
 }
 
 func (s *authServer) PublicUserToken(ctx context.Context, pu *pb.PublicUser) (*pb.AuthReply, error) {
-	rt, err := s.newTx(ctx, "PublicUserToken")
+	rt, err := s.newTx(ctx, "PublicUserToken", false)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +196,7 @@ func (s *authServer) PublicUserToken(ctx context.Context, pu *pb.PublicUser) (*p
 }
 
 func (s *authServer) GetPubKey(ctx context.Context, k *pb.KeyID) (*pb.PublicKey, error) {
-	rt, err := s.newTx(ctx, "GetPubKey")
+	rt, err := s.newTx(ctx, "GetPubKey", false)
 	if err != nil {
 		return nil, err
 	}
