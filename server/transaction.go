@@ -80,9 +80,9 @@ func (rt *requestTx) done() {
 
 	if err != nil {
 		rt.log.WithError(err).Error("TX Rollback")
-		return
+	} else {
+		rt.log.Debug("TX Rollback")
 	}
-	rt.log.Debug("TX Rollback")
 }
 
 func (rt *requestTx) commit() error {
@@ -103,6 +103,31 @@ const (
 	jwtGroupIDs = "group_ids"
 )
 
+func (rt *requestTx) authReply(subject string, issued time.Time, set map[string]interface{}, audiences ...string) (*pb.AuthReply, error) {
+	prKey := rt.s.privateKey()
+	c := jwt.Claims{
+		KeyID: prKey.id,
+		Registered: jwt.Registered{
+			Issuer:    viper.GetString("JWTIssuer"),
+			Subject:   subject,
+			Expires:   jwt.NewNumericTime(issued.Add(viper.GetDuration("JWTExpiry"))),
+			Audiences: audiences,
+			Issued:    jwt.NewNumericTime(issued),
+		},
+		Set: set,
+	}
+	rt.log = rt.log.WithField("claims", c)
+
+	token, err := c.EdDSASign(prKey.key)
+	if err != nil {
+		rt.log.WithError(err).Error("authReply")
+		return nil, status.Error(codes.Internal, errToken)
+	}
+	st := string(token)
+	rt.log.WithField("token", st).Debug("authReply")
+	return &pb.AuthReply{Jwt: st}, nil
+}
+
 func (rt *requestTx) userAuthReply(user *models.User, audiences ...string) (*pb.AuthReply, error) {
 	rt.log = rt.log.WithField("user", user)
 	groups, err := user.Groups(qm.Select(models.GroupColumns.ID)).All(rt.ctx, rt.tx)
@@ -118,37 +143,12 @@ func (rt *requestTx) userAuthReply(user *models.User, audiences ...string) (*pb.
 	}
 	return rt.authReply(
 		user.Name,
+		time.Now(),
 		map[string]interface{}{
 			jwtUserID:   user.ID,
 			jwtGroupIDs: gIDs,
 		},
 	)
-}
-
-func (rt *requestTx) authReply(subject string, set map[string]interface{}, audiences ...string) (*pb.AuthReply, error) {
-	prKey := rt.s.privateKey()
-	now := time.Now()
-	c := jwt.Claims{
-		KeyID: prKey.id,
-		Registered: jwt.Registered{
-			Issuer:    viper.GetString("JWTIssuer"),
-			Subject:   subject,
-			Expires:   jwt.NewNumericTime(now.Add(viper.GetDuration("JWTExpiry"))),
-			Audiences: audiences,
-			Issued:    jwt.NewNumericTime(now),
-		},
-		Set: set,
-	}
-	rt.log = rt.log.WithField("claims", c)
-
-	token, err := c.EdDSASign(prKey.key)
-	if err != nil {
-		rt.log.WithError(err).Error("authReply")
-		return nil, status.Error(codes.Internal, errToken)
-	}
-	st := string(token)
-	rt.log.WithField("token", st).Debug("authReply")
-	return &pb.AuthReply{Jwt: st}, nil
 }
 
 func (rt *requestTx) checkJWT(jwt string) (*jwt.Claims, error) {
@@ -382,7 +382,7 @@ func (rt *requestTx) publicUserToken(uuid string) (*pb.AuthReply, error) {
 		return nil, status.Error(codes.InvalidArgument, errMissingUUID)
 	}
 	rt.log.Debug("publicUserToken")
-	return rt.authReply(fmt.Sprintf("public:%s", uuid), nil)
+	return rt.authReply(fmt.Sprintf("public:%s", uuid), time.Now(), nil)
 }
 
 func (rt *requestTx) getPubKey(kid int) (*pb.PublicKey, error) {
