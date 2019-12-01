@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/moapis/multidb"
+	migrate "github.com/rubenv/sql-migrate"
 	"github.com/spf13/viper"
 )
 
@@ -17,27 +18,21 @@ var (
 	mdb     *multidb.MultiDB
 )
 
-func testData() error {
-	queries := []string{
-		`CREATE TABLE public.jwt_keys
-		(
-			id serial NOT NULL PRIMARY KEY,
-			public_key bytea NOT NULL,
-			created_at timestamp with time zone NOT NULL,
-			UNIQUE (public_key)
-		);`,
-	}
-	tx, err := mdb.MasterTx(testCtx, nil)
+func migrations() error {
+	m, err := mdb.Master(testCtx)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
-	for _, q := range queries {
-		if _, err := tx.ExecContext(testCtx, q); err != nil {
-			return err
-		}
+	migrations := &migrate.FileMigrationSource{
+		Dir: "migrations/tests",
 	}
-	return tx.Commit()
+	n, err := migrate.Exec(m.DB, "postgres", migrations, migrate.Up)
+	if err != nil {
+		log.WithError(err).Error("Migrations")
+		return err
+	}
+	log.WithField("n", n).Info("Migrations")
+	return nil
 }
 
 func TestMain(m *testing.M) {
@@ -61,8 +56,7 @@ func TestMain(m *testing.M) {
 		_, err = suDB.ExecContext(testCtx, fmt.Sprintf("DROP DATABASE %s;", param["dbname"]))
 		log.WithError(err).Fatal("Drop testDB, terminating")
 	}
-	if err = testData(); err != nil {
-		log.WithError(err).Error("Create testdata failed")
+	if err = migrations(); err != nil {
 		log.WithError(mdb.Close()).Info("Closed testDB")
 		_, err = suDB.ExecContext(testCtx, fmt.Sprintf("DROP DATABASE %s;", param["dbname"]))
 		log.WithError(err).Fatal("Drop testDB, terminating")

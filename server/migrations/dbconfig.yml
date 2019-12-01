@@ -1,0 +1,7 @@
+# Config for sql-migrate
+
+development:
+  dialect: postgres
+  datasource: host=/run/postgresql dbname=authenticator user=postgres sslmode=disabled
+  dir: .
+  table: migrations

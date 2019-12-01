@@ -9,8 +9,9 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/kat-co/vala v0.0.0-20170210184112-42e1d8b61f12
 	github.com/lib/pq v1.2.0
-	github.com/moapis/multidb v0.1.1-0.20191129183152-abad17771dc2
+	github.com/moapis/multidb v0.1.1-0.20191201123409-7030a7d3218d
 	github.com/pascaldekloe/jwt v1.6.0
+	github.com/rubenv/sql-migrate v0.0.0-20191121092708-da1cb182f00e
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/viper v1.5.0
 	github.com/volatiletech/null v8.0.0+incompatible // indirect
