@@ -2,6 +2,6 @@
 
 development:
   dialect: postgres
-  datasource: host=/run/postgresql dbname=authenticator user=postgres sslmode=disabled
+  datasource: host=localhost dbname=authenticator user=postgres sslmode=disable
   dir: .
   table: migrations

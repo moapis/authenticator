@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -11,7 +9,6 @@ import (
 	"github.com/moapis/authenticator/models"
 	"github.com/moapis/multidb"
 	migrate "github.com/rubenv/sql-migrate"
-	"github.com/spf13/viper"
 	"github.com/volatiletech/sqlboiler/boil"
 	"golang.org/x/crypto/argon2"
 )
@@ -47,21 +44,35 @@ const (
 	testSalt = "12345678"
 )
 
-func migrations() error {
+func migrations() {
+	migrate.SetTable("migrations")
 	m, err := mdb.Master(testCtx)
 	if err != nil {
-		return err
+		log.WithError(err).Fatal("migrations()")
 	}
 	migrations := &migrate.FileMigrationSource{
 		Dir: "migrations",
 	}
 	n, err := migrate.Exec(m.DB, "postgres", migrations, migrate.Up)
 	if err != nil {
-		log.WithError(err).Error("Migrations")
-		return err
+		log.WithError(err).Fatal("Migrations")
 	}
 	log.WithField("n", n).Info("Migrations")
-	return nil
+}
+
+func migrateDown() {
+	m, err := mdb.Master(testCtx)
+	if err != nil {
+		log.WithError(err).Fatal("migrateDown")
+	}
+	migrations := &migrate.FileMigrationSource{
+		Dir: "migrations",
+	}
+	n, err := migrate.Exec(m.DB, "postgres", migrations, migrate.Down)
+	if err != nil {
+		log.WithError(err).Fatal("migrateDown")
+	}
+	log.WithField("n", n).Info("migrateDown")
 }
 
 func userTestData() error {
@@ -117,40 +128,19 @@ func TestMain(m *testing.M) {
 	var cancel context.CancelFunc
 	testCtx, cancel = context.WithTimeout(context.Background(), 30*time.Minute)
 
-	param := viper.GetStringMapString("DBParams")
-
-	suDB, err := sql.Open("postgres", "host=/run/postgresql dbname=postgres user=postgres sslmode=disable connect_timeout=5")
+	var err error
+	mdb, err = connectMDB()
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal("Connect to testDB failed")
 	}
-	if _, err = suDB.ExecContext(testCtx, fmt.Sprintf("CREATE DATABASE %s;", param["dbname"])); err != nil {
-		log.WithError(err).Error("Create testDB failed")
-		_, err = suDB.ExecContext(testCtx, fmt.Sprintf("DROP DATABASE %s;", param["dbname"]))
-		log.WithError(err).Fatal("Drop testDB, terminating")
-	}
-
-	if mdb, err = connectMDB(); err != nil {
-		log.WithError(err).Error("Connect to testDB failed")
-		_, err = suDB.ExecContext(testCtx, fmt.Sprintf("DROP DATABASE %s;", param["dbname"]))
-		log.WithError(err).Fatal("Drop testDB, terminating")
-	}
-	if err = migrations(); err != nil {
-		log.WithError(mdb.Close()).Info("Closed testDB")
-		_, err = suDB.ExecContext(testCtx, fmt.Sprintf("DROP DATABASE %s;", param["dbname"]))
-		log.WithError(err).Fatal("Drop testDB, terminating")
-	}
+	migrations()
 	if err = userTestData(); err != nil {
-		log.WithError(mdb.Close()).Info("Closed testDB")
-		_, err = suDB.ExecContext(testCtx, fmt.Sprintf("DROP DATABASE %s;", param["dbname"]))
-		log.WithError(err).Fatal("Drop testDB, terminating")
+		migrateDown()
 	}
 
 	code := m.Run()
 
-	log.WithError(mdb.Close()).Info("Closed testDB")
-	if _, err = suDB.ExecContext(testCtx, fmt.Sprintf("DROP DATABASE %s;", param["dbname"])); err != nil {
-		log.WithError(err).Fatal("Drop testDB failed")
-	}
+	migrateDown()
 	cancel()
 	os.Exit(code)
 }

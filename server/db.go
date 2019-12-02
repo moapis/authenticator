@@ -12,7 +12,7 @@ import (
 func init() {
 	viper.SetDefault("DBHosts", map[string]uint16{"localhost": 5432})
 	viper.SetDefault("DBParams", map[string]string{
-		"dbname":          "authenticator_test",
+		"dbname":          "authenticator",
 		"user":            "postgres",
 		"password":        "",
 		"sslmode":         "disable",
