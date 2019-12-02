@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/friendsofgo/errors"
+	"golang.org/x/crypto/argon2"
 
 	"github.com/moapis/authenticator/models"
 	pb "github.com/moapis/authenticator/pb"
@@ -182,6 +183,41 @@ func (rt *requestTx) checkJWT(jwt string) (*jwt.Claims, error) {
 	}
 }
 
+const (
+	// PasswordSaltLen is the amount of bytes used for salting passwords
+	PasswordSaltLen = 8
+	// Argon2Time sets the time argument to the argon2 password hasher
+	Argon2Time = 1
+	// Argon2Memory sets the memory argument to the argon2 password hasher
+	Argon2Memory = 64 * 1024
+	// Argon2Threads sets the threads argument to the argon2 password hasher
+	Argon2Threads = 2
+	// Argon2KeyLen sets the keyLen argument to the argon2 password hasher
+	Argon2KeyLen = 32
+)
+
+func (rt *requestTx) setUserPassword(user *models.User, password string) error {
+	log := rt.log.WithField("method", "setUserPassword()")
+	if password == "" {
+		log.Warn(errMissingPW)
+		return status.Error(codes.InvalidArgument, errMissingPW)
+	}
+	pwm := &models.Password{Salt: make([]byte, PasswordSaltLen)}
+	if _, err := rand.Read(pwm.Salt); err != nil {
+		log.WithError(err).Error("Salt generation")
+		return status.Error(codes.Internal, errFatal)
+	}
+	pwm.Hash = argon2.IDKey([]byte(password), pwm.Salt, Argon2Time, Argon2Memory, Argon2Threads, Argon2KeyLen)
+	log = log.WithField("password_model", pwm)
+
+	if err := user.SetPassword(rt.ctx, rt.tx, true, pwm); err != nil {
+		log.WithError(err).Error("user.SetPassword()")
+		return status.Error(codes.Internal, errDB)
+	}
+	log.Debug("user.SetPassword()")
+	return nil
+}
+
 func (rt *requestTx) insertPwUser(email, name, password string) (*models.User, error) {
 	rt.log = rt.log.WithFields(logrus.Fields{"email": email, "name": name, "passwordLen": len(password)})
 	if email == "" || name == "" {
@@ -201,51 +237,7 @@ func (rt *requestTx) insertPwUser(email, name, password string) (*models.User, e
 	}
 	rt.log.Debug("Insert user")
 
-	return user, rt.upsertPassword(user.ID, password)
-}
-
-func newPwModel(password string) (*models.Password, error) {
-	if password == "" {
-		return nil, status.Error(codes.InvalidArgument, errMissingEmailOrName)
-	}
-	h, err := newHasher()
-	if err != nil {
-		return nil, status.Error(codes.Internal, errFatal)
-	}
-	p, err := json.Marshal(h)
-	if err != nil {
-		return nil, status.Error(codes.Internal, errFatal)
-	}
-	return &models.Password{
-		Hash:  h.hash(password),
-		Param: p,
-	}, nil
-}
-
-func (rt *requestTx) upsertPassword(userID int, password string) error {
-	if password == "" {
-		rt.log.Warn(errMissingPW)
-		return status.Error(codes.InvalidArgument, errMissingPW)
-	}
-	pwm, err := newPwModel(password)
-	if err != nil {
-		rt.log.WithError(err).Error("New PW model")
-		return status.Error(codes.Internal, errFatal)
-	}
-	pwm.UserID = userID
-	pLog := rt.log.WithField("password_model", pwm)
-
-	if err = pwm.Upsert(
-		rt.ctx, rt.tx, true,
-		[]string{models.PasswordColumns.UserID},
-		boil.Blacklist(models.PasswordColumns.UserID, models.PasswordColumns.CreatedAt),
-		boil.Infer(),
-	); err != nil {
-		pLog.WithError(err).Error("Upsert password")
-		return status.Error(codes.Internal, errDB)
-	}
-	pLog.Debug("Upsert password")
-	return nil
+	return user, rt.setUserPassword(user, password)
 }
 
 func (rt *requestTx) dbAuthError(action, entry string, err error) error {
@@ -293,25 +285,6 @@ func (rt *requestTx) findUserByEmailOrName(email, name string) (user *models.Use
 	return user, nil
 }
 
-func (rt *requestTx) checkPassword(hash string, param []byte, password string) error {
-	if err := rt.enoughTime(3 * time.Second); err != nil {
-		return err
-	}
-	h := new(argon2hasher)
-	ll := rt.log.WithFields(logrus.Fields{"hash": hash, "param": string(param)})
-	if err := json.Unmarshal(param, h); err != nil {
-		ll.WithError(err).Error("Unmarshal Argon2 params")
-		return status.Error(codes.Internal, errFatal)
-	}
-	ll = ll.WithField("param", h)
-	ll.Debug("Unmarshal Argon2 params")
-	if hash != h.hash(password) {
-		log.WithError(errors.New(errCredentials)).Warn("Password missmatch")
-		return status.Error(codes.Unauthenticated, errCredentials)
-	}
-	return nil
-}
-
 func (rt *requestTx) authenticatePwUser(email, name, password string) (*models.User, error) {
 	rt.log = rt.log.WithFields(logrus.Fields{"email": email, "name": name, "passwordLen": len(password)})
 	// email and name presence are checked by findUserByEmailOrName
@@ -328,8 +301,13 @@ func (rt *requestTx) authenticatePwUser(email, name, password string) (*models.U
 	if err != nil {
 		return nil, rt.dbAuthError("Get user password", "password", err)
 	}
-	if err = rt.checkPassword(pwm.Hash, pwm.Param, password); err != nil {
+	if err := rt.enoughTime(3 * time.Second); err != nil {
 		return nil, err
+	}
+
+	if string(pwm.Hash) != string(argon2.IDKey([]byte(password), pwm.Salt, Argon2Time, Argon2Memory, Argon2Threads, Argon2KeyLen)) {
+		log.WithError(errors.New(errCredentials)).Warn("Password missmatch")
+		return nil, status.Error(codes.Unauthenticated, errCredentials)
 	}
 	return user, nil
 }

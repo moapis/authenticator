@@ -14,7 +14,7 @@ require (
 	github.com/rubenv/sql-migrate v0.0.0-20191121092708-da1cb182f00e
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/viper v1.5.0
-	github.com/volatiletech/null v8.0.0+incompatible // indirect
+	github.com/volatiletech/null v8.0.0+incompatible
 	github.com/volatiletech/sqlboiler v3.6.1+incompatible
 	golang.org/x/crypto v0.0.0-20191119213627-4f8c1d86b1ba
 	google.golang.org/grpc v1.25.1

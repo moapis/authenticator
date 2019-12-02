@@ -19,16 +19,15 @@ import (
 	"github.com/volatiletech/sqlboiler/queries/qm"
 	"github.com/volatiletech/sqlboiler/queries/qmhelper"
 	"github.com/volatiletech/sqlboiler/strmangle"
-	"github.com/volatiletech/sqlboiler/types"
 )
 
 // Password is an object representing the database table.
 type Password struct {
-	UserID    int        `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
-	CreatedAt time.Time  `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	UpdatedAt time.Time  `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
-	Param     types.JSON `boil:"param" json:"param" toml:"param" yaml:"param"`
-	Hash      string     `boil:"hash" json:"hash" toml:"hash" yaml:"hash"`
+	UserID    int       `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
+	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	UpdatedAt time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	Salt      []byte    `boil:"salt" json:"salt" toml:"salt" yaml:"salt"`
+	Hash      []byte    `boil:"hash" json:"hash" toml:"hash" yaml:"hash"`
 
 	R *passwordR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L passwordL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -38,51 +37,30 @@ var PasswordColumns = struct {
 	UserID    string
 	CreatedAt string
 	UpdatedAt string
-	Param     string
+	Salt      string
 	Hash      string
 }{
 	UserID:    "user_id",
 	CreatedAt: "created_at",
 	UpdatedAt: "updated_at",
-	Param:     "param",
+	Salt:      "salt",
 	Hash:      "hash",
 }
 
 // Generated where
 
-type whereHelpertypes_JSON struct{ field string }
-
-func (w whereHelpertypes_JSON) EQ(x types.JSON) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.EQ, x)
-}
-func (w whereHelpertypes_JSON) NEQ(x types.JSON) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.NEQ, x)
-}
-func (w whereHelpertypes_JSON) LT(x types.JSON) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LT, x)
-}
-func (w whereHelpertypes_JSON) LTE(x types.JSON) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LTE, x)
-}
-func (w whereHelpertypes_JSON) GT(x types.JSON) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GT, x)
-}
-func (w whereHelpertypes_JSON) GTE(x types.JSON) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GTE, x)
-}
-
 var PasswordWhere = struct {
 	UserID    whereHelperint
 	CreatedAt whereHelpertime_Time
 	UpdatedAt whereHelpertime_Time
-	Param     whereHelpertypes_JSON
-	Hash      whereHelperstring
+	Salt      whereHelper__byte
+	Hash      whereHelper__byte
 }{
 	UserID:    whereHelperint{field: "\"passwords\".\"user_id\""},
 	CreatedAt: whereHelpertime_Time{field: "\"passwords\".\"created_at\""},
 	UpdatedAt: whereHelpertime_Time{field: "\"passwords\".\"updated_at\""},
-	Param:     whereHelpertypes_JSON{field: "\"passwords\".\"param\""},
-	Hash:      whereHelperstring{field: "\"passwords\".\"hash\""},
+	Salt:      whereHelper__byte{field: "\"passwords\".\"salt\""},
+	Hash:      whereHelper__byte{field: "\"passwords\".\"hash\""},
 }
 
 // PasswordRels is where relationship names are stored.
@@ -106,8 +84,8 @@ func (*passwordR) NewStruct() *passwordR {
 type passwordL struct{}
 
 var (
-	passwordAllColumns            = []string{"user_id", "created_at", "updated_at", "param", "hash"}
-	passwordColumnsWithoutDefault = []string{"user_id", "created_at", "updated_at", "param", "hash"}
+	passwordAllColumns            = []string{"user_id", "created_at", "updated_at", "salt", "hash"}
+	passwordColumnsWithoutDefault = []string{"user_id", "created_at", "updated_at", "salt", "hash"}
 	passwordColumnsWithDefault    = []string{}
 	passwordPrimaryKeyColumns     = []string{"user_id"}
 )

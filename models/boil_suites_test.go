@@ -14,6 +14,7 @@ import "testing"
 func TestParent(t *testing.T) {
 	t.Run("Groups", testGroups)
 	t.Run("JWTKeys", testJWTKeys)
+	t.Run("Migrations", testMigrations)
 	t.Run("Passwords", testPasswords)
 	t.Run("Users", testUsers)
 }
@@ -21,6 +22,7 @@ func TestParent(t *testing.T) {
 func TestDelete(t *testing.T) {
 	t.Run("Groups", testGroupsDelete)
 	t.Run("JWTKeys", testJWTKeysDelete)
+	t.Run("Migrations", testMigrationsDelete)
 	t.Run("Passwords", testPasswordsDelete)
 	t.Run("Users", testUsersDelete)
 }
@@ -28,6 +30,7 @@ func TestDelete(t *testing.T) {
 func TestQueryDeleteAll(t *testing.T) {
 	t.Run("Groups", testGroupsQueryDeleteAll)
 	t.Run("JWTKeys", testJWTKeysQueryDeleteAll)
+	t.Run("Migrations", testMigrationsQueryDeleteAll)
 	t.Run("Passwords", testPasswordsQueryDeleteAll)
 	t.Run("Users", testUsersQueryDeleteAll)
 }
@@ -35,6 +38,7 @@ func TestQueryDeleteAll(t *testing.T) {
 func TestSliceDeleteAll(t *testing.T) {
 	t.Run("Groups", testGroupsSliceDeleteAll)
 	t.Run("JWTKeys", testJWTKeysSliceDeleteAll)
+	t.Run("Migrations", testMigrationsSliceDeleteAll)
 	t.Run("Passwords", testPasswordsSliceDeleteAll)
 	t.Run("Users", testUsersSliceDeleteAll)
 }
@@ -42,6 +46,7 @@ func TestSliceDeleteAll(t *testing.T) {
 func TestExists(t *testing.T) {
 	t.Run("Groups", testGroupsExists)
 	t.Run("JWTKeys", testJWTKeysExists)
+	t.Run("Migrations", testMigrationsExists)
 	t.Run("Passwords", testPasswordsExists)
 	t.Run("Users", testUsersExists)
 }
@@ -49,6 +54,7 @@ func TestExists(t *testing.T) {
 func TestFind(t *testing.T) {
 	t.Run("Groups", testGroupsFind)
 	t.Run("JWTKeys", testJWTKeysFind)
+	t.Run("Migrations", testMigrationsFind)
 	t.Run("Passwords", testPasswordsFind)
 	t.Run("Users", testUsersFind)
 }
@@ -56,6 +62,7 @@ func TestFind(t *testing.T) {
 func TestBind(t *testing.T) {
 	t.Run("Groups", testGroupsBind)
 	t.Run("JWTKeys", testJWTKeysBind)
+	t.Run("Migrations", testMigrationsBind)
 	t.Run("Passwords", testPasswordsBind)
 	t.Run("Users", testUsersBind)
 }
@@ -63,6 +70,7 @@ func TestBind(t *testing.T) {
 func TestOne(t *testing.T) {
 	t.Run("Groups", testGroupsOne)
 	t.Run("JWTKeys", testJWTKeysOne)
+	t.Run("Migrations", testMigrationsOne)
 	t.Run("Passwords", testPasswordsOne)
 	t.Run("Users", testUsersOne)
 }
@@ -70,6 +78,7 @@ func TestOne(t *testing.T) {
 func TestAll(t *testing.T) {
 	t.Run("Groups", testGroupsAll)
 	t.Run("JWTKeys", testJWTKeysAll)
+	t.Run("Migrations", testMigrationsAll)
 	t.Run("Passwords", testPasswordsAll)
 	t.Run("Users", testUsersAll)
 }
@@ -77,6 +86,7 @@ func TestAll(t *testing.T) {
 func TestCount(t *testing.T) {
 	t.Run("Groups", testGroupsCount)
 	t.Run("JWTKeys", testJWTKeysCount)
+	t.Run("Migrations", testMigrationsCount)
 	t.Run("Passwords", testPasswordsCount)
 	t.Run("Users", testUsersCount)
 }
@@ -84,6 +94,7 @@ func TestCount(t *testing.T) {
 func TestHooks(t *testing.T) {
 	t.Run("Groups", testGroupsHooks)
 	t.Run("JWTKeys", testJWTKeysHooks)
+	t.Run("Migrations", testMigrationsHooks)
 	t.Run("Passwords", testPasswordsHooks)
 	t.Run("Users", testUsersHooks)
 }
@@ -93,6 +104,8 @@ func TestInsert(t *testing.T) {
 	t.Run("Groups", testGroupsInsertWhitelist)
 	t.Run("JWTKeys", testJWTKeysInsert)
 	t.Run("JWTKeys", testJWTKeysInsertWhitelist)
+	t.Run("Migrations", testMigrationsInsert)
+	t.Run("Migrations", testMigrationsInsertWhitelist)
 	t.Run("Passwords", testPasswordsInsert)
 	t.Run("Passwords", testPasswordsInsertWhitelist)
 	t.Run("Users", testUsersInsert)
@@ -162,6 +175,7 @@ func TestToManyRemove(t *testing.T) {
 func TestReload(t *testing.T) {
 	t.Run("Groups", testGroupsReload)
 	t.Run("JWTKeys", testJWTKeysReload)
+	t.Run("Migrations", testMigrationsReload)
 	t.Run("Passwords", testPasswordsReload)
 	t.Run("Users", testUsersReload)
 }
@@ -169,6 +183,7 @@ func TestReload(t *testing.T) {
 func TestReloadAll(t *testing.T) {
 	t.Run("Groups", testGroupsReloadAll)
 	t.Run("JWTKeys", testJWTKeysReloadAll)
+	t.Run("Migrations", testMigrationsReloadAll)
 	t.Run("Passwords", testPasswordsReloadAll)
 	t.Run("Users", testUsersReloadAll)
 }
@@ -176,6 +191,7 @@ func TestReloadAll(t *testing.T) {
 func TestSelect(t *testing.T) {
 	t.Run("Groups", testGroupsSelect)
 	t.Run("JWTKeys", testJWTKeysSelect)
+	t.Run("Migrations", testMigrationsSelect)
 	t.Run("Passwords", testPasswordsSelect)
 	t.Run("Users", testUsersSelect)
 }
@@ -183,6 +199,7 @@ func TestSelect(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	t.Run("Groups", testGroupsUpdate)
 	t.Run("JWTKeys", testJWTKeysUpdate)
+	t.Run("Migrations", testMigrationsUpdate)
 	t.Run("Passwords", testPasswordsUpdate)
 	t.Run("Users", testUsersUpdate)
 }
@@ -190,6 +207,7 @@ func TestUpdate(t *testing.T) {
 func TestSliceUpdateAll(t *testing.T) {
 	t.Run("Groups", testGroupsSliceUpdateAll)
 	t.Run("JWTKeys", testJWTKeysSliceUpdateAll)
+	t.Run("Migrations", testMigrationsSliceUpdateAll)
 	t.Run("Passwords", testPasswordsSliceUpdateAll)
 	t.Run("Users", testUsersSliceUpdateAll)
 }

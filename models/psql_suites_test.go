@@ -10,6 +10,8 @@ func TestUpsert(t *testing.T) {
 
 	t.Run("JWTKeys", testJWTKeysUpsert)
 
+	t.Run("Migrations", testMigrationsUpsert)
+
 	t.Run("Passwords", testPasswordsUpsert)
 
 	t.Run("Users", testUsersUpsert)

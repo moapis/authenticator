@@ -6,12 +6,14 @@ package models
 var TableNames = struct {
 	Groups     string
 	JWTKeys    string
+	Migrations string
 	Passwords  string
 	UserGroups string
 	Users      string
 }{
 	Groups:     "groups",
 	JWTKeys:    "jwt_keys",
+	Migrations: "migrations",
 	Passwords:  "passwords",
 	UserGroups: "user_groups",
 	Users:      "users",

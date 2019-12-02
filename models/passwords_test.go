@@ -673,7 +673,7 @@ func testPasswordsSelect(t *testing.T) {
 }
 
 var (
-	passwordDBTypes = map[string]string{`UserID`: `integer`, `CreatedAt`: `timestamp with time zone`, `UpdatedAt`: `timestamp with time zone`, `Param`: `jsonb`, `Hash`: `character varying`}
+	passwordDBTypes = map[string]string{`UserID`: `integer`, `CreatedAt`: `timestamp with time zone`, `UpdatedAt`: `timestamp with time zone`, `Salt`: `bytea`, `Hash`: `bytea`}
 	_               = bytes.MinRead
 )
 

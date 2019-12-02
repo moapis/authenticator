@@ -35,8 +35,8 @@ create table passwords (
 	user_id integer not null primary key references users(id),
 	created_at timestamp with time zone not null,
 	updated_at timestamp with time zone not null,
-	param jsonb not null,
-	hash character varying(32) not null
+	salt bytea not null,
+	hash bytea not null
 );
 
 -- +migrate Down

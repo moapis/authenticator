@@ -147,7 +147,7 @@ func (s *authServer) ChangeUserPw(ctx context.Context, up *pb.NewUserPassword) (
 	if err != nil {
 		return nil, err
 	}
-	if err = rt.upsertPassword(user.ID, up.GetNewPassword()); err != nil {
+	if err = rt.setUserPassword(user, up.GetNewPassword()); err != nil {
 		return nil, err
 	}
 	if err = rt.commit(); err != nil {
