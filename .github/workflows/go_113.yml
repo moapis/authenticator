@@ -53,13 +53,15 @@ jobs:
         cd server/migrations
         sql-migrate up
 
-    - name: Test
-      run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
-      
+    - name: Tests
+      run: | 
+        go test -race -coverprofile=models.txt -covermode=atomic ./models
+        go test -race -coverprofile=server.txt -covermode=atomic ./server
+
     - name: Codecov
       uses: codecov/codecov-action@v1.0.4
       with:
         # Repository upload token - get it from codecov.io
         token: ${{ secrets.CODECOV_TOKEN }}
         # Path to coverage file to upload
-        file: coverage.txt
+        file: "*.txt"
