@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/moapis/authenticator/models"
 	pb "github.com/moapis/authenticator/pb"
 	"github.com/moapis/multidb"
 	"github.com/sirupsen/logrus"
@@ -220,6 +221,87 @@ func Test_requestTx_authReply(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("requestTx.authReply() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_requestTx_userAuthReply(t *testing.T) {
+	type args struct {
+		user      *models.User
+		issued    time.Time
+		audiences []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *pb.AuthReply
+		wantErr bool
+	}{
+		{
+			"No group",
+			args{
+				testUsers["noGroup"],
+				time.Unix(123, 456),
+				nil,
+			},
+			&pb.AuthReply{
+				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiZ3JvdXBfaWRzIjpbXSwiaWF0IjoxMjMuMDAwMDAwNDU2LCJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJub0dyb3VwIiwidXNlcl9pZCI6MTAxfQ.cN5J_jiwdE25scA3p1X2BgAeMxYtLLYwORF7kOPgbDEnegspSyxPLnklOf46QG1-wsN3Ju8sWH134palAGTBAQ",
+			},
+			false,
+		},
+		{
+			"One group",
+			args{
+				testUsers["oneGroup"],
+				time.Unix(123, 456),
+				nil,
+			},
+			&pb.AuthReply{
+				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiZ3JvdXBfaWRzIjpbMV0sImlhdCI6MTIzLjAwMDAwMDQ1NiwiaXNzIjoibG9jYWxob3N0Iiwic3ViIjoib25lR3JvdXAiLCJ1c2VyX2lkIjoxMDJ9.gbkjDYNFamC2AJEIU-HlMzh1mHLeYdm8dv8an60Z2nvHuhKXUY7RCzMARUtrXeEuYDAaiSWYwqXN4AyWDzoJAw",
+			},
+			false,
+		},
+		{
+			"All groups",
+			args{
+				testUsers["allGroups"],
+				time.Unix(123, 456),
+				[]string{"me", "and", "you"},
+			},
+			&pb.AuthReply{
+				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJhdWQiOlsibWUiLCJhbmQiLCJ5b3UiXSwiZXhwIjo4NjUyMy4wMDAwMDA0NTYsImdyb3VwX2lkcyI6WzEsMiwzXSwiaWF0IjoxMjMuMDAwMDAwNDU2LCJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJhbGxHcm91cHMiLCJ1c2VyX2lkIjoxMDN9.j0hyUeEUu8ZKFl8n4s-8HFzC5eR4Y5KjT5vI2dHNCu-MRdz2iB0Dh2C2EqZ_sILggtkTTjtrScRxTOlcX8kgBA",
+			},
+			false,
+		},
+		{
+			"Error",
+			args{
+				testUsers["allGroups"],
+				time.Unix(123, 456),
+				nil,
+			},
+			nil,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, err := newTestTx()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rt.done()
+			if tt.wantErr {
+				rt.done()
+			}
+			got, err := rt.userAuthReply(tt.args.user, tt.args.issued, tt.args.audiences...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("requestTx.userAuthReply() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("requestTx.userAuthReply() = %v, want %v", got, tt.want)
 			}
 		})
 	}

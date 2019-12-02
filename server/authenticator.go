@@ -7,6 +7,7 @@ import (
 	"io"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/moapis/authenticator/models"
 	pb "github.com/moapis/authenticator/pb"
@@ -118,7 +119,7 @@ func (s *authServer) RegisterPwUser(ctx context.Context, pu *pb.NewPwUser) (*pb.
 	if err = rt.commit(); err != nil {
 		return nil, err
 	}
-	return rt.userAuthReply(user)
+	return rt.userAuthReply(user, time.Now())
 }
 
 func (s *authServer) AuthenticatePwUser(ctx context.Context, up *pb.UserPassword) (*pb.AuthReply, error) {
@@ -133,7 +134,7 @@ func (s *authServer) AuthenticatePwUser(ctx context.Context, up *pb.UserPassword
 		return nil, err
 	}
 
-	return rt.userAuthReply(user)
+	return rt.userAuthReply(user, time.Now())
 }
 
 func (s *authServer) ChangeUserPw(ctx context.Context, up *pb.NewUserPassword) (*pb.ChangePwReply, error) {
@@ -183,7 +184,7 @@ func (s *authServer) RefreshToken(ctx context.Context, old *pb.AuthReply) (*pb.A
 	if err != nil {
 		return nil, err
 	}
-	return rt.userAuthReply(user)
+	return rt.userAuthReply(user, time.Now())
 }
 
 func (s *authServer) PublicUserToken(ctx context.Context, pu *pb.PublicUser) (*pb.AuthReply, error) {

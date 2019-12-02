@@ -129,7 +129,7 @@ func (rt *requestTx) authReply(subject string, issued time.Time, set map[string]
 	return &pb.AuthReply{Jwt: st}, nil
 }
 
-func (rt *requestTx) userAuthReply(user *models.User, audiences ...string) (*pb.AuthReply, error) {
+func (rt *requestTx) userAuthReply(user *models.User, issued time.Time, audiences ...string) (*pb.AuthReply, error) {
 	rt.log = rt.log.WithField("user", user)
 	groups, err := user.Groups(qm.Select(models.GroupColumns.ID)).All(rt.ctx, rt.tx)
 	if err != nil {
@@ -144,11 +144,12 @@ func (rt *requestTx) userAuthReply(user *models.User, audiences ...string) (*pb.
 	}
 	return rt.authReply(
 		user.Name,
-		time.Now(),
+		issued,
 		map[string]interface{}{
 			jwtUserID:   user.ID,
 			jwtGroupIDs: gIDs,
 		},
+		audiences...,
 	)
 }
 

@@ -17,8 +17,30 @@ import (
 )
 
 var (
-	testCtx context.Context
-	mdb     *multidb.MultiDB
+	testCtx   context.Context
+	mdb       *multidb.MultiDB
+	testUsers = map[string]*models.User{
+		"noGroup": {
+			ID:    101,
+			Email: "no@group.com",
+			Name:  "noGroup",
+		},
+		"oneGroup": {
+			ID:    102,
+			Email: "one@group.com",
+			Name:  "oneGroup",
+		},
+		"allGroups": {
+			ID:    103,
+			Email: "all@groups.com",
+			Name:  "allGroups",
+		},
+	}
+	testGroups = []*models.Group{
+		{Name: "public"},
+		{Name: "user"},
+		{Name: "admin"},
+	}
 )
 
 const (
@@ -49,31 +71,15 @@ func userTestData() error {
 	}
 	defer tx.Rollback()
 
-	groups := []*models.Group{
-		{Name: "public"},
-		{Name: "user"},
-		{Name: "admin"},
+	for _, g := range testGroups {
+		gl := log.WithField("group", g)
+		if err = g.Insert(testCtx, tx, boil.Infer()); err != nil {
+			gl.WithError(err).Error("Insert group")
+			return err
+		}
+		gl.Debug("Insert group")
 	}
-	users := []*models.User{
-		{
-			Email: "foo@bar.com",
-			Name:  "foo",
-		},
-		{
-			Email: "mickey@bar.com",
-			Name:  "mickey",
-		},
-		{
-			Email: "donald@bar.com",
-			Name:  "donald",
-		},
-		{
-			Email: "goofey@bar.com",
-			Name:  "goofey",
-		},
-	}
-	insertGroups := true
-	for _, u := range users {
+	for _, u := range testUsers {
 		ul := log.WithField("user", u)
 		if err = u.Insert(testCtx, tx, boil.Infer()); err != nil {
 			ul.WithError(err).Error("Insert user")
@@ -81,24 +87,22 @@ func userTestData() error {
 		}
 		ul.Debug("Insert user")
 
-		l := ul.WithField("groups", groups)
-		if err = u.SetGroups(testCtx, tx, insertGroups, groups...); err != nil {
-			l.WithError(err).Error("Add groups")
-			return err
-		}
-		l.Debug("Add groups")
-		insertGroups = false
-
 		pw := &models.Password{
 			Salt: []byte(testSalt),
 			Hash: argon2.IDKey([]byte(u.Name), []byte(testSalt), Argon2Time, Argon2Memory, Argon2Threads, Argon2KeyLen),
 		}
-		l = ul.WithField("password", pw)
+		ul = ul.WithField("password", pw)
 		if err := u.SetPassword(testCtx, tx, true, pw); err != nil {
-			l.WithError(err).Error("Set password")
+			ul.WithError(err).Error("Set password")
 			return err
 		}
-		l.Debug("Set password")
+		ul.Debug("Set password")
+	}
+	if err = testUsers["oneGroup"].AddGroups(testCtx, tx, false, testGroups[0]); err != nil {
+		log.WithError(err).Error("AddGroups one")
+	}
+	if err = testUsers["allGroups"].AddGroups(testCtx, tx, false, testGroups...); err != nil {
+		log.WithError(err).Error("AddGroups all")
 	}
 
 	if err = tx.Commit(); err != nil {
