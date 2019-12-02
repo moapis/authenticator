@@ -153,35 +153,57 @@ func (rt *requestTx) userAuthReply(user *models.User, issued time.Time, audience
 	)
 }
 
-func (rt *requestTx) checkJWT(jwt string) (*jwt.Claims, error) {
-	ll := rt.log.WithField("jwt", jwt)
-	if jwt == "" {
-		ll.WithError(errors.New(errMissingToken)).Warn("checkJWT")
+func (rt *requestTx) findJWTKey(kid int) ([]byte, error) {
+	rt.log = rt.log.WithField("KeyID", kid)
+	if kid == 0 {
+		rt.log.WithError(errors.New(errMissingKeyID)).Warn("getPubKey")
+		return nil, status.Error(codes.InvalidArgument, errMissingKeyID)
+	}
+	key, err := models.FindJWTKey(rt.ctx, rt.tx, kid, models.JWTKeyColumns.PublicKey)
+	switch err {
+	case nil:
+		break
+	case sql.ErrNoRows:
+		rt.log.WithError(err).Warn("getPubKey")
+		return nil, status.Error(codes.NotFound, errKeyNotFound)
+	default:
+		rt.log.WithError(err).Error("getPubKey")
+		return nil, status.Error(codes.Internal, errDB)
+	}
+	return key.PublicKey, nil
+}
+
+func (rt *requestTx) checkJWT(token string) (*jwt.Claims, error) {
+	log := rt.log.WithField("token", token)
+	if token == "" {
+		log.WithError(errors.New(errMissingToken)).Warn("checkJWT")
 		return nil, status.Error(codes.InvalidArgument, errMissingToken)
 	}
-	claims, err := rt.s.pubKeys.Check(rt.ctx, []byte(jwt))
-	if err == nil {
-		ll.WithField("claims", claims).Debug("checkJWT")
-		return claims, nil
+	kid, err := tokens.ParseJWTHeader([]byte(token))
+	if err != nil {
+		log.WithError(err).Warn("tokens.ParseJWTHeader()")
+		switch err.Error() {
+		case tokens.ErrUnsupportedAlg:
+			return nil, status.Error(codes.OutOfRange, tokens.ErrUnsupportedAlg)
+		default:
+			return nil, status.Error(codes.Unauthenticated, tokens.ErrKeyVerification)
+		}
 	}
-	ll = ll.WithError(err)
-	switch err.Error() {
-	case tokens.ErrCommunication:
-		ll.Error("checkJWT")
-		return nil, status.Error(codes.Internal, "Communication error")
-	case tokens.ErrMissingKey:
-		ll.Warn("checkJWT")
-		return nil, status.Error(codes.NotFound, "Unkown key ID")
-	case tokens.ErrKeyVerification:
-		ll.Warn("checkJWT")
-		return nil, status.Error(codes.Unauthenticated, tokens.ErrKeyVerification)
-	case tokens.ErrUnsupportedAlg:
-		ll.Warn("checkJWT")
-		return nil, status.Error(codes.OutOfRange, tokens.ErrUnsupportedAlg)
-	default:
-		ll.Error("checkJWT")
-		return nil, status.Error(codes.Unknown, "Unknown JWT error")
+	key, err := rt.findJWTKey(kid)
+	if err != nil {
+		return nil, err
 	}
+	claims, err := jwt.EdDSACheck([]byte(token), []byte(key))
+	if err != nil {
+		log.WithError(err).Warn("jwt.EdDSACheck()")
+		switch err {
+		case jwt.ErrSigMiss:
+			return nil, status.Error(codes.Unauthenticated, err.Error())
+		default:
+			return nil, status.Error(codes.Unknown, "JWT malformed")
+		}
+	}
+	return claims, nil
 }
 
 const (
@@ -365,21 +387,9 @@ func (rt *requestTx) publicUserToken(uuid string) (*pb.AuthReply, error) {
 }
 
 func (rt *requestTx) getPubKey(kid int) (*pb.PublicKey, error) {
-	rt.log = rt.log.WithField("KeyID", kid)
-	if kid == 0 {
-		rt.log.WithError(errors.New(errMissingKeyID)).Warn("getPubKey")
-		return nil, status.Error(codes.InvalidArgument, errMissingKeyID)
+	key, err := rt.findJWTKey(kid)
+	if err != nil {
+		return nil, err
 	}
-	key, err := models.FindJWTKey(rt.ctx, rt.tx, kid, models.JWTKeyColumns.PublicKey)
-	switch err {
-	case nil:
-		break
-	case sql.ErrNoRows:
-		rt.log.WithError(err).Warn("getPubKey")
-		return nil, status.Error(codes.NotFound, errKeyNotFound)
-	default:
-		rt.log.WithError(err).Error("getPubKey")
-		return nil, status.Error(codes.Internal, errDB)
-	}
-	return &pb.PublicKey{Key: key.PublicKey}, nil
+	return &pb.PublicKey{Key: key}, nil
 }

@@ -10,8 +10,8 @@ import (
 	"sync"
 
 	"github.com/friendsofgo/errors"
-	"github.com/pascaldekloe/jwt"
 	pb "github.com/moapis/authenticator/pb"
+	"github.com/pascaldekloe/jwt"
 )
 
 // KeyClientCache gets public keys from the Authenticator gRPC server
@@ -91,26 +91,30 @@ func (k *KeyClientCache) getOrRetrieve(ctx context.Context, kid int32) ([]byte, 
 
 var jwtSeperator = []byte(".")
 
-func parseJWTHeader(token []byte) (int32, error) {
+// ParseJWTHeader checks is the Alg field is supported and returns the Kid as an int.
+func ParseJWTHeader(token []byte) (int, error) {
 	var h struct {
 		Alg string // algorithm
 		Kid string // key identifier
 	}
 	if err := json.Unmarshal(bytes.Split(token, jwtSeperator)[0], &h); err != nil {
-		return 0, err
+		return 0, errors.WithMessage(err, ErrKeyVerification)
 	}
 	if h.Alg != jwt.EdDSA {
 		return 0, errors.New(ErrUnsupportedAlg)
 	}
 	kid, err := strconv.ParseInt(h.Kid, 10, 32)
-	return int32(kid), err
+	if err != nil {
+		return 0, errors.WithMessage(err, ErrKeyVerification)
+	}
+	return int(kid), err
 }
 
 // Check if the JWT is valid and return the Claims if so.
 // If the key is not in the cache, it will be fetched through the client before checking.
 // Typical errors can by of grpc/status or Verfication error
 func (k *KeyClientCache) Check(ctx context.Context, token []byte) (*jwt.Claims, error) {
-	kid, err := parseJWTHeader(token)
+	kid, err := ParseJWTHeader(token)
 	if err != nil {
 		return nil, err
 	}
