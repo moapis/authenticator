@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	viper.SetDefault("DBHosts", map[string]uint16{"/run/postgresql": 5432})
+	viper.SetDefault("DBHosts", map[string]uint16{"localhost": 5432})
 	viper.SetDefault("DBParams", map[string]string{
 		"dbname":          "authenticator_test",
 		"user":            "postgres",

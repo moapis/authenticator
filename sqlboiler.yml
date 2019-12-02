@@ -1,5 +1,5 @@
 psql:
   dbname: authenticator
   schema: public
-  host: /run/postgresql
+  host: localhost
   user: postgres

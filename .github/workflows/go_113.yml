@@ -21,13 +21,14 @@ jobs:
           POSTGRES_DB: postgres
         ports:
           - 5432:5432
-        volumes:
-          - "/run/postgresql:/run/postgresql" 
         # needed because the postgres container does not provide a healthcheck
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
 
     steps:
+    - name: Install PostgreSQL client
+      run: |
+        sudo apt-get -yqq install postgresql-client
 
     - name: Set up Go 1.13
       uses: actions/setup-go@v1
