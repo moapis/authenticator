@@ -55,7 +55,7 @@ jobs:
 
     - name: Tests
       run: | 
-        go test -race -coverprofile=models.txt -covermode=atomic ./models
+        go test -race ./models
         go test -race -coverprofile=server.txt -covermode=atomic ./server
 
     - name: Codecov
