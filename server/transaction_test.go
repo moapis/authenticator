@@ -306,3 +306,57 @@ func Test_requestTx_userAuthReply(t *testing.T) {
 		})
 	}
 }
+
+func Test_requestTx_findJWTKey(t *testing.T) {
+	tests := []struct {
+		name    string
+		kid     int
+		want    []byte
+		wantErr bool
+	}{
+		{
+			"Missing Key ID",
+			0,
+			nil,
+			true,
+		},
+		{
+			"Existing Key ID",
+			333,
+			[]byte(testPubKey),
+			false,
+		},
+		{
+			"Key not found",
+			22,
+			nil,
+			true,
+		},
+		{
+			"DB error",
+			22,
+			nil,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, err := newTestTx()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rt.done()
+			if tt.name == "DB error" {
+				rt.done()
+			}
+			got, err := rt.findJWTKey(tt.kid)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("requestTx.findJWTKey() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("requestTx.findJWTKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

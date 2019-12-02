@@ -3,8 +3,7 @@
 create table jwt_keys (
 	id serial not null primary key,
 	public_key bytea not null,
-	created_at timestamp with time zone not null,
-	unique (public_key)
+	created_at timestamp with time zone not null
 );
 
 create table users (

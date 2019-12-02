@@ -124,6 +124,32 @@ func userTestData() error {
 	return nil
 }
 
+func jwtTestData() error {
+	tx, err := mdb.MasterTx(testCtx, nil)
+	if err != nil {
+		log.WithError(err).Error("Obtaining MasterTx")
+	}
+	defer tx.Rollback()
+
+	token := &models.JWTKey{
+		ID:        333,
+		PublicKey: []byte(testPubKey),
+	}
+	log := log.WithField("token", token)
+
+	if err = token.Insert(testCtx, tx, boil.Infer()); err != nil {
+		log.WithError(err).Error("token.Insert()")
+		return err
+	}
+	log.Debug("token.Insert()")
+	if err = tx.Commit(); err != nil {
+		log.WithError(err).Error("tx.Commit()")
+		return err
+	}
+	log.Debug("tx.Commit()")
+	return nil
+}
+
 func TestMain(m *testing.M) {
 	var cancel context.CancelFunc
 	testCtx, cancel = context.WithTimeout(context.Background(), 30*time.Minute)
@@ -135,6 +161,9 @@ func TestMain(m *testing.M) {
 	}
 	migrations()
 	if err = userTestData(); err != nil {
+		migrateDown()
+	}
+	if err = jwtTestData(); err != nil {
 		migrateDown()
 	}
 
