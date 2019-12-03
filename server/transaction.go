@@ -130,6 +130,11 @@ func (rt *requestTx) authReply(subject string, issued time.Time, set map[string]
 	}
 	st := string(token)
 	rt.log.WithField("token", st).Debug("authReply")
+
+	if err = rt.commit(); err != nil {
+		rt.log.WithError(err).Error("commit()")
+		return nil, status.Error(codes.Internal, errDB)
+	}
 	return &pb.AuthReply{Jwt: st}, nil
 }
 

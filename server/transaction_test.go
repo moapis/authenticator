@@ -220,6 +220,17 @@ func Test_requestTx_authReply(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"Commit error",
+			args{
+				subject:   "testuser",
+				issued:    time.Unix(123, 456),
+				set:       map[string]interface{}{"some": 1},
+				audiences: []string{"foo", "bar"},
+			},
+			nil,
+			true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -228,6 +239,11 @@ func Test_requestTx_authReply(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer rt.done()
+
+			if tt.name == "Commit error" {
+				rt.done()
+			}
+
 			got, err := rt.authReply(tt.args.subject, tt.args.issued, tt.args.set, tt.args.audiences...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("requestTx.authReply() error = %v, wantErr %v", err, tt.wantErr)

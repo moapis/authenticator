@@ -121,9 +121,6 @@ func (s *authServer) RegisterPwUser(ctx context.Context, pu *pb.NewPwUser) (*pb.
 		}
 		logger.Debug(action)
 	*/
-	if err = rt.commit(); err != nil {
-		return nil, err
-	}
 	return rt.userAuthReply(user, time.Now())
 }
 
