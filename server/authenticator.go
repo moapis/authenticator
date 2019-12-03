@@ -15,7 +15,6 @@ import (
 
 	"github.com/moapis/authenticator/models"
 	pb "github.com/moapis/authenticator/pb"
-	"github.com/moapis/authenticator/tokens"
 	"github.com/moapis/multidb"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -38,15 +37,12 @@ type authServer struct {
 	privKey privateKey
 	keyMtx  sync.RWMutex //Protects privKey during updates
 
-	pubKeys *tokens.KeyClientCache
-
 	log *logrus.Entry
 }
 
 func newAuthServer(ctx context.Context, r io.Reader) (*authServer, error) {
 	s := &authServer{
-		pubKeys: new(tokens.KeyClientCache),
-		log:     logrus.WithField("server", "Authenticator"),
+		log: logrus.WithField("server", "Authenticator"),
 	}
 	lvl, err := logrus.ParseLevel(viper.GetString("LogLevel"))
 	if err != nil {
@@ -168,10 +164,6 @@ func (s *authServer) ChangeUserPw(ctx context.Context, up *pb.NewUserPassword) (
 	return &pb.ChangePwReply{Success: true}, nil
 }
 
-const (
-	userExistsQuery = "select exists (select true from users where %s=$1);"
-)
-
 func (s *authServer) CheckUserExists(ctx context.Context, ud *pb.UserData) (*pb.Exists, error) {
 	rt, err := s.newTx(ctx, "ChangeCheckUserExistsUserPw", false)
 	if err != nil {
@@ -212,5 +204,6 @@ func (s *authServer) GetPubKey(ctx context.Context, k *pb.KeyID) (*pb.PublicKey,
 	if err != nil {
 		return nil, err
 	}
+	defer rt.done()
 	return rt.getPubKey(int(k.GetKid()))
 }

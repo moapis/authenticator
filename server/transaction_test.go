@@ -165,12 +165,9 @@ func Test_requestTx_enoughTime(t *testing.T) {
 
 func newTestTx() (*requestTx, error) {
 	s := &authServer{
-		mdb: mdb,
-		log: logrus.NewEntry(log),
-		privKey: privateKey{
-			id:  "10",
-			key: []byte(testPrivKey),
-		},
+		mdb:     mdb,
+		log:     logrus.NewEntry(log),
+		privKey: testPrivateKey,
 	}
 	return s.newTx(context.Background(), "testing", false)
 }
