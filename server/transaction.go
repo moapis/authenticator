@@ -383,14 +383,14 @@ func (rt *requestTx) checkUserExists(email, name string) (*pb.Exists, error) {
 	return exists, nil
 }
 
-func (rt *requestTx) publicUserToken(uuid string) (*pb.AuthReply, error) {
+func (rt *requestTx) publicUserToken(uuid string, issued time.Time) (*pb.AuthReply, error) {
 	rt.log = rt.log.WithField("uuid", uuid)
 	if uuid == "" {
 		rt.log.WithError(errors.New(errMissingUUID)).Warn("publicUserToken")
 		return nil, status.Error(codes.InvalidArgument, errMissingUUID)
 	}
 	rt.log.Debug("publicUserToken")
-	return rt.authReply(fmt.Sprintf("public:%s", uuid), time.Now(), nil)
+	return rt.authReply(fmt.Sprintf("public:%s", uuid), issued, nil)
 }
 
 func (rt *requestTx) getPubKey(kid int) (*pb.PublicKey, error) {

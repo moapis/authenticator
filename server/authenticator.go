@@ -198,7 +198,7 @@ func (s *authServer) PublicUserToken(ctx context.Context, pu *pb.PublicUser) (*p
 		return nil, err
 	}
 	defer rt.done()
-	return rt.publicUserToken(pu.GetUuid())
+	return rt.publicUserToken(pu.GetUuid(), time.Now())
 }
 
 func (s *authServer) GetPubKey(ctx context.Context, k *pb.KeyID) (*pb.PublicKey, error) {

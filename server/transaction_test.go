@@ -1087,3 +1087,54 @@ func Test_requestTx_checkUserExists(t *testing.T) {
 		})
 	}
 }
+
+func Test_requestTx_publicUserToken(t *testing.T) {
+	type args struct {
+		uuid   string
+		issued time.Time
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *pb.AuthReply
+		wantErr bool
+	}{
+		{
+			"Ok",
+			args{
+				uuid:   "super-unique-uuid",
+				issued: time.Unix(123, 456),
+			},
+			&pb.AuthReply{
+				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJwdWJsaWM6c3VwZXItdW5pcXVlLXV1aWQiLCJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiaWF0IjoxMjMuMDAwMDAwNDU2fQ.NzH0jqp71uXgbmILuhUK3sn2HYPESDlUlRzQJGrbZr85k7Gh8ZE0ckg8RUzFATvsKCjKOnZojuQ2txcYnFNfCQ",
+			},
+			false,
+		},
+		{
+			"Empy UUID",
+			args{
+				uuid:   "",
+				issued: time.Unix(123, 456),
+			},
+			nil,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, err := newTestTx()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rt.done()
+			got, err := rt.publicUserToken(tt.args.uuid, tt.args.issued)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("requestTx.publicUserToken() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("requestTx.publicUserToken() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
