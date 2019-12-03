@@ -560,3 +560,71 @@ func Test_requestTx_setUserPassword(t *testing.T) {
 		})
 	}
 }
+
+func Test_requestTx_insertPwUser(t *testing.T) {
+	type args struct {
+		email    string
+		name     string
+		password string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			"Empty email",
+			args{
+				"",
+				"foo",
+				"pass",
+			},
+			true,
+		},
+		{
+			"Success",
+			args{
+				"foo@bar.com",
+				"foo",
+				"pass",
+			},
+			false,
+		},
+		{
+			"Duplicate",
+			args{
+				"foo@bar.com",
+				"foo",
+				"pass",
+			},
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, err := newTestTx()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rt.done()
+			want, err := rt.insertPwUser(tt.args.email, tt.args.name, tt.args.password)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("requestTx.insertPwUser() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
+				return
+			}
+			got, err := models.FindUser(testCtx, rt.tx, want.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Email != want.Email {
+				t.Errorf("requestTx.insertPwUser() = %v, want %v", got, want)
+			}
+			if err := rt.commit(); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
