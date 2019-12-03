@@ -6,17 +6,20 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/friendsofgo/errors"
 	"github.com/moapis/authenticator/models"
 	pb "github.com/moapis/authenticator/pb"
 	"github.com/moapis/multidb"
 	"github.com/pascaldekloe/jwt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"golang.org/x/crypto/argon2"
 )
 
 func Test_authServer_newTx(t *testing.T) {
@@ -480,6 +483,79 @@ func Test_requestTx_checkJWT(t *testing.T) {
 			}
 			if fmt.Sprint(got.Set) != fmt.Sprint(tt.want.Set) {
 				t.Errorf("requestTx.checkJWT() = %v, want %v", got.Set, tt.want.Set)
+			}
+		})
+	}
+}
+
+func Test_requestTx_setUserPassword(t *testing.T) {
+	type args struct {
+		user     *models.User
+		password string
+		read     func([]byte) (int, error)
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			"Empty password",
+			args{
+				&models.User{},
+				"",
+				rand.Read,
+			},
+			true,
+		},
+		{
+			"Read error",
+			args{
+				&models.User{},
+				"Somepass",
+				func([]byte) (int, error) { return 0, errors.New("SomeErr") },
+			},
+			true,
+		},
+		{
+			"SetPassword error",
+			args{
+				&models.User{},
+				"Somepass",
+				rand.Read,
+			},
+			true,
+		},
+		{
+			"Success",
+			args{
+				testUsers["allGroups"],
+				"Somepass",
+				rand.Read,
+			},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, err := newTestTx()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rt.done()
+			if err := rt.setUserPassword(tt.args.user, tt.args.password, tt.args.read); (err != nil) != tt.wantErr {
+				t.Errorf("requestTx.setUserPassword() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				pw, err := tt.args.user.Password().One(testCtx, rt.tx)
+				if err != nil {
+					t.Fatal(err)
+				}
+				t.Log(pw)
+				exp := argon2.IDKey([]byte(tt.args.password), pw.Salt, Argon2Time, Argon2Memory, Argon2Threads, Argon2KeyLen)
+				if !reflect.DeepEqual(exp, pw.Hash) {
+					t.Errorf("requestTx.setUserPassword() = %v, want %v", string(pw.Hash), string(exp))
+				}
 			}
 		})
 	}

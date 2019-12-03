@@ -223,7 +223,10 @@ func (rt *requestTx) setUserPassword(user *models.User, password string, read fu
 		log.Warn(errMissingPW)
 		return status.Error(codes.InvalidArgument, errMissingPW)
 	}
-	pwm := &models.Password{Salt: make([]byte, PasswordSaltLen)}
+	pwm := &models.Password{
+		UserID: user.ID,
+		Salt:   make([]byte, PasswordSaltLen),
+	}
 	if _, err := read(pwm.Salt); err != nil {
 		log.WithError(err).Error("Salt generation")
 		return status.Error(codes.Internal, errFatal)
@@ -231,11 +234,19 @@ func (rt *requestTx) setUserPassword(user *models.User, password string, read fu
 	pwm.Hash = argon2.IDKey([]byte(password), pwm.Salt, Argon2Time, Argon2Memory, Argon2Threads, Argon2KeyLen)
 	log = log.WithField("password_model", pwm)
 
-	if err := user.SetPassword(rt.ctx, rt.tx, true, pwm); err != nil {
-		log.WithError(err).Error("user.SetPassword()")
+	if err := pwm.Upsert(
+		rt.ctx, rt.tx, true,
+		[]string{models.PasswordColumns.UserID},
+		boil.Blacklist(
+			models.PasswordColumns.UserID,
+			models.PasswordColumns.CreatedAt,
+		),
+		boil.Infer(),
+	); err != nil {
+		log.WithError(err).Error("password.Upsert()")
 		return status.Error(codes.Internal, errDB)
 	}
-	log.Debug("user.SetPassword()")
+	log.Debug("password.Upsert()")
 	return nil
 }
 
