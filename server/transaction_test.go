@@ -20,6 +20,7 @@ import (
 	"github.com/pascaldekloe/jwt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/volatiletech/sqlboiler/boil"
 	"golang.org/x/crypto/argon2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -787,6 +788,110 @@ func Test_requestTx_findUserByEmailOrName(t *testing.T) {
 			got, err := rt.findUserByEmailOrName(tt.args.email, tt.args.name)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("requestTx.findUserByEmailOrName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.want != nil {
+				if got == nil {
+					t.Fatalf("requestTx.findUserByValue() = %+v, want %+v", got, tt.want)
+				}
+				if tt.want.Name != got.Name {
+					t.Fatalf("requestTx.findUserByValue() = %+v, want %+v", got, tt.want)
+				}
+			}
+		})
+	}
+}
+
+func Test_requestTx_authenticatePwUser(t *testing.T) {
+	m, err := mdb.Master(testCtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	u := &models.User{Email: "no@pwd.com", Name: "noPwd"}
+	if err = u.Insert(testCtx, m, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	type args struct {
+		email    string
+		name     string
+		password string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *models.User
+		wantErr bool
+	}{
+		{
+			"Valid password",
+			args{
+				name:     "oneGroup",
+				password: "oneGroup",
+			},
+			testUsers["oneGroup"],
+			false,
+		},
+		{
+			"Missing password",
+			args{
+				name: "oneGroup",
+			},
+			nil,
+			true,
+		},
+		{
+			"Missing name and email",
+			args{
+				password: "oneGroup",
+			},
+			nil,
+			true,
+		},
+		{
+			"Password not found",
+			args{
+				email:    "no@pwd.com",
+				password: "something",
+			},
+			nil,
+			true,
+		},
+		{
+			"Timeout",
+			args{
+				name:     "oneGroup",
+				password: "oneGroup",
+			},
+			nil,
+			true,
+		},
+		{
+			"Wrong password",
+			args{
+				name:     "oneGroup",
+				password: "foobar",
+			},
+			nil,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, err := newTestTx()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rt.done()
+
+			if tt.name == "Timeout" {
+				rt.ctx, rt.cancel = context.WithTimeout(rt.ctx, 500*time.Millisecond)
+			}
+			defer rt.cancel()
+
+			got, err := rt.authenticatePwUser(tt.args.email, tt.args.name, tt.args.password)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("requestTx.authenticatePwUser() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if tt.want != nil {
