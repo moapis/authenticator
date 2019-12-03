@@ -136,7 +136,7 @@ func jwtTestData() error {
 	defer tx.Rollback()
 
 	token := &models.JWTKey{
-		ID:        333,
+		ID:        10,
 		PublicKey: []byte(testPubKey),
 	}
 	log := log.WithField("token", token)

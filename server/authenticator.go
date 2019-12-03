@@ -92,6 +92,7 @@ const (
 	errMissingEmailOrName = "Missing email or name"
 	errMissingPW          = "Missing password"
 	errMissingToken       = "JWT token missing"
+	errExpiredToken       = "JWT expired"
 	errMissingUUID        = "UUID missing"
 	errMissingKeyID       = "Public key ID missing"
 	errKeyNotFound        = "Key ID not found"
@@ -152,7 +153,7 @@ func (s *authServer) ChangeUserPw(ctx context.Context, up *pb.NewUserPassword) (
 	if err != nil {
 		return nil, err
 	}
-	if err = rt.setUserPassword(user, up.GetNewPassword()); err != nil {
+	if err = rt.setUserPassword(user, up.GetNewPassword(), rand.Read); err != nil {
 		return nil, err
 	}
 	if err = rt.commit(); err != nil {
@@ -180,7 +181,7 @@ func (s *authServer) RefreshToken(ctx context.Context, old *pb.AuthReply) (*pb.A
 		return nil, err
 	}
 	defer rt.done()
-	claims, err := rt.checkJWT(old.GetJwt())
+	claims, err := rt.checkJWT(old.GetJwt(), time.Now())
 	if err != nil {
 		return nil, err
 	}

@@ -5,12 +5,13 @@
 package tokens
 
 import (
-	"bytes"
 	"context"
 	"crypto/ed25519"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/friendsofgo/errors"
@@ -96,12 +97,17 @@ func (k *KeyClientCache) getOrRetrieve(ctx context.Context, kid int32) ([]byte, 
 var jwtSeperator = []byte(".")
 
 // ParseJWTHeader checks is the Alg field is supported and returns the Kid as an int.
-func ParseJWTHeader(token []byte) (int, error) {
+func ParseJWTHeader(token string) (int, error) {
+	js, err := base64.RawURLEncoding.DecodeString(strings.Split(token, ".")[0])
+	if err != nil {
+		return 0, errors.WithMessage(err, ErrKeyVerification)
+	}
+
 	var h struct {
 		Alg string // algorithm
 		Kid string // key identifier
 	}
-	if err := json.Unmarshal(bytes.Split(token, jwtSeperator)[0], &h); err != nil {
+	if err := json.Unmarshal(js, &h); err != nil {
 		return 0, errors.WithMessage(err, ErrKeyVerification)
 	}
 	if h.Alg != jwt.EdDSA {
@@ -117,7 +123,7 @@ func ParseJWTHeader(token []byte) (int, error) {
 // Check if the JWT is valid and return the Claims if so.
 // If the key is not in the cache, it will be fetched through the client before checking.
 // Typical errors can by of grpc/status or Verfication error
-func (k *KeyClientCache) Check(ctx context.Context, token []byte) (*jwt.Claims, error) {
+func (k *KeyClientCache) Check(ctx context.Context, token string) (*jwt.Claims, error) {
 	kid, err := ParseJWTHeader(token)
 	if err != nil {
 		return nil, err
@@ -126,5 +132,5 @@ func (k *KeyClientCache) Check(ctx context.Context, token []byte) (*jwt.Claims, 
 	if err != nil {
 		return nil, err
 	}
-	return jwt.EdDSACheck(token, key)
+	return jwt.EdDSACheck([]byte(token), key)
 }

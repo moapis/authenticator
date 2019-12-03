@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -13,7 +14,9 @@ import (
 	"github.com/moapis/authenticator/models"
 	pb "github.com/moapis/authenticator/pb"
 	"github.com/moapis/multidb"
+	"github.com/pascaldekloe/jwt"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 func Test_authServer_newTx(t *testing.T) {
@@ -326,7 +329,7 @@ func Test_requestTx_findJWTKey(t *testing.T) {
 		},
 		{
 			"Existing Key ID",
-			333,
+			10,
 			[]byte(testPubKey),
 			false,
 		},
@@ -360,6 +363,123 @@ func Test_requestTx_findJWTKey(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("requestTx.findJWTKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_requestTx_checkJWT(t *testing.T) {
+	c := &jwt.Claims{
+		KeyID: "66",
+	}
+	neid, err := c.EdDSASign([]byte(testPrivKey))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type args struct {
+		token string
+		valid time.Time
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *jwt.Claims
+		wantErr bool
+	}{
+		{
+			"Expired JWT",
+			args{
+				"eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiZ3JvdXBfaWRzIjpbXSwiaWF0IjoxMjMuMDAwMDAwNDU2LCJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJub0dyb3VwIiwidXNlcl9pZCI6MTAxfQ.cN5J_jiwdE25scA3p1X2BgAeMxYtLLYwORF7kOPgbDEnegspSyxPLnklOf46QG1-wsN3Ju8sWH134palAGTBAQ",
+				time.Now(),
+			},
+			nil,
+			true,
+		},
+		{
+			"Valid JWT",
+			args{
+				"eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJhdWQiOlsibWUiLCJhbmQiLCJ5b3UiXSwiZXhwIjo4NjUyMy4wMDAwMDA0NTYsImdyb3VwX2lkcyI6WzEsMiwzXSwiaWF0IjoxMjMuMDAwMDAwNDU2LCJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJhbGxHcm91cHMiLCJ1c2VyX2lkIjoxMDN9.j0hyUeEUu8ZKFl8n4s-8HFzC5eR4Y5KjT5vI2dHNCu-MRdz2iB0Dh2C2EqZ_sILggtkTTjtrScRxTOlcX8kgBA",
+				time.Unix(124, 0),
+			},
+			&jwt.Claims{
+				Registered: jwt.Registered{
+					Issuer:    viper.GetString("JWTIssuer"),
+					Subject:   testUsers["allGroups"].Name,
+					Expires:   jwt.NewNumericTime(time.Unix(123, 456).Add(viper.GetDuration("JWTExpiry"))),
+					Audiences: []string{"me", "and", "you"},
+					Issued:    jwt.NewNumericTime(time.Unix(123, 456)),
+				},
+				Set: map[string]interface{}{
+					"user_id":   103,
+					"group_ids": []int{1, 2, 3},
+				},
+			},
+			false,
+		},
+		{
+			"Empty token",
+			args{
+				"",
+				time.Now(),
+			},
+			nil,
+			true,
+		},
+		{
+			"Malformed token header",
+			args{
+				"foobar",
+				time.Now(),
+			},
+			nil,
+			true,
+		},
+		{
+			"Non-existing ID",
+			args{
+				string(neid),
+				time.Now(),
+			},
+			nil,
+			true,
+		},
+		{
+			"Malformed token signature",
+			args{
+				"eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJhdWQiOlsibWUiLCJhbmQiLCJ5b3UiXSwiZXhwIjo4NjUyMy4wMDAwMDA0NTYsImdyb3VwX2lkcyI6WzEsMiwzXSwiaWF0IjoxMjMuMDAwMDAwNDU2LCJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJhbGxHcm91cHMiLCJ1c2VyX2lkIjoxMDN9.foobar",
+				time.Unix(124, 0),
+			},
+			nil,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, err := newTestTx()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rt.done()
+			if tt.want != nil {
+				tt.want.KeyID = rt.s.privateKey().id
+			}
+			got, err := rt.checkJWT(tt.args.token, tt.args.valid)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("requestTx.checkJWT() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.want == got {
+				return
+			}
+			if tt.want != nil && got == nil {
+				t.Errorf("requestTx.checkJWT() = %v, want %v", got, tt.want)
+				return
+			}
+			if !reflect.DeepEqual(got.Registered, tt.want.Registered) {
+				t.Errorf("requestTx.checkJWT() = %v, want %v", got.Registered, tt.want.Registered)
+			}
+			if fmt.Sprint(got.Set) != fmt.Sprint(tt.want.Set) {
+				t.Errorf("requestTx.checkJWT() = %v, want %v", got.Set, tt.want.Set)
 			}
 		})
 	}

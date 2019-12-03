@@ -177,21 +177,16 @@ func (rt *requestTx) findJWTKey(kid int) ([]byte, error) {
 	return key.PublicKey, nil
 }
 
-func (rt *requestTx) checkJWT(token string) (*jwt.Claims, error) {
+func (rt *requestTx) checkJWT(token string, valid time.Time) (*jwt.Claims, error) {
 	log := rt.log.WithField("token", token)
 	if token == "" {
 		log.WithError(errors.New(errMissingToken)).Warn("checkJWT")
 		return nil, status.Error(codes.InvalidArgument, errMissingToken)
 	}
-	kid, err := tokens.ParseJWTHeader([]byte(token))
+	kid, err := tokens.ParseJWTHeader(token)
 	if err != nil {
 		log.WithError(err).Warn("tokens.ParseJWTHeader()")
-		switch err.Error() {
-		case tokens.ErrUnsupportedAlg:
-			return nil, status.Error(codes.OutOfRange, tokens.ErrUnsupportedAlg)
-		default:
-			return nil, status.Error(codes.Unauthenticated, tokens.ErrKeyVerification)
-		}
+		return nil, status.Error(codes.Unauthenticated, tokens.ErrKeyVerification)
 	}
 	key, err := rt.findJWTKey(kid)
 	if err != nil {
@@ -200,12 +195,11 @@ func (rt *requestTx) checkJWT(token string) (*jwt.Claims, error) {
 	claims, err := jwt.EdDSACheck([]byte(token), []byte(key))
 	if err != nil {
 		log.WithError(err).Warn("jwt.EdDSACheck()")
-		switch err {
-		case jwt.ErrSigMiss:
-			return nil, status.Error(codes.Unauthenticated, err.Error())
-		default:
-			return nil, status.Error(codes.Unknown, "JWT malformed")
-		}
+		return nil, status.Error(codes.Unauthenticated, tokens.ErrKeyVerification)
+	}
+	if !claims.Valid(valid) {
+		log.WithError(errors.New(errExpiredToken)).Warn("jwt.EdDSACheck()")
+		return nil, status.Error(codes.Unauthenticated, errExpiredToken)
 	}
 	return claims, nil
 }
@@ -223,14 +217,14 @@ const (
 	Argon2KeyLen = 32
 )
 
-func (rt *requestTx) setUserPassword(user *models.User, password string) error {
+func (rt *requestTx) setUserPassword(user *models.User, password string, read func([]byte) (int, error)) error {
 	log := rt.log.WithField("method", "setUserPassword()")
 	if password == "" {
 		log.Warn(errMissingPW)
 		return status.Error(codes.InvalidArgument, errMissingPW)
 	}
 	pwm := &models.Password{Salt: make([]byte, PasswordSaltLen)}
-	if _, err := rand.Read(pwm.Salt); err != nil {
+	if _, err := read(pwm.Salt); err != nil {
 		log.WithError(err).Error("Salt generation")
 		return status.Error(codes.Internal, errFatal)
 	}
@@ -264,7 +258,7 @@ func (rt *requestTx) insertPwUser(email, name, password string) (*models.User, e
 	}
 	rt.log.Debug("Insert user")
 
-	return user, rt.setUserPassword(user, password)
+	return user, rt.setUserPassword(user, password, rand.Read)
 }
 
 func (rt *requestTx) dbAuthError(action, entry string, err error) error {
