@@ -273,15 +273,15 @@ func (rt *requestTx) insertPwUser(email, name, password string) (*models.User, e
 }
 
 func (rt *requestTx) dbAuthError(action, entry string, err error) error {
-	ll := rt.log.WithError(err)
+	log := rt.log.WithError(err).WithFields(logrus.Fields{"action": action})
 	switch err {
 	case nil:
 		return nil
 	case sql.ErrNoRows:
-		ll.Warnf("%s: %s not found", action, entry)
+		log.Warnf("%s not found", entry)
 		return status.Error(codes.Unauthenticated, errCredentials)
 	default:
-		ll.Error(action)
+		log.Error(errDB)
 		return status.Error(codes.Internal, errDB)
 	}
 }
@@ -289,10 +289,9 @@ func (rt *requestTx) dbAuthError(action, entry string, err error) error {
 func (rt *requestTx) findUserByValue(key, value string, columns ...string) (*models.User, error) {
 	ll := rt.log.WithFields(logrus.Fields{key: value, "columns": columns})
 
-	qms := []qm.QueryMod{qm.Where(fmt.Sprintf("%s=$1", key), value)}
-	// TODO: Test if we can do without this if when columns are nil
-	if len(columns) != 0 {
-		qms = append(qms, qm.Select(columns...))
+	qms := []qm.QueryMod{
+		qm.Select(columns...),
+		qm.Where(fmt.Sprintf("%s=$1", key), value),
 	}
 	ll.WithField("qms", qms).Debug("findUserByValue")
 	return models.Users(qms...).One(rt.ctx, rt.tx)
@@ -333,7 +332,7 @@ func (rt *requestTx) authenticatePwUser(email, name, password string) (*models.U
 	if err != nil {
 		return nil, rt.dbAuthError("Get user password", "password", err)
 	}
-	if err := rt.enoughTime(3 * time.Second); err != nil {
+	if err := rt.enoughTime(time.Second); err != nil {
 		return nil, err
 	}
 

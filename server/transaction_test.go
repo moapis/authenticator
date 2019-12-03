@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"fmt"
 	"reflect"
 	"testing"
@@ -20,6 +21,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/argon2"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func Test_authServer_newTx(t *testing.T) {
@@ -624,6 +627,175 @@ func Test_requestTx_insertPwUser(t *testing.T) {
 			}
 			if err := rt.commit(); err != nil {
 				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func Test_requestTx_dbAuthError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want error
+	}{
+		{
+			"Nil error",
+			nil,
+			nil,
+		},
+		{
+			"No rows",
+			sql.ErrNoRows,
+			status.Error(codes.Unauthenticated, errCredentials),
+		},
+		{
+			"Other error",
+			errors.New("some"),
+			status.Error(codes.Internal, errDB),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, err := newTestTx()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rt.done()
+			if err := rt.dbAuthError("action", "entry", tt.err); fmt.Sprint(err) != fmt.Sprint(tt.want) {
+				t.Errorf("requestTx.dbAuthError() error = %v, wantErr %v", err, tt.want)
+			}
+		})
+	}
+}
+
+func Test_requestTx_findUserByValue(t *testing.T) {
+	type args struct {
+		key     string
+		value   string
+		columns []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *models.User
+		wantErr bool
+	}{
+		{
+			"Find all columns",
+			args{
+				models.UserColumns.Email,
+				"one@group.com",
+				nil,
+			},
+			testUsers["oneGroup"],
+			false,
+		},
+		{
+			"Name column",
+			args{
+				models.UserColumns.Email,
+				"one@group.com",
+				[]string{models.UserColumns.Name},
+			},
+			testUsers["oneGroup"],
+			false,
+		},
+		{
+			"Syntax error",
+			args{
+				"",
+				"one@group.com",
+				nil,
+			},
+			nil,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, err := newTestTx()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rt.done()
+			got, err := rt.findUserByValue(tt.args.key, tt.args.value, tt.args.columns...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("requestTx.findUserByValue() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.want != nil {
+				if got == nil {
+					t.Fatalf("requestTx.findUserByValue() = %+v, want %+v", got, tt.want)
+				}
+				if tt.want.Name != got.Name {
+					t.Fatalf("requestTx.findUserByValue() = %+v, want %+v", got, tt.want)
+				}
+			}
+		})
+	}
+}
+
+func Test_requestTx_findUserByEmailOrName(t *testing.T) {
+	type args struct {
+		email string
+		name  string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *models.User
+		wantErr bool
+	}{
+		{
+			"Find by email",
+			args{
+				email: "one@group.com",
+			},
+			testUsers["oneGroup"],
+			false,
+		},
+		{
+			"Find by name",
+			args{
+				name: "oneGroup",
+			},
+			testUsers["oneGroup"],
+			false,
+		},
+		{
+			"Missing name and email",
+			args{},
+			nil,
+			true,
+		},
+		{
+			"Not found",
+			args{
+				name: "spanac",
+			},
+			nil,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, err := newTestTx()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rt.done()
+			got, err := rt.findUserByEmailOrName(tt.args.email, tt.args.name)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("requestTx.findUserByEmailOrName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.want != nil {
+				if got == nil {
+					t.Fatalf("requestTx.findUserByValue() = %+v, want %+v", got, tt.want)
+				}
+				if tt.want.Name != got.Name {
+					t.Fatalf("requestTx.findUserByValue() = %+v, want %+v", got, tt.want)
+				}
 			}
 		})
 	}
