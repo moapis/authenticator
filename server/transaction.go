@@ -343,19 +343,18 @@ func (rt *requestTx) authenticatePwUser(email, name, password string) (*models.U
 	return user, nil
 }
 
-func (rt *requestTx) userExistsByValue(key, value string) (exists bool, err error) {
-	_, err = rt.findUserByValue(key, value, models.UserColumns.ID)
+func (rt *requestTx) userExistsByValue(key, value string) (bool, error) {
+	_, err := rt.findUserByValue(key, value, models.UserColumns.ID)
 	switch err {
 	case nil:
-		exists = true
+		return true, nil
 	case sql.ErrNoRows:
 		rt.log.WithError(err).Debug("userExistsByValue")
-		break
+		return false, nil
 	default:
 		rt.log.WithError(err).Error("userExistsByValue")
-		err = status.Error(codes.Internal, errDB)
+		return false, status.Error(codes.Internal, errDB)
 	}
-	return exists, err
 }
 
 func (rt *requestTx) checkUserExists(email, name string) (*pb.Exists, error) {

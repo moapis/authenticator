@@ -905,3 +905,185 @@ func Test_requestTx_authenticatePwUser(t *testing.T) {
 		})
 	}
 }
+
+func Test_requestTx_userExistsByValue(t *testing.T) {
+	type args struct {
+		key   string
+		value string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			"Existing user",
+			args{
+				models.UserColumns.Email,
+				"one@group.com",
+			},
+			true,
+			false,
+		},
+		{
+			"non-existing user",
+			args{
+				models.UserColumns.Email,
+				"no@body.com",
+			},
+			false,
+			false,
+		},
+		{
+			"error",
+			args{
+				"",
+				"no@body.com",
+			},
+			false,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, err := newTestTx()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rt.done()
+			gotExists, err := rt.userExistsByValue(tt.args.key, tt.args.value)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("requestTx.userExistsByValue() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotExists != tt.want {
+				t.Errorf("requestTx.userExistsByValue() = %v, want %v", gotExists, tt.want)
+			}
+		})
+	}
+}
+
+func Test_requestTx_checkUserExists(t *testing.T) {
+	type args struct {
+		email string
+		name  string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *pb.Exists
+		wantErr bool
+	}{
+		{
+			"Email exists",
+			args{
+				email: "one@group.com",
+			},
+			&pb.Exists{
+				Email: true,
+				Name:  false,
+			},
+			false,
+		},
+		{
+			"Name exists",
+			args{
+				name: "oneGroup",
+			},
+			&pb.Exists{
+				Email: false,
+				Name:  true,
+			},
+			false,
+		},
+		{
+			"Both exist",
+			args{
+				email: "one@group.com",
+				name:  "noGroup",
+			},
+			&pb.Exists{
+				Email: true,
+				Name:  true,
+			},
+			false,
+		},
+		{
+			"E-mail does not exist",
+			args{
+				email: "no@body.com",
+				name:  "noGroup",
+			},
+			&pb.Exists{
+				Email: false,
+				Name:  true,
+			},
+			false,
+		},
+		{
+			"Name does not exist",
+			args{
+				email: "no@group.com",
+				name:  "noBody",
+			},
+			&pb.Exists{
+				Email: true,
+				Name:  false,
+			},
+			false,
+		},
+		{
+			"Neither exist",
+			args{
+				email: "no@body.com",
+				name:  "noBody",
+			},
+			&pb.Exists{
+				Email: false,
+				Name:  false,
+			},
+			false,
+		},
+		{
+			"Missing email and name",
+			args{
+				email: "",
+				name:  "",
+			},
+			nil,
+			true,
+		},
+		{
+			"DBErr",
+			args{
+				email: "one@group.com",
+				name:  "noGroup",
+			},
+			nil,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, err := newTestTx()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rt.done()
+
+			if tt.name == "DBErr" {
+				rt.done()
+			}
+
+			got, err := rt.checkUserExists(tt.args.email, tt.args.name)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("requestTx.checkUserExists() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("requestTx.checkUserExists() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
