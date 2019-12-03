@@ -1138,3 +1138,43 @@ func Test_requestTx_publicUserToken(t *testing.T) {
 		})
 	}
 }
+
+func Test_requestTx_getPubKey(t *testing.T) {
+	tests := []struct {
+		name    string
+		kid     int
+		want    *pb.PublicKey
+		wantErr bool
+	}{
+		{
+			"Existing key",
+			10,
+			&pb.PublicKey{Key: []byte(testPubKey)},
+			false,
+		},
+		{
+			"Non-existing key",
+			666,
+			nil,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, err := newTestTx()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rt.done()
+
+			got, err := rt.getPubKey(tt.kid)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("requestTx.getPubKey() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("requestTx.getPubKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
