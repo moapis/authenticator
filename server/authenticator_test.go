@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"crypto/ed25519"
+	"crypto/rand"
 	"io"
 	"reflect"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/moapis/authenticator/models"
 	"github.com/moapis/multidb"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -112,6 +114,46 @@ func Test_authServer_updateKeyPair(t *testing.T) {
 			s.keyMtx.Lock() // Will hang if mutex was not proberly cleared
 			s.keyMtx.Unlock()
 		})
+	}
+}
+
+func Test_newAuthServer(t *testing.T) {
+	s, err := newAuthServer(context.Background(), rand.Reader)
+	if err != nil {
+		t.Errorf("newAuthServer() error = %v, wantErr %v", err, false)
+	}
+	if s == nil {
+		t.Errorf("newAuthServer() = %v, want %v", s, &authServer{})
+	}
+
+	oldLvl := viper.GetString("LogLevel")
+	viper.Set("LogLevel", "Foobar")
+	s, err = newAuthServer(context.Background(), rand.Reader)
+	if err == nil {
+		t.Errorf("newAuthServer() error = %v, wantErr %v", err, true)
+	}
+	if s != nil {
+		t.Errorf("newAuthServer() = %v, want %v", s, nil)
+	}
+	viper.Set("LogLevel", oldLvl)
+
+	oldHm := viper.Get("DBHosts").(map[string]uint16)
+	viper.Set("DBHosts", make(map[string]uint16))
+	s, err = newAuthServer(context.Background(), rand.Reader)
+	if err == nil {
+		t.Errorf("newAuthServer() error = %v, wantErr %v", err, true)
+	}
+	if s != nil {
+		t.Errorf("newAuthServer() = %v, want %v", s, nil)
+	}
+	viper.Set("DBHosts", oldHm)
+
+	s, err = newAuthServer(context.Background(), strings.NewReader(""))
+	if err == nil {
+		t.Errorf("newAuthServer() error = %v, wantErr %v", err, true)
+	}
+	if s != nil {
+		t.Errorf("newAuthServer() = %v, want %v", s, nil)
 	}
 }
 

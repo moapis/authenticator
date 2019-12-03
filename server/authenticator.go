@@ -18,8 +18,13 @@ import (
 	"github.com/moapis/authenticator/tokens"
 	"github.com/moapis/multidb"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"github.com/volatiletech/sqlboiler/boil"
 )
+
+func init() {
+	viper.SetDefault("LogLevel", "debug")
+}
 
 type privateKey struct {
 	id  string
@@ -38,17 +43,21 @@ type authServer struct {
 	log *logrus.Entry
 }
 
-func newAuthServer() (*authServer, error) {
+func newAuthServer(ctx context.Context, r io.Reader) (*authServer, error) {
 	s := &authServer{
 		pubKeys: new(tokens.KeyClientCache),
 		log:     logrus.WithField("server", "Authenticator"),
 	}
-	log.SetLevel(logrus.DebugLevel)
-	var err error
+	lvl, err := logrus.ParseLevel(viper.GetString("LogLevel"))
+	if err != nil {
+		return nil, err
+	}
+	log.SetLevel(lvl)
+
 	if s.mdb, err = connectMDB(); err != nil {
 		return nil, err
 	}
-	if err = s.updateKeyPair(context.Background(), rand.Reader); err != nil {
+	if err = s.updateKeyPair(ctx, r); err != nil {
 		return nil, err
 	}
 	return s, nil
