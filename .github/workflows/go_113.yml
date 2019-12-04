@@ -57,6 +57,7 @@ jobs:
       run: | 
         go test -race ./models
         go test -race -coverprofile=server.txt -covermode=atomic ./server
+        go test -race -coverprofile=verify.txt -covermode=atomic ./verify
 
     - name: Codecov
       uses: codecov/codecov-action@v1.0.4
