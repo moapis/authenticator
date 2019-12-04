@@ -16,7 +16,7 @@ import (
 
 	"github.com/moapis/authenticator/models"
 	pb "github.com/moapis/authenticator/pb"
-	"github.com/moapis/authenticator/tokens"
+	"github.com/moapis/authenticator/verify"
 	"github.com/pascaldekloe/jwt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -188,10 +188,10 @@ func (rt *requestTx) checkJWT(token string, valid time.Time) (*jwt.Claims, error
 		log.WithError(errors.New(errMissingToken)).Warn("checkJWT")
 		return nil, status.Error(codes.InvalidArgument, errMissingToken)
 	}
-	kid, err := tokens.ParseJWTHeader(token)
+	kid, err := verify.ParseJWTHeader(token)
 	if err != nil {
 		log.WithError(err).Warn("tokens.ParseJWTHeader()")
-		return nil, status.Error(codes.Unauthenticated, tokens.ErrKeyVerification)
+		return nil, status.Error(codes.Unauthenticated, "Invalid token header")
 	}
 	key, err := rt.findJWTKey(kid)
 	if err != nil {
@@ -200,7 +200,7 @@ func (rt *requestTx) checkJWT(token string, valid time.Time) (*jwt.Claims, error
 	claims, err := jwt.EdDSACheck([]byte(token), []byte(key))
 	if err != nil {
 		log.WithError(err).Warn("jwt.EdDSACheck()")
-		return nil, status.Error(codes.Unauthenticated, tokens.ErrKeyVerification)
+		return nil, status.Error(codes.Unauthenticated, "EdDSA verification failed")
 	}
 	if !claims.Valid(valid) {
 		log.WithError(errors.New(errExpiredToken)).Warn("jwt.EdDSACheck()")
