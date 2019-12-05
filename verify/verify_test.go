@@ -11,6 +11,7 @@ package verify
 import (
 	"encoding/base64"
 	"errors"
+	"reflect"
 	"testing"
 )
 
@@ -65,6 +66,98 @@ func TestParseJWTHeader(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("ParseJWTHeader() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestVerificator_get(t *testing.T) {
+	key := []byte("foobar")
+	keys := map[int32][]byte{10: key}
+
+	tests := []struct {
+		name    string
+		keys    map[int32][]byte
+		kid     int32
+		wantKey []byte
+		wantOk  bool
+	}{
+		{
+			"Empty map",
+			nil,
+			33,
+			nil,
+			false,
+		},
+		{
+			"Existing key",
+			keys,
+			10,
+			key,
+			true,
+		},
+		{
+			"Non-existing key",
+			keys,
+			33,
+			nil,
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := &Verificator{
+				keys: tt.keys,
+			}
+			gotKey, gotOk := v.get(tt.kid)
+			if !reflect.DeepEqual(gotKey, tt.wantKey) {
+				t.Errorf("Verificator.get() gotKey = %v, want %v", gotKey, tt.wantKey)
+			}
+			if gotOk != tt.wantOk {
+				t.Errorf("Verificator.get() gotOk = %v, want %v", gotOk, tt.wantOk)
+			}
+		})
+	}
+}
+
+func TestVerificator_set(t *testing.T) {
+	type args struct {
+		kid int32
+		key []byte
+	}
+	tests := []struct {
+		name string
+		keys map[int32][]byte
+		args args
+		want map[int32][]byte
+	}{
+		{
+			"Nil map",
+			nil,
+			args{10, []byte("foobar")},
+			map[int32][]byte{10: []byte("foobar")},
+		},
+		{
+			"extra key",
+			map[int32][]byte{10: []byte("foobar")},
+			args{22, []byte("hello")},
+			map[int32][]byte{10: []byte("foobar"), 22: []byte("hello")},
+		},
+		{
+			"existing key",
+			map[int32][]byte{10: []byte("foobar")},
+			args{10, []byte("hello")},
+			map[int32][]byte{10: []byte("hello")},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := &Verificator{
+				keys: tt.keys,
+			}
+			v.set(tt.args.kid, tt.args.key)
+			if !reflect.DeepEqual(v.keys, tt.want) {
+				t.Errorf("Verificator.set() v.keys = %v, want %v", v.keys, tt.want)
 			}
 		})
 	}

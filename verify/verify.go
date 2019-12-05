@@ -67,18 +67,10 @@ type Verificator struct {
 	mtx    sync.RWMutex
 }
 
-// New returns an initialized Verificator
-func New(client pb.AuthenticatorClient) *Verificator {
-	return &Verificator{
-		Client: client,
-		keys:   make(map[int32][]byte),
-	}
-}
-
 // Get key from cache
-func (v *Verificator) get(kid int32) ([]byte, bool) {
+func (v *Verificator) get(kid int32) (key []byte, ok bool) {
 	v.mtx.RLock()
-	key, ok := v.keys[kid]
+	key, ok = v.keys[kid]
 	v.mtx.RUnlock()
 	return key, ok
 }
