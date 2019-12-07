@@ -17,13 +17,8 @@ import (
 	pb "github.com/moapis/authenticator/pb"
 	"github.com/moapis/multidb"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"github.com/volatiletech/sqlboiler/boil"
 )
-
-func init() {
-	viper.SetDefault("LogLevel", "debug")
-}
 
 type privateKey struct {
 	id  string
@@ -32,31 +27,12 @@ type privateKey struct {
 
 type authServer struct {
 	pb.UnimplementedAuthenticatorServer
-	mdb *multidb.MultiDB
 
+	mdb     *multidb.MultiDB
 	privKey privateKey
 	keyMtx  sync.RWMutex //Protects privKey during updates
-
-	log *logrus.Entry
-}
-
-func newAuthServer(ctx context.Context, r io.Reader) (*authServer, error) {
-	s := &authServer{
-		log: logrus.WithField("server", "Authenticator"),
-	}
-	lvl, err := logrus.ParseLevel(viper.GetString("LogLevel"))
-	if err != nil {
-		return nil, err
-	}
-	log.SetLevel(lvl)
-
-	if s.mdb, err = connectMDB(); err != nil {
-		return nil, err
-	}
-	if err = s.updateKeyPair(ctx, r); err != nil {
-		return nil, err
-	}
-	return s, nil
+	log     *logrus.Entry
+	conf    *ServerConfig
 }
 
 func (s *authServer) updateKeyPair(ctx context.Context, r io.Reader) error {

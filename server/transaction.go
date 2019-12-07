@@ -19,17 +19,11 @@ import (
 	"github.com/moapis/authenticator/verify"
 	"github.com/pascaldekloe/jwt"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"github.com/volatiletech/sqlboiler/boil"
 	"github.com/volatiletech/sqlboiler/queries/qm"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
-
-func init() {
-	viper.SetDefault("JWTIssuer", "localhost")
-	viper.SetDefault("JWTExpiry", 24*time.Hour)
-}
 
 // requestTx holds the request transaction, context and reference to authServer
 type requestTx struct {
@@ -49,7 +43,7 @@ func (s *authServer) newTx(ctx context.Context, method string, master bool) (*re
 	if master {
 		rt.tx, err = s.mdb.MasterTx(ctx, nil)
 	} else {
-		rt.tx, err = s.mdb.MultiTx(ctx, nil, viper.GetInt("DBRoutines"))
+		rt.tx, err = s.mdb.MultiTx(ctx, nil, s.conf.SQLRoutines)
 	}
 	if err != nil {
 		rt.log.WithError(err).Error("Begin TX")
@@ -113,9 +107,9 @@ func (rt *requestTx) authReply(subject string, issued time.Time, set map[string]
 	c := jwt.Claims{
 		KeyID: prKey.id,
 		Registered: jwt.Registered{
-			Issuer:    viper.GetString("JWTIssuer"),
+			Issuer:    rt.s.conf.JWT.Issuer,
 			Subject:   subject,
-			Expires:   jwt.NewNumericTime(issued.Add(viper.GetDuration("JWTExpiry"))),
+			Expires:   jwt.NewNumericTime(issued.Add(rt.s.conf.JWT.Expiry)),
 			Audiences: audiences,
 			Issued:    jwt.NewNumericTime(issued),
 		},

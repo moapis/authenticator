@@ -7,7 +7,6 @@ package main
 import (
 	"context"
 	"crypto/ed25519"
-	"crypto/rand"
 	"io"
 	"reflect"
 	"strings"
@@ -18,14 +17,6 @@ import (
 	pb "github.com/moapis/authenticator/pb"
 	"github.com/moapis/multidb"
 	"github.com/pascaldekloe/jwt"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
-)
-
-const (
-	testKeyInput = "qwertyuiopasdfghjklzxcvbnm123456"
-	testPrivKey  = "qwertyuiopasdfghjklzxcvbnm123456\xda\xf9W\x14\xfcc\xe2\xe5\x1b+i\xa3\n\xbek($\x1e\x18\xc6j/*\x88\xaf\xa7X݉|ֳ"
-	testPubKey   = "\xda\xf9W\x14\xfcc\xe2\xe5\x1b+i\xa3\n\xbek($\x1e\x18\xc6j/*\x88\xaf\xa7X݉|ֳ"
 )
 
 var (
@@ -128,46 +119,6 @@ func Test_authServer_updateKeyPair(t *testing.T) {
 	}
 }
 
-func Test_newAuthServer(t *testing.T) {
-	s, err := newAuthServer(context.Background(), rand.Reader)
-	if err != nil {
-		t.Errorf("newAuthServer() error = %v, wantErr %v", err, false)
-	}
-	if s == nil {
-		t.Errorf("newAuthServer() = %v, want %v", s, &authServer{})
-	}
-
-	oldLvl := viper.GetString("LogLevel")
-	viper.Set("LogLevel", "Foobar")
-	s, err = newAuthServer(context.Background(), rand.Reader)
-	if err == nil {
-		t.Errorf("newAuthServer() error = %v, wantErr %v", err, true)
-	}
-	if s != nil {
-		t.Errorf("newAuthServer() = %v, want %v", s, nil)
-	}
-	viper.Set("LogLevel", oldLvl)
-
-	oldHm := viper.Get("DBHosts").(map[string]uint16)
-	viper.Set("DBHosts", make(map[string]uint16))
-	s, err = newAuthServer(context.Background(), rand.Reader)
-	if err == nil {
-		t.Errorf("newAuthServer() error = %v, wantErr %v", err, true)
-	}
-	if s != nil {
-		t.Errorf("newAuthServer() = %v, want %v", s, nil)
-	}
-	viper.Set("DBHosts", oldHm)
-
-	s, err = newAuthServer(context.Background(), strings.NewReader(""))
-	if err == nil {
-		t.Errorf("newAuthServer() error = %v, wantErr %v", err, true)
-	}
-	if s != nil {
-		t.Errorf("newAuthServer() = %v, want %v", s, nil)
-	}
-}
-
 func Test_authServer_privateKey(t *testing.T) {
 	type fields struct {
 		privKey privateKey
@@ -252,12 +203,7 @@ func Test_authServer_RegisterPwUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &authServer{
-				mdb:     mdb,
-				privKey: testPrivateKey,
-				log:     logrus.NewEntry(log),
-			}
-			got, err := s.RegisterPwUser(tt.args.ctx, tt.args.pu)
+			got, err := tas.RegisterPwUser(tt.args.ctx, tt.args.pu)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("authServer.RegisterPwUser() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -312,12 +258,7 @@ func Test_authServer_AuthenticatePwUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &authServer{
-				mdb:     mdb,
-				privKey: testPrivateKey,
-				log:     logrus.NewEntry(log),
-			}
-			got, err := s.AuthenticatePwUser(tt.args.ctx, tt.args.up)
+			got, err := tas.AuthenticatePwUser(tt.args.ctx, tt.args.up)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("authServer.AuthenticatePwUser() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -390,12 +331,7 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &authServer{
-				mdb:     mdb,
-				privKey: testPrivateKey,
-				log:     logrus.NewEntry(log),
-			}
-			got, err := s.ChangeUserPw(tt.args.ctx, tt.args.up)
+			got, err := tas.ChangeUserPw(tt.args.ctx, tt.args.up)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("authServer.ChangeUserPw() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -451,12 +387,7 @@ func Test_authServer_CheckUserExists(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &authServer{
-				mdb:     mdb,
-				privKey: testPrivateKey,
-				log:     logrus.NewEntry(log),
-			}
-			got, err := s.CheckUserExists(tt.args.ctx, tt.args.ud)
+			got, err := tas.CheckUserExists(tt.args.ctx, tt.args.ud)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("authServer.CheckUserExists() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -475,9 +406,9 @@ func Test_authServer_RefreshToken(t *testing.T) {
 	claims := &jwt.Claims{
 		KeyID: "10",
 		Registered: jwt.Registered{
-			Issuer:    viper.GetString("JWTIssuer"),
+			Issuer:    "localhost",
 			Subject:   testUsers["allGroups"].Name,
-			Expires:   jwt.NewNumericTime(time.Now().Add(viper.GetDuration("JWTExpiry"))),
+			Expires:   jwt.NewNumericTime(time.Now().Add(24 * time.Hour)),
 			Audiences: []string{"me", "and", "you"},
 			Issued:    jwt.NewNumericTime(time.Now()),
 		},
@@ -494,9 +425,9 @@ func Test_authServer_RefreshToken(t *testing.T) {
 	claims = &jwt.Claims{
 		KeyID: "10",
 		Registered: jwt.Registered{
-			Issuer:    viper.GetString("JWTIssuer"),
+			Issuer:    "localhost",
 			Subject:   "Nobody",
-			Expires:   jwt.NewNumericTime(time.Now().Add(viper.GetDuration("JWTExpiry"))),
+			Expires:   jwt.NewNumericTime(time.Now().Add(24 * time.Hour)),
 			Audiences: []string{"me", "and", "you"},
 			Issued:    jwt.NewNumericTime(time.Now()),
 		},
@@ -554,12 +485,7 @@ func Test_authServer_RefreshToken(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &authServer{
-				mdb:     mdb,
-				privKey: testPrivateKey,
-				log:     logrus.NewEntry(log),
-			}
-			got, err := s.RefreshToken(tt.args.ctx, tt.args.old)
+			got, err := tas.RefreshToken(tt.args.ctx, tt.args.old)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("authServer.RefreshToken() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -611,12 +537,7 @@ func Test_authServer_PublicUserToken(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &authServer{
-				mdb:     mdb,
-				privKey: testPrivateKey,
-				log:     logrus.NewEntry(log),
-			}
-			got, err := s.PublicUserToken(tt.args.ctx, tt.args.pu)
+			got, err := tas.PublicUserToken(tt.args.ctx, tt.args.pu)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("authServer.PublicUserToken() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -672,12 +593,7 @@ func Test_authServer_GetPubKey(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &authServer{
-				mdb:     mdb,
-				privKey: testPrivateKey,
-				log:     logrus.NewEntry(log),
-			}
-			got, err := s.GetPubKey(tt.args.ctx, tt.args.k)
+			got, err := tas.GetPubKey(tt.args.ctx, tt.args.k)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("authServer.GetPubKey() error = %v, wantErr %v", err, tt.wantErr)
 				return

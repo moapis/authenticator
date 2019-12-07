@@ -13,13 +13,21 @@ import (
 	"github.com/moapis/authenticator/models"
 	"github.com/moapis/multidb"
 	migrate "github.com/rubenv/sql-migrate"
+	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/boil"
 	"golang.org/x/crypto/argon2"
+)
+
+const (
+	testKeyInput = "qwertyuiopasdfghjklzxcvbnm123456"
+	testPrivKey  = "qwertyuiopasdfghjklzxcvbnm123456\xda\xf9W\x14\xfcc\xe2\xe5\x1b+i\xa3\n\xbek($\x1e\x18\xc6j/*\x88\xaf\xa7X݉|ֳ"
+	testPubKey   = "\xda\xf9W\x14\xfcc\xe2\xe5\x1b+i\xa3\n\xbek($\x1e\x18\xc6j/*\x88\xaf\xa7X݉|ֳ"
 )
 
 var (
 	testCtx   context.Context
 	mdb       *multidb.MultiDB
+	tas       *authServer
 	testUsers = map[string]*models.User{
 		"noGroup": {
 			ID:    101,
@@ -155,20 +163,34 @@ func jwtTestData() error {
 }
 
 func TestMain(m *testing.M) {
-	var cancel context.CancelFunc
-	testCtx, cancel = context.WithTimeout(context.Background(), 30*time.Minute)
-
-	var err error
-	mdb, err = connectMDB()
+	c, err := configure(Default)
 	if err != nil {
-		log.WithError(err).Fatal("Connect to testDB failed")
+		log.WithError(err).Fatal("configure()")
 	}
+
+	var cancel context.CancelFunc
+	testCtx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
+
+	mdb, err = c.MultiDB.Open()
+	if err != nil {
+		log.WithError(err).Fatal("mdb.Open()")
+	}
+
 	migrations()
 	if err = userTestData(); err != nil {
 		migrateDown()
+		log.WithError(err).Fatal("userTestData()")
 	}
 	if err = jwtTestData(); err != nil {
 		migrateDown()
+		log.WithError(err).Fatal("jwtTestData()")
+	}
+
+	tas = &authServer{
+		log:     logrus.NewEntry(log),
+		conf:    c,
+		mdb:     mdb,
+		privKey: privateKey{"10", []byte(testPrivKey)},
 	}
 
 	code := m.Run()

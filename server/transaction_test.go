@@ -19,7 +19,6 @@ import (
 	"github.com/moapis/multidb"
 	"github.com/pascaldekloe/jwt"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"github.com/volatiletech/sqlboiler/boil"
 	"golang.org/x/crypto/argon2"
 	"google.golang.org/grpc/codes"
@@ -86,11 +85,7 @@ func Test_authServer_newTx(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &authServer{
-				mdb: tt.fields.mdb,
-				log: tt.fields.log,
-			}
-			got, err := s.newTx(tt.args.ctx, tt.args.method, tt.args.master)
+			got, err := tas.newTx(tt.args.ctx, tt.args.method, tt.args.master)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("authServer.newTx() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -163,17 +158,8 @@ func Test_requestTx_enoughTime(t *testing.T) {
 	}
 }
 
-func newTestTx() (*requestTx, error) {
-	s := &authServer{
-		mdb:     mdb,
-		log:     logrus.NewEntry(log),
-		privKey: testPrivateKey,
-	}
-	return s.newTx(context.Background(), "testing", false)
-}
-
 func Test_requestTx_done_commit(t *testing.T) {
-	tx, err := newTestTx()
+	tx, err := tas.newTx(testCtx, "testing", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +170,7 @@ func Test_requestTx_done_commit(t *testing.T) {
 		t.Errorf("requestTx.commit() error = %v, wantErr %v", err, true)
 	}
 	tx.done()
-	tx, err = newTestTx()
+	tx, err = tas.newTx(testCtx, "testing", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -231,7 +217,7 @@ func Test_requestTx_authReply(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rt, err := newTestTx()
+			rt, err := tas.newTx(testCtx, "testing", true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -314,7 +300,7 @@ func Test_requestTx_userAuthReply(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rt, err := newTestTx()
+			rt, err := tas.newTx(testCtx, "testing", true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -368,7 +354,7 @@ func Test_requestTx_findJWTKey(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rt, err := newTestTx()
+			rt, err := tas.newTx(testCtx, "testing", true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -424,9 +410,9 @@ func Test_requestTx_checkJWT(t *testing.T) {
 			},
 			&jwt.Claims{
 				Registered: jwt.Registered{
-					Issuer:    viper.GetString("JWTIssuer"),
+					Issuer:    "localhost",
 					Subject:   testUsers["allGroups"].Name,
-					Expires:   jwt.NewNumericTime(time.Unix(123, 456).Add(viper.GetDuration("JWTExpiry"))),
+					Expires:   jwt.NewNumericTime(time.Unix(123, 456).Add(24 * time.Hour)),
 					Audiences: []string{"me", "and", "you"},
 					Issued:    jwt.NewNumericTime(time.Unix(123, 456)),
 				},
@@ -476,7 +462,7 @@ func Test_requestTx_checkJWT(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rt, err := newTestTx()
+			rt, err := tas.newTx(testCtx, "testing", true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -555,7 +541,7 @@ func Test_requestTx_setUserPassword(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rt, err := newTestTx()
+			rt, err := tas.newTx(testCtx, "testing", true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -619,7 +605,7 @@ func Test_requestTx_insertPwUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rt, err := newTestTx()
+			rt, err := tas.newTx(testCtx, "testing", true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -670,7 +656,7 @@ func Test_requestTx_dbAuthError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rt, err := newTestTx()
+			rt, err := tas.newTx(testCtx, "testing", true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -727,7 +713,7 @@ func Test_requestTx_findUserByValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rt, err := newTestTx()
+			rt, err := tas.newTx(testCtx, "testing", true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -793,7 +779,7 @@ func Test_requestTx_findUserByEmailOrName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rt, err := newTestTx()
+			rt, err := tas.newTx(testCtx, "testing", true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -891,7 +877,7 @@ func Test_requestTx_authenticatePwUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rt, err := newTestTx()
+			rt, err := tas.newTx(testCtx, "testing", true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -960,7 +946,7 @@ func Test_requestTx_userExistsByValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rt, err := newTestTx()
+			rt, err := tas.newTx(testCtx, "testing", true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1079,7 +1065,7 @@ func Test_requestTx_checkUserExists(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rt, err := newTestTx()
+			rt, err := tas.newTx(testCtx, "testing", true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1135,7 +1121,7 @@ func Test_requestTx_publicUserToken(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rt, err := newTestTx()
+			rt, err := tas.newTx(testCtx, "testing", true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1174,7 +1160,7 @@ func Test_requestTx_getPubKey(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rt, err := newTestTx()
+			rt, err := tas.newTx(testCtx, "testing", true)
 			if err != nil {
 				t.Fatal(err)
 			}

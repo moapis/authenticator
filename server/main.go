@@ -6,59 +6,66 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"net"
 
 	pb "github.com/moapis/authenticator/pb"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
-var log *logrus.Logger
+var (
+	log *logrus.Logger
+)
+
+// LogLevel used for logrus
+type LogLevel string
+
+const (
+	// PanicLevel sets logrus level to panic
+	PanicLevel LogLevel = "panic"
+	// FatalLevel sets logrus level to fatal
+	FatalLevel LogLevel = "fatal"
+	// ErrorLevel sets logrus level to error
+	ErrorLevel LogLevel = "error"
+	// WarnLevel sets logrus level to warn
+	WarnLevel LogLevel = "warn"
+	// InfoLevel sets logrus level to info
+	InfoLevel LogLevel = "info"
+	// DebugLevel sets logrus level to debug
+	DebugLevel LogLevel = "debug"
+	// TraceLevel sets logrus level to trace
+	TraceLevel LogLevel = "trace"
+)
 
 func init() {
-	viper.SetDefault("Host", "localhost")
-	viper.SetDefault("Port", 5050)
-	viper.SetDefault("TLSPem", "authenticator.pem")
-	viper.SetDefault("TLSKey", "authenticator.key")
-	viper.SetDefault("TLS", false)
 	log = logrus.New()
-	log.SetLevel(logrus.DebugLevel)
+	log.SetLevel(logrus.InfoLevel)
 }
 
 func main() {
-	s := grpc.NewServer(setOpts()...)
-	pb.RegisterAuthenticatorServer(s, new(authServer))
-	log.WithField("grpc", s.GetServiceInfo()).Debug("Registered services")
-
-	host, port := viper.GetString("Host"), viper.GetInt32("Port")
-	logger := log.WithFields(logrus.Fields{"host": host, "port": port})
-	logger.Info("Starting server")
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port))
+	c, err := configure(Default)
 	if err != nil {
-		logger.WithError(err).Fatal("Failed to listen")
+		log.WithError(err).Fatal("configure()")
+	}
+	opts, err := c.grpcOpts()
+	if err != nil {
+		log.WithError(err).Fatal("grpcOpts()")
+	}
+
+	s := grpc.NewServer(opts...)
+	pb.RegisterAuthenticatorServer(s, new(authServer))
+	log.WithField("grpc", s.GetServiceInfo()).Info("Registered services")
+
+	log := log.WithFields(logrus.Fields{"address": c.Addres, "port": c.Port})
+	log.Info("Starting server")
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", c.Addres, c.Port))
+	if err != nil {
+		log.WithError(err).Fatal("Failed to listen")
 	}
 	if err = s.Serve(lis); err != nil {
-		logger.WithError(err).Fatal("Failed to serve")
+		log.WithError(err).Fatal("Failed to serve")
 	}
-}
-
-func setOpts() []grpc.ServerOption {
-	opts := []grpc.ServerOption{
-		grpc.UnaryInterceptor(middlewareInterceptor),
-	}
-	if viper.GetBool("TLS") {
-		pem, key := viper.GetString("TLSPem"), viper.GetString("TLSKey")
-		cert, err := tls.LoadX509KeyPair(pem, key)
-		if err != nil {
-			log.WithFields(logrus.Fields{"TLSPem": pem, "TLSKey": key}).WithError(err).Fatal("Failed to set TLS opts")
-		}
-		opts = append(opts, grpc.Creds(credentials.NewServerTLSFromCert(&cert)))
-	}
-	return opts
 }
 
 var middleware []grpc.UnaryServerInterceptor
