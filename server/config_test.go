@@ -157,19 +157,19 @@ func TestServerConfig_newAuthServer(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		conf    ServerConfig
+		conf    *ServerConfig
 		args    args
 		wantErr bool
 	}{
 		{
 			"Succesfull",
-			Default,
+			testConfig,
 			args{testCtx, strings.NewReader(testKeyInput)},
 			false,
 		},
 		{
 			"Mdb error",
-			ServerConfig{
+			&ServerConfig{
 				MultiDB: multidb.Config{
 					DBConf: pg.Config{
 						Nodes: []pg.Node{},
@@ -181,7 +181,7 @@ func TestServerConfig_newAuthServer(t *testing.T) {
 		},
 		{
 			"Expired context",
-			Default,
+			testConfig,
 			args{ectx, strings.NewReader(testKeyInput)},
 			true,
 		},

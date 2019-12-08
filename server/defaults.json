@@ -4,23 +4,23 @@
   "loglevel": "warn",
   "tls": null,
   "multidb": {
-    "DBConf": {
-      "Nodes": [
-        {
-          "Host": "localhost",
-          "Port": 5432
-        }
-      ],
-      "Params": {
-        "dbname": "authenticator",
-        "user": "postgres",
-        "sslmode": "disable",
-        "connect_timeout": 30
+    "statslen": 100,
+    "maxfails": 10,
+    "reconnectwait": 10000000000
+  },
+  "pg": {
+    "nodes": [
+      {
+        "host": "localhost",
+        "port": 5432
       }
-    },
-    "StatsLen": 100,
-    "MaxFails": 10,
-    "ReconnectWait": 10000000000
+    ],
+    "params": {
+      "dbname": "authenticator",
+      "user": "postgres",
+      "sslmode": "disable",
+      "connect_timeout": 30
+    }
   },
   "sqlroutines": 3,
   "jwt": {

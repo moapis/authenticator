@@ -162,8 +162,11 @@ func jwtTestData() error {
 	return nil
 }
 
+var testConfig *ServerConfig
+
 func TestMain(m *testing.M) {
-	c, err := configure(Default)
+	var err error
+	testConfig, err = configure(Default)
 	if err != nil {
 		log.WithError(err).Fatal("configure()")
 	}
@@ -171,7 +174,7 @@ func TestMain(m *testing.M) {
 	var cancel context.CancelFunc
 	testCtx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 
-	mdb, err = c.MultiDB.Open()
+	mdb, err = testConfig.MultiDB.Open()
 	if err != nil {
 		log.WithError(err).Fatal("mdb.Open()")
 	}
@@ -188,7 +191,7 @@ func TestMain(m *testing.M) {
 
 	tas = &authServer{
 		log:     logrus.NewEntry(log),
-		conf:    c,
+		conf:    testConfig,
 		mdb:     mdb,
 		privKey: privateKey{"10", []byte(testPrivKey)},
 	}

@@ -8,7 +8,7 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/kat-co/vala v0.0.0-20170210184112-42e1d8b61f12
 	github.com/lib/pq v1.2.0
-	github.com/moapis/multidb v0.1.1-0.20191207100616-2bf037215f06
+	github.com/moapis/multidb v0.1.1-0.20191208140004-e40c963dc2a8
 	github.com/pascaldekloe/jwt v1.6.0
 	github.com/rubenv/sql-migrate v0.0.0-20191121092708-da1cb182f00e
 	github.com/sirupsen/logrus v1.4.2

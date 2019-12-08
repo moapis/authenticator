@@ -40,6 +40,7 @@ type ServerConfig struct {
 	LogLevel    LogLevel       `json:"loglevel"`    // LogLevel used for logrus
 	TLS         *TLSConfig     `json:"tls"`         // TLS will be disabled when nil
 	MultiDB     multidb.Config `json:"multidb"`     // Imported from multidb
+	PG          *pg.Config     `json:"pg"`          // PG is later embedded in multidb
 	SQLRoutines int            `json:"sqlroutines"` // Amount of Go-routines for non-master queries
 	JWT         JWTConfig      `json:"jwt"`
 }
@@ -59,24 +60,24 @@ var Default = ServerConfig{
 	LogLevel: WarnLevel,
 	TLS:      nil,
 	MultiDB: multidb.Config{
-		DBConf: pg.Config{
-			Nodes: []pg.Node{
-				{
-					Host: "localhost",
-					Port: 5432,
-				},
-			},
-			Params: pg.Params{
-				DBname:          "authenticator",
-				User:            "postgres",
-				Password:        "",
-				SSLmode:         "disable",
-				Connect_timeout: 30,
-			},
-		},
 		StatsLen:      100,
 		MaxFails:      10,
 		ReconnectWait: 10 * time.Second,
+	},
+	PG: &pg.Config{
+		Nodes: []pg.Node{
+			{
+				Host: "localhost",
+				Port: 5432,
+			},
+		},
+		Params: pg.Params{
+			DBname:          "authenticator",
+			User:            "postgres",
+			Password:        "",
+			SSLmode:         "disable",
+			Connect_timeout: 30,
+		},
 	},
 	SQLRoutines: 3,
 	JWT: JWTConfig{
@@ -88,6 +89,8 @@ var Default = ServerConfig{
 var configFiles = flag.String("config", "", "Comma separated list of JSON config files")
 
 func configure(c ServerConfig) (*ServerConfig, error) {
+	flag.Parse()
+
 	files := strings.Split(*configFiles, ",")
 	s := &c
 	for _, f := range files {
@@ -106,6 +109,11 @@ func configure(c ServerConfig) (*ServerConfig, error) {
 		}
 		log.Info("Applied config")
 	}
+
+	if s.PG != nil {
+		s.MultiDB.DBConf, s.PG = s.PG, nil
+	}
+
 	lvl, err := logrus.ParseLevel(string(s.LogLevel))
 	if err != nil {
 		return nil, err
