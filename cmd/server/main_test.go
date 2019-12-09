@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/moapis/authenticator/cmd/server/models"
+	"github.com/moapis/authenticator/models"
 	"github.com/moapis/multidb"
 	migrate "github.com/rubenv/sql-migrate"
 	"github.com/sirupsen/logrus"

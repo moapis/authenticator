@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
-	"github.com/moapis/authenticator/cmd/server/models"
+	"github.com/moapis/authenticator/models"
 	pb "github.com/moapis/authenticator/pb"
 	"github.com/moapis/multidb"
 	"github.com/pascaldekloe/jwt"

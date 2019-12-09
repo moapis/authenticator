@@ -11,7 +11,7 @@ sql-migrate up
 
 ## Models
 
-Regenerate models with:
+From project root, regenerate models with:
 
 ````
 sqlboiler --wipe --config config/sqlboiler.yml psql

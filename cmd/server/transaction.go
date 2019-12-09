@@ -14,7 +14,7 @@ import (
 	"github.com/friendsofgo/errors"
 	"golang.org/x/crypto/argon2"
 
-	"github.com/moapis/authenticator/cmd/server/models"
+	"github.com/moapis/authenticator/models"
 	pb "github.com/moapis/authenticator/pb"
 	"github.com/moapis/authenticator/verify"
 	"github.com/pascaldekloe/jwt"
