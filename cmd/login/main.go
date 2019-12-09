@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"strings"
+	"text/template"
 	"time"
 
 	pb "github.com/moapis/authenticator/pb"
@@ -77,8 +78,15 @@ func (h *loginHandler) postRequest(w http.ResponseWriter, r *http.Request, redir
 	http.Redirect(w, r, strings.Join([]string{redirect, "?jwt=", auth.GetJwt()}, ""), http.StatusSeeOther)
 }
 
+var (
+	authServer   = flag.String("authServer", "127.0.0.1:8765", "Host and port for the authenticator server")
+	templateFile = flag.String("template", "templates/login.html", "HTML template file")
+)
+
 func main() {
-	cc, err := grpc.Dial("127.0.0.1:8765", grpc.WithBlock(), grpc.WithInsecure())
+	flag.Parse()
+
+	cc, err := grpc.Dial(*authServer, grpc.WithBlock(), grpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -88,6 +96,6 @@ func main() {
 
 	http.ListenAndServe("127.0.0.1:8080", &loginHandler{
 		client,
-		template.Must(template.ParseFiles("templates/login.html")),
+		template.Must(template.ParseFiles(*templateFile)),
 	})
 }
