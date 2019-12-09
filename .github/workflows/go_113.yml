@@ -50,13 +50,13 @@ jobs:
     - name: Run migrations
       run: |
         export PATH=${PATH}:`go env GOPATH`/bin
-        cd server/migrations
+        cd cmd/server/migrations
         sql-migrate up
 
     - name: Tests
       run: | 
         go test -race ./models
-        go test -race -coverprofile=server.txt -covermode=atomic ./server
+        go test -race -coverprofile=server.txt -covermode=atomic ./cmd/server
         go test -race -coverprofile=verify.txt -covermode=atomic ./verify
 
     - name: Codecov
