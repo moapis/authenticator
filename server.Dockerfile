@@ -9,4 +9,5 @@ FROM debian:buster-slim
 RUN apt-get update && \
     apt-get install -y ca-certificates
 
-COPY --from=build /go/src/github.com/moapis/authenticator/cmd/server /server
+COPY --from=build /go/src/github.com/moapis/authenticator/cmd/server/server /server
+ENTRYPOINT [ "/server" ]
