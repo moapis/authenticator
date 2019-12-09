@@ -5,3 +5,9 @@ development:
   datasource: host=localhost dbname=authenticator user=postgres sslmode=disable
   dir: .
   table: migrations
+
+testing:
+  dialect: postgres
+  datasource: host=localhost dbname=authenticator_test user=postgres sslmode=disable
+  dir: .
+  table: migrations

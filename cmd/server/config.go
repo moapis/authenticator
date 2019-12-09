@@ -75,7 +75,7 @@ var Default = ServerConfig{
 			},
 		},
 		Params: pg.Params{
-			DBname:          "authenticator",
+			DBname:          "authenticator_test",
 			User:            "postgres",
 			Password:        "",
 			SSLmode:         "disable",

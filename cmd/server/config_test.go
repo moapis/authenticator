@@ -28,7 +28,7 @@ func TestServerConfig_writeOut(t *testing.T) {
 		{
 			"Write config",
 			&Default,
-			"./defaults.json",
+			"./config/defaults.json",
 			false,
 		},
 	}

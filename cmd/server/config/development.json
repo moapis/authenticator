@@ -1,0 +1,30 @@
+{
+  "address": "127.0.0.1",
+  "port": 8765,
+  "loglevel": "debug",
+  "tls": null,
+  "multidb": {
+    "statslen": 100,
+    "maxfails": 10,
+    "reconnectwait": 10000000000
+  },
+  "pg": {
+    "nodes": [
+      {
+        "host": "localhost",
+        "port": 5432
+      }
+    ],
+    "params": {
+      "dbname": "authenticator",
+      "user": "postgres",
+      "sslmode": "disable",
+      "connect_timeout": 30
+    }
+  },
+  "sqlroutines": 1,
+  "jwt": {
+    "issuer": "localhost",
+    "expiry": 3600000000000
+  }
+}
