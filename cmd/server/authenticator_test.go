@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/moapis/authenticator/models"
+	"github.com/moapis/authenticator/cmd/server/models"
 	pb "github.com/moapis/authenticator/pb"
 	"github.com/moapis/multidb"
 	"github.com/pascaldekloe/jwt"
