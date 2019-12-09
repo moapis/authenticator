@@ -90,6 +90,7 @@ func Test_authServer_updateKeyPair(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &authServer{
 				mdb: tt.fields.mdb,
+				log: tas.log,
 			}
 			err := s.updateKeyPair(tt.args.ctx, tt.args.r)
 			if (err != nil) != tt.wantErr {

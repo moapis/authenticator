@@ -40,6 +40,8 @@ func (s *authServer) updateKeyPair(ctx context.Context, r io.Reader) error {
 	if err != nil {
 		return err
 	}
+	log := s.log.WithField("pub", string(pub))
+	log.Debug("Generated key")
 	m := &models.JWTKey{
 		PublicKey: pub,
 	}
@@ -48,8 +50,12 @@ func (s *authServer) updateKeyPair(ctx context.Context, r io.Reader) error {
 		return err
 	}
 	if err = m.Insert(ctx, db, boil.Infer()); err != nil {
+		log.WithError(err).Error("Insert pub key")
 		return err
 	}
+	log = log.WithField("id", m.ID)
+	log.Debug("Insert pub key")
+
 	pk := privateKey{
 		id:  strconv.Itoa(m.ID),
 		key: priv,
@@ -58,6 +64,8 @@ func (s *authServer) updateKeyPair(ctx context.Context, r io.Reader) error {
 	s.keyMtx.Lock()
 	s.privKey = pk
 	s.keyMtx.Unlock()
+
+	log.Info("JWT keypair update complete")
 
 	return nil
 }
