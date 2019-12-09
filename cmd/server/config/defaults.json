@@ -23,6 +23,13 @@
     }
   },
   "sqlroutines": 3,
+  "bootsrap": [
+    {
+      "Email": "admin@localhost",
+      "Name": "admin",
+      "Password": "admin"
+    }
+  ],
   "jwt": {
     "issuer": "localhost",
     "expiry": 86400000000000

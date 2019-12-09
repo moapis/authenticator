@@ -36,16 +36,24 @@ type JWTConfig struct {
 	Expiry time.Duration `json:"expiry,omitempty"`
 }
 
+// BootstrapUser defines a primary user
+type BootstrapUser struct {
+	Email    string
+	Name     string
+	Password string
+}
+
 // ServerConfig is a collection on config
 type ServerConfig struct {
-	Addres      string         `json:"address"`     // gRPC listen Address
-	Port        uint16         `json:"port"`        // gRPC listen Port
-	LogLevel    LogLevel       `json:"loglevel"`    // LogLevel used for logrus
-	TLS         *TLSConfig     `json:"tls"`         // TLS will be disabled when nil
-	MultiDB     multidb.Config `json:"multidb"`     // Imported from multidb
-	PG          *pg.Config     `json:"pg"`          // PG is later embedded in multidb
-	SQLRoutines int            `json:"sqlroutines"` // Amount of Go-routines for non-master queries
-	JWT         JWTConfig      `json:"jwt"`
+	Addres      string          `json:"address"`     // gRPC listen Address
+	Port        uint16          `json:"port"`        // gRPC listen Port
+	LogLevel    LogLevel        `json:"loglevel"`    // LogLevel used for logrus
+	TLS         *TLSConfig      `json:"tls"`         // TLS will be disabled when nil
+	MultiDB     multidb.Config  `json:"multidb"`     // Imported from multidb
+	PG          *pg.Config      `json:"pg"`          // PG is later embedded in multidb
+	SQLRoutines int             `json:"sqlroutines"` // Amount of Go-routines for non-master queries
+	Bootstrap   []BootstrapUser `json:"bootsrap"`    // Users which will be upserted at start
+	JWT         JWTConfig       `json:"jwt"`
 }
 
 func (c *ServerConfig) writeOut(filename string) error {
@@ -83,6 +91,13 @@ var Default = ServerConfig{
 		},
 	},
 	SQLRoutines: 3,
+	Bootstrap: []BootstrapUser{
+		{
+			Name:     "admin",
+			Email:    "admin@localhost",
+			Password: "admin",
+		},
+	},
 	JWT: JWTConfig{
 		Issuer: "localhost",
 		Expiry: 24 * time.Hour,
@@ -154,9 +169,22 @@ func (c ServerConfig) newAuthServer(ctx context.Context, r io.Reader) (*authServ
 	if s.mdb, err = c.MultiDB.Open(); err != nil {
 		return nil, err
 	}
+
 	if err = s.updateKeyPair(ctx, r); err != nil {
 		return nil, err
 	}
+
+	for _, u := range c.Bootstrap {
+		log := s.log.WithField("user", u)
+		if _, err := s.RegisterPwUser(ctx, &pb.NewPwUser{
+			Email:    u.Email,
+			Name:     u.Name,
+			Password: u.Password,
+		}); err != nil {
+			log.WithError(err).Warn("Bootstrap")
+		}
+	}
+
 	return s, nil
 }
 
