@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/moapis/multidb"
 	pg "github.com/moapis/multidb/drivers/postgresql"
@@ -195,6 +196,57 @@ func TestServerConfig_newAuthServer(t *testing.T) {
 			}
 			if !tt.wantErr && got == nil {
 				t.Errorf("ServerConfig.newAuthServer() = %v, want %v", got, "something")
+			}
+		})
+	}
+}
+
+func TestServerConfig_listenAndServe(t *testing.T) {
+	type fields struct {
+		Addres string
+		Port   uint16
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		s       *authServer
+		wantErr bool
+	}{
+		{
+			"Healthy start",
+			fields{
+				"127.0.0.1",
+				1234,
+			},
+			tas,
+			false,
+		},
+		{
+			"Fail to listen",
+			fields{
+				"127.0.0.1",
+				12,
+			},
+			tas,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := ServerConfig{
+				Addres: tt.fields.Addres,
+				Port:   tt.fields.Port,
+			}
+			got, ec := c.listenAndServe(tt.s)
+			time.Sleep(time.Millisecond)
+			if got == nil {
+				t.Errorf("ServerConfig.listen() got = %v, want %v", got, "not nil")
+			}
+			got.GracefulStop()
+			err := <-ec
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ServerConfig.listen() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 		})
 	}

@@ -6,10 +6,11 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"net"
+	"crypto/rand"
+	"os"
+	"os/signal"
+	"time"
 
-	pb "github.com/moapis/authenticator/pb"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -53,18 +54,24 @@ func main() {
 		log.WithError(err).Fatal("grpcOpts()")
 	}
 
-	s := grpc.NewServer(opts...)
-	pb.RegisterAuthenticatorServer(s, new(authServer))
-	log.WithField("grpc", s.GetServiceInfo()).Info("Registered services")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	log := log.WithFields(logrus.Fields{"address": c.Addres, "port": c.Port})
-	log.Info("Starting server")
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", c.Addres, c.Port))
+	s, err := c.newAuthServer(ctx, rand.Reader)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to listen")
+		log.WithError(err).Fatal("newAuthServer")
 	}
-	if err = s.Serve(lis); err != nil {
-		log.WithError(err).Fatal("Failed to serve")
+
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, os.Interrupt)
+
+	gs, ec := c.listenAndServe(s, opts...)
+	select {
+	case sig := <-sc:
+		log.WithField("signal", sig).Info("Shutdown")
+		gs.GracefulStop()
+	case err = <-ec:
+		log.WithError(err).Fatal("Shutdown")
 	}
 }
 

@@ -9,11 +9,14 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"strings"
 	"time"
 
+	pb "github.com/moapis/authenticator/pb"
 	"github.com/moapis/multidb"
 	pg "github.com/moapis/multidb/drivers/postgresql"
 	"github.com/sirupsen/logrus"
@@ -57,7 +60,7 @@ func (c *ServerConfig) writeOut(filename string) error {
 var Default = ServerConfig{
 	Addres:   "127.0.0.1",
 	Port:     8765,
-	LogLevel: WarnLevel,
+	LogLevel: InfoLevel,
 	TLS:      nil,
 	MultiDB: multidb.Config{
 		StatsLen:      100,
@@ -155,4 +158,30 @@ func (c ServerConfig) newAuthServer(ctx context.Context, r io.Reader) (*authServ
 		return nil, err
 	}
 	return s, nil
+}
+
+func (c ServerConfig) listenAndServe(s *authServer, opts ...grpc.ServerOption) (*grpc.Server, <-chan error) {
+	gs := grpc.NewServer(opts...)
+	ec := make(chan error)
+	pb.RegisterAuthenticatorServer(gs, s)
+
+	log := log.WithFields(logrus.Fields{"address": c.Addres, "port": c.Port})
+	log.WithField("grpc", gs.GetServiceInfo()).Debug("Registered services")
+	log.Info("Starting server")
+
+	go func(ec chan<- error) {
+		lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", c.Addres, c.Port))
+		if err != nil {
+			log.WithError(err).Error("Failed to listen")
+			ec <- err
+			return
+		}
+		if err = gs.Serve(lis); err != nil {
+			log.WithError(err).Error("Failed to serve")
+			ec <- err
+			return
+		}
+		ec <- nil
+	}(ec)
+	return gs, ec
 }
