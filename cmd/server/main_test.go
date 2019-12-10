@@ -111,11 +111,13 @@ func userTestData() error {
 		ul.Debug("Insert user")
 
 		pw := &models.Password{
-			Salt: []byte(testSalt),
-			Hash: argon2.IDKey([]byte(u.Name), []byte(testSalt), Argon2Time, Argon2Memory, Argon2Threads, Argon2KeyLen),
+			UserID: u.ID,
+			Salt:   []byte(testSalt),
+			Hash:   argon2.IDKey([]byte(u.Name), []byte(testSalt), Argon2Time, Argon2Memory, Argon2Threads, Argon2KeyLen),
 		}
 		ul = ul.WithField("password", pw)
-		if err := u.SetPassword(testCtx, tx, true, pw); err != nil {
+
+		if err := pw.Insert(testCtx, tx, boil.Infer()); err != nil {
 			ul.WithError(err).Error("Set password")
 			return err
 		}

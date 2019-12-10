@@ -775,7 +775,7 @@ func (o *User) SetPassword(ctx context.Context, exec boil.ContextExecutor, inser
 			strmangle.SetParamNames("\"", "\"", 1, []string{"user_id"}),
 			strmangle.WhereClause("\"", "\"", 2, passwordPrimaryKeyColumns),
 		)
-		values := []interface{}{o.ID, related.UserID}
+		values := []interface{}{o.ID, related.ID}
 
 		if boil.IsDebug(ctx) {
 			writer := boil.DebugWriterFrom(ctx)

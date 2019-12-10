@@ -590,10 +590,11 @@ func testUserOneToOneSetOpPasswordUsingPassword(t *testing.T) {
 			t.Error("foreign key was wrong value", a.ID)
 		}
 
-		if exists, err := PasswordExists(ctx, tx, x.UserID); err != nil {
-			t.Fatal(err)
-		} else if !exists {
-			t.Error("want 'x' to exist")
+		zero := reflect.Zero(reflect.TypeOf(x.UserID))
+		reflect.Indirect(reflect.ValueOf(&x.UserID)).Set(zero)
+
+		if err = x.Reload(ctx, tx); err != nil {
+			t.Fatal("failed to reload", err)
 		}
 
 		if a.ID != x.UserID {

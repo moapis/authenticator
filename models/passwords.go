@@ -23,6 +23,7 @@ import (
 
 // Password is an object representing the database table.
 type Password struct {
+	ID        int       `boil:"id" json:"id" toml:"id" yaml:"id"`
 	UserID    int       `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
 	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
@@ -34,12 +35,14 @@ type Password struct {
 }
 
 var PasswordColumns = struct {
+	ID        string
 	UserID    string
 	CreatedAt string
 	UpdatedAt string
 	Salt      string
 	Hash      string
 }{
+	ID:        "id",
 	UserID:    "user_id",
 	CreatedAt: "created_at",
 	UpdatedAt: "updated_at",
@@ -50,12 +53,14 @@ var PasswordColumns = struct {
 // Generated where
 
 var PasswordWhere = struct {
+	ID        whereHelperint
 	UserID    whereHelperint
 	CreatedAt whereHelpertime_Time
 	UpdatedAt whereHelpertime_Time
 	Salt      whereHelper__byte
 	Hash      whereHelper__byte
 }{
+	ID:        whereHelperint{field: "\"passwords\".\"id\""},
 	UserID:    whereHelperint{field: "\"passwords\".\"user_id\""},
 	CreatedAt: whereHelpertime_Time{field: "\"passwords\".\"created_at\""},
 	UpdatedAt: whereHelpertime_Time{field: "\"passwords\".\"updated_at\""},
@@ -84,10 +89,10 @@ func (*passwordR) NewStruct() *passwordR {
 type passwordL struct{}
 
 var (
-	passwordAllColumns            = []string{"user_id", "created_at", "updated_at", "salt", "hash"}
+	passwordAllColumns            = []string{"id", "user_id", "created_at", "updated_at", "salt", "hash"}
 	passwordColumnsWithoutDefault = []string{"user_id", "created_at", "updated_at", "salt", "hash"}
-	passwordColumnsWithDefault    = []string{}
-	passwordPrimaryKeyColumns     = []string{"user_id"}
+	passwordColumnsWithDefault    = []string{"id"}
+	passwordPrimaryKeyColumns     = []string{"id"}
 )
 
 type (
@@ -496,7 +501,7 @@ func (o *Password) SetUser(ctx context.Context, exec boil.ContextExecutor, inser
 		strmangle.SetParamNames("\"", "\"", 1, []string{"user_id"}),
 		strmangle.WhereClause("\"", "\"", 2, passwordPrimaryKeyColumns),
 	)
-	values := []interface{}{related.ID, o.UserID}
+	values := []interface{}{related.ID, o.ID}
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -535,7 +540,7 @@ func Passwords(mods ...qm.QueryMod) passwordQuery {
 
 // FindPassword retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindPassword(ctx context.Context, exec boil.ContextExecutor, userID int, selectCols ...string) (*Password, error) {
+func FindPassword(ctx context.Context, exec boil.ContextExecutor, iD int, selectCols ...string) (*Password, error) {
 	passwordObj := &Password{}
 
 	sel := "*"
@@ -543,10 +548,10 @@ func FindPassword(ctx context.Context, exec boil.ContextExecutor, userID int, se
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"passwords\" where \"user_id\"=$1", sel,
+		"select %s from \"passwords\" where \"id\"=$1", sel,
 	)
 
-	q := queries.Raw(query, userID)
+	q := queries.Raw(query, iD)
 
 	err := q.Bind(ctx, exec, passwordObj)
 	if err != nil {
@@ -917,7 +922,7 @@ func (o *Password) Delete(ctx context.Context, exec boil.ContextExecutor) (int64
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), passwordPrimaryKeyMapping)
-	sql := "DELETE FROM \"passwords\" WHERE \"user_id\"=$1"
+	sql := "DELETE FROM \"passwords\" WHERE \"id\"=$1"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1014,7 +1019,7 @@ func (o PasswordSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor)
 // Reload refetches the object from the database
 // using the primary keys with an executor.
 func (o *Password) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindPassword(ctx, exec, o.UserID)
+	ret, err := FindPassword(ctx, exec, o.ID)
 	if err != nil {
 		return err
 	}
@@ -1053,16 +1058,16 @@ func (o *PasswordSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor
 }
 
 // PasswordExists checks if the Password row exists.
-func PasswordExists(ctx context.Context, exec boil.ContextExecutor, userID int) (bool, error) {
+func PasswordExists(ctx context.Context, exec boil.ContextExecutor, iD int) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"passwords\" where \"user_id\"=$1 limit 1)"
+	sql := "select exists(select 1 from \"passwords\" where \"id\"=$1 limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
 		fmt.Fprintln(writer, sql)
-		fmt.Fprintln(writer, userID)
+		fmt.Fprintln(writer, iD)
 	}
-	row := exec.QueryRowContext(ctx, sql, userID)
+	row := exec.QueryRowContext(ctx, sql, iD)
 
 	err := row.Scan(&exists)
 	if err != nil {

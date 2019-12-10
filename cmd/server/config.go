@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/tls"
 	"encoding/json"
 	"flag"
@@ -16,12 +17,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/moapis/authenticator/models"
 	pb "github.com/moapis/authenticator/pb"
 	"github.com/moapis/multidb"
 	pg "github.com/moapis/multidb/drivers/postgresql"
 	"github.com/sirupsen/logrus"
+	"github.com/volatiletech/sqlboiler/boil"
+	"golang.org/x/crypto/argon2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
 )
 
 // TLSConfig for the gRPC server's CertFile and KeyFile
@@ -38,9 +44,11 @@ type JWTConfig struct {
 
 // BootstrapUser defines a primary user
 type BootstrapUser struct {
-	Email    string
-	Name     string
-	Password string
+	Email     string
+	Name      string
+	Password  string
+	Groups    []string
+	Audiences []string
 }
 
 // ServerConfig is a collection on config
@@ -52,7 +60,7 @@ type ServerConfig struct {
 	MultiDB     multidb.Config  `json:"multidb"`     // Imported from multidb
 	PG          *pg.Config      `json:"pg"`          // PG is later embedded in multidb
 	SQLRoutines int             `json:"sqlroutines"` // Amount of Go-routines for non-master queries
-	Bootstrap   []BootstrapUser `json:"bootsrap"`    // Users which will be upserted at start
+	Users       []BootstrapUser `json:"bootsrap"`    // Users which will be upserted at start
 	JWT         JWTConfig       `json:"jwt"`
 }
 
@@ -91,11 +99,13 @@ var Default = ServerConfig{
 		},
 	},
 	SQLRoutines: 3,
-	Bootstrap: []BootstrapUser{
+	Users: []BootstrapUser{
 		{
-			Name:     "admin",
-			Email:    "admin@localhost",
-			Password: "admin",
+			Name:      "admin",
+			Email:     "admin@localhost",
+			Password:  "admin",
+			Groups:    []string{"admin"},
+			Audiences: []string{"authenticator"},
 		},
 	},
 	JWT: JWTConfig{
@@ -160,6 +170,76 @@ func (c ServerConfig) grpcOpts() ([]grpc.ServerOption, error) {
 	return opts, nil
 }
 
+func (c ServerConfig) bootStrapUsers(ctx context.Context, s *authServer) error {
+	for _, u := range c.Users {
+		tx, err := s.mdb.MasterTx(ctx, nil)
+		if err != nil {
+			log.WithError(err).Error("bootstrapUsers")
+			return err
+		}
+		defer tx.Rollback()
+
+		log := s.log.WithField("user", u)
+		um := &models.User{
+			Name:  u.Name,
+			Email: u.Email,
+		}
+		if err = um.Insert(ctx, tx, boil.Infer()); err != nil {
+			if strings.Contains(err.Error(), "pq: duplicate key value violates unique constraint") {
+				log.WithError(err).Info("user exists")
+				continue
+			}
+			log.WithError(err).Error("bootstrap User insert")
+			return err
+		}
+		log.Debug("bootstrap User insert")
+
+		pwm := &models.Password{
+			UserID: um.ID,
+			Salt:   make([]byte, PasswordSaltLen),
+		}
+		if _, err := rand.Read(pwm.Salt); err != nil {
+			log.WithError(err).Error("Salt generation")
+			return status.Error(codes.Internal, errFatal)
+		}
+		pwm.Hash = argon2.IDKey([]byte(u.Password), pwm.Salt, Argon2Time, Argon2Memory, Argon2Threads, Argon2KeyLen)
+		log = log.WithField("password_model", pwm)
+
+		if err := um.SetPassword(ctx, tx, true, pwm); err != nil {
+			log.WithError(err).Error("password.SetPassword()")
+			return status.Error(codes.Internal, errDB)
+		}
+		log.Debug("bootstrap password Upsert()")
+
+		gms := make([]*models.Group, len(u.Groups))
+		for i, g := range u.Groups {
+			gms[i] = &models.Group{Name: g}
+		}
+		if err = um.SetGroups(ctx, tx, true); err != nil {
+			log.WithError(err).Error("bootstrap SetGroups")
+			return err
+		}
+		log.Debug("bootstrap SetGroups")
+
+		ams := make([]*models.Audience, len(u.Audiences))
+		for i, a := range u.Audiences {
+			ams[i] = &models.Audience{Name: a}
+		}
+		if err = um.SetAudiences(ctx, tx, true); err != nil {
+			log.WithError(err).Error("bootstrap SetAudiences")
+			return err
+		}
+		log.Debug("bootstrap SetAudiences")
+
+		if err = tx.Commit(); err != nil {
+			log.WithError(err).Error("bootstrap commit")
+			return err
+		}
+		log.Debug("bootstrap commit")
+	}
+	return nil
+}
+
 func (c ServerConfig) newAuthServer(ctx context.Context, r io.Reader) (*authServer, error) {
 	s := &authServer{
 		log:  log.WithField("server", "Authenticator"),
@@ -170,19 +250,12 @@ func (c ServerConfig) newAuthServer(ctx context.Context, r io.Reader) (*authServ
 		return nil, err
 	}
 
-	if err = s.updateKeyPair(ctx, r); err != nil {
+	if err = c.bootStrapUsers(ctx, s); err != nil {
 		return nil, err
 	}
 
-	for _, u := range c.Bootstrap {
-		log := s.log.WithField("user", u)
-		if _, err := s.RegisterPwUser(ctx, &pb.NewPwUser{
-			Email:    u.Email,
-			Name:     u.Name,
-			Password: u.Password,
-		}); err != nil {
-			log.WithError(err).Warn("Bootstrap")
-		}
+	if err = s.updateKeyPair(ctx, r); err != nil {
+		return nil, err
 	}
 
 	return s, nil

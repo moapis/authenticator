@@ -27,7 +27,13 @@
     {
       "Email": "admin@localhost",
       "Name": "admin",
-      "Password": "admin"
+      "Password": "admin",
+      "Groups": [
+        "admin"
+      ],
+      "Audiences": [
+        "authenticator"
+      ]
     }
   ],
   "jwt": {

@@ -149,7 +149,7 @@ func testPasswordsExists(t *testing.T) {
 		t.Error(err)
 	}
 
-	e, err := PasswordExists(ctx, tx, o.UserID)
+	e, err := PasswordExists(ctx, tx, o.ID)
 	if err != nil {
 		t.Errorf("Unable to check if Password exists: %s", err)
 	}
@@ -175,7 +175,7 @@ func testPasswordsFind(t *testing.T) {
 		t.Error(err)
 	}
 
-	passwordFound, err := FindPassword(ctx, tx, o.UserID)
+	passwordFound, err := FindPassword(ctx, tx, o.ID)
 	if err != nil {
 		t.Error(err)
 	}
@@ -590,12 +590,16 @@ func testPasswordToOneSetOpUserUsingUser(t *testing.T) {
 			t.Error("foreign key was wrong value", a.UserID)
 		}
 
-		if exists, err := PasswordExists(ctx, tx, a.UserID); err != nil {
-			t.Fatal(err)
-		} else if !exists {
-			t.Error("want 'a' to exist")
+		zero := reflect.Zero(reflect.TypeOf(a.UserID))
+		reflect.Indirect(reflect.ValueOf(&a.UserID)).Set(zero)
+
+		if err = a.Reload(ctx, tx); err != nil {
+			t.Fatal("failed to reload", err)
 		}
 
+		if a.UserID != x.ID {
+			t.Error("foreign key was wrong value", a.UserID, x.ID)
+		}
 	}
 }
 
@@ -673,7 +677,7 @@ func testPasswordsSelect(t *testing.T) {
 }
 
 var (
-	passwordDBTypes = map[string]string{`UserID`: `integer`, `CreatedAt`: `timestamp with time zone`, `UpdatedAt`: `timestamp with time zone`, `Salt`: `bytea`, `Hash`: `bytea`}
+	passwordDBTypes = map[string]string{`ID`: `integer`, `UserID`: `integer`, `CreatedAt`: `timestamp with time zone`, `UpdatedAt`: `timestamp with time zone`, `Salt`: `bytea`, `Hash`: `bytea`}
 	_               = bytes.MinRead
 )
 
