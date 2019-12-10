@@ -8,4 +8,4 @@ FROM debian:buster-slim
 
 COPY --from=build /go/src/github.com/moapis/authenticator/cmd/login/templates/ /templates
 COPY --from=build /go/src/github.com/moapis/authenticator/cmd/login/login /login
-ENTRYPOINT [ "/login", "-template=/templates/login.html" ]
+ENTRYPOINT [ "/login", "-template=/templates/login.html", "-listen=:8080" ]

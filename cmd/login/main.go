@@ -65,6 +65,7 @@ func (h *loginHandler) postRequest(w http.ResponseWriter, r *http.Request, redir
 		Password: password,
 	})
 	if err != nil {
+		log.Println(err.Error())
 		s, ok := status.FromError(err)
 		if !ok || s.Code() != codes.Unauthenticated {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -80,6 +81,7 @@ func (h *loginHandler) postRequest(w http.ResponseWriter, r *http.Request, redir
 
 var (
 	authServer   = flag.String("authServer", "127.0.0.1:8765", "Host and port for the authenticator server")
+	listenAddr   = flag.String("listen", "127.0.0.1:8080", "List address and port")
 	templateFile = flag.String("template", "templates/login.html", "HTML template file")
 )
 
@@ -94,7 +96,8 @@ func main() {
 
 	client := pb.NewAuthenticatorClient(cc)
 
-	http.ListenAndServe("127.0.0.1:8080", &loginHandler{
+	log.Println("HTTP server starting")
+	http.ListenAndServe(*listenAddr, &loginHandler{
 		client,
 		template.Must(template.ParseFiles(*templateFile)),
 	})
