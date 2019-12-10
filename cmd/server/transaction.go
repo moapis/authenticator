@@ -43,7 +43,7 @@ func (s *authServer) newTx(ctx context.Context, method string, master bool) (*re
 	if master {
 		rt.tx, err = s.mdb.MasterTx(ctx, nil)
 	} else {
-		rt.tx, err = s.mdb.MultiTx(ctx, nil, s.conf.SQLRoutines)
+		rt.tx, err = s.mdb.MultiTx(ctx, &sql.TxOptions{ReadOnly: true}, s.conf.SQLRoutines)
 	}
 	if err != nil {
 		rt.log.WithError(err).Error("Begin TX")
