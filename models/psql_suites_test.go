@@ -6,6 +6,8 @@ package models
 import "testing"
 
 func TestUpsert(t *testing.T) {
+	t.Run("Audiences", testAudiencesUpsert)
+
 	t.Run("Groups", testGroupsUpsert)
 
 	t.Run("JWTKeys", testJWTKeysUpsert)

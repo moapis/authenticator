@@ -12,6 +12,7 @@ import "testing"
 // It does NOT run each operation group in parallel.
 // Separating the tests thusly grants avoidance of Postgres deadlocks.
 func TestParent(t *testing.T) {
+	t.Run("Audiences", testAudiences)
 	t.Run("Groups", testGroups)
 	t.Run("JWTKeys", testJWTKeys)
 	t.Run("Migrations", testMigrations)
@@ -20,6 +21,7 @@ func TestParent(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
+	t.Run("Audiences", testAudiencesDelete)
 	t.Run("Groups", testGroupsDelete)
 	t.Run("JWTKeys", testJWTKeysDelete)
 	t.Run("Migrations", testMigrationsDelete)
@@ -28,6 +30,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestQueryDeleteAll(t *testing.T) {
+	t.Run("Audiences", testAudiencesQueryDeleteAll)
 	t.Run("Groups", testGroupsQueryDeleteAll)
 	t.Run("JWTKeys", testJWTKeysQueryDeleteAll)
 	t.Run("Migrations", testMigrationsQueryDeleteAll)
@@ -36,6 +39,7 @@ func TestQueryDeleteAll(t *testing.T) {
 }
 
 func TestSliceDeleteAll(t *testing.T) {
+	t.Run("Audiences", testAudiencesSliceDeleteAll)
 	t.Run("Groups", testGroupsSliceDeleteAll)
 	t.Run("JWTKeys", testJWTKeysSliceDeleteAll)
 	t.Run("Migrations", testMigrationsSliceDeleteAll)
@@ -44,6 +48,7 @@ func TestSliceDeleteAll(t *testing.T) {
 }
 
 func TestExists(t *testing.T) {
+	t.Run("Audiences", testAudiencesExists)
 	t.Run("Groups", testGroupsExists)
 	t.Run("JWTKeys", testJWTKeysExists)
 	t.Run("Migrations", testMigrationsExists)
@@ -52,6 +57,7 @@ func TestExists(t *testing.T) {
 }
 
 func TestFind(t *testing.T) {
+	t.Run("Audiences", testAudiencesFind)
 	t.Run("Groups", testGroupsFind)
 	t.Run("JWTKeys", testJWTKeysFind)
 	t.Run("Migrations", testMigrationsFind)
@@ -60,6 +66,7 @@ func TestFind(t *testing.T) {
 }
 
 func TestBind(t *testing.T) {
+	t.Run("Audiences", testAudiencesBind)
 	t.Run("Groups", testGroupsBind)
 	t.Run("JWTKeys", testJWTKeysBind)
 	t.Run("Migrations", testMigrationsBind)
@@ -68,6 +75,7 @@ func TestBind(t *testing.T) {
 }
 
 func TestOne(t *testing.T) {
+	t.Run("Audiences", testAudiencesOne)
 	t.Run("Groups", testGroupsOne)
 	t.Run("JWTKeys", testJWTKeysOne)
 	t.Run("Migrations", testMigrationsOne)
@@ -76,6 +84,7 @@ func TestOne(t *testing.T) {
 }
 
 func TestAll(t *testing.T) {
+	t.Run("Audiences", testAudiencesAll)
 	t.Run("Groups", testGroupsAll)
 	t.Run("JWTKeys", testJWTKeysAll)
 	t.Run("Migrations", testMigrationsAll)
@@ -84,6 +93,7 @@ func TestAll(t *testing.T) {
 }
 
 func TestCount(t *testing.T) {
+	t.Run("Audiences", testAudiencesCount)
 	t.Run("Groups", testGroupsCount)
 	t.Run("JWTKeys", testJWTKeysCount)
 	t.Run("Migrations", testMigrationsCount)
@@ -92,6 +102,7 @@ func TestCount(t *testing.T) {
 }
 
 func TestHooks(t *testing.T) {
+	t.Run("Audiences", testAudiencesHooks)
 	t.Run("Groups", testGroupsHooks)
 	t.Run("JWTKeys", testJWTKeysHooks)
 	t.Run("Migrations", testMigrationsHooks)
@@ -100,6 +111,8 @@ func TestHooks(t *testing.T) {
 }
 
 func TestInsert(t *testing.T) {
+	t.Run("Audiences", testAudiencesInsert)
+	t.Run("Audiences", testAudiencesInsertWhitelist)
 	t.Run("Groups", testGroupsInsert)
 	t.Run("Groups", testGroupsInsertWhitelist)
 	t.Run("JWTKeys", testJWTKeysInsert)
@@ -127,7 +140,9 @@ func TestOneToOne(t *testing.T) {
 // TestToMany tests cannot be run in parallel
 // or deadlocks can occur.
 func TestToMany(t *testing.T) {
+	t.Run("AudienceToUsers", testAudienceToManyUsers)
 	t.Run("GroupToUsers", testGroupToManyUsers)
+	t.Run("UserToAudiences", testUserToManyAudiences)
 	t.Run("UserToGroups", testUserToManyGroups)
 }
 
@@ -154,25 +169,32 @@ func TestOneToOneRemove(t *testing.T) {}
 // TestToManyAdd tests cannot be run in parallel
 // or deadlocks can occur.
 func TestToManyAdd(t *testing.T) {
+	t.Run("AudienceToUsers", testAudienceToManyAddOpUsers)
 	t.Run("GroupToUsers", testGroupToManyAddOpUsers)
+	t.Run("UserToAudiences", testUserToManyAddOpAudiences)
 	t.Run("UserToGroups", testUserToManyAddOpGroups)
 }
 
 // TestToManySet tests cannot be run in parallel
 // or deadlocks can occur.
 func TestToManySet(t *testing.T) {
+	t.Run("AudienceToUsers", testAudienceToManySetOpUsers)
 	t.Run("GroupToUsers", testGroupToManySetOpUsers)
+	t.Run("UserToAudiences", testUserToManySetOpAudiences)
 	t.Run("UserToGroups", testUserToManySetOpGroups)
 }
 
 // TestToManyRemove tests cannot be run in parallel
 // or deadlocks can occur.
 func TestToManyRemove(t *testing.T) {
+	t.Run("AudienceToUsers", testAudienceToManyRemoveOpUsers)
 	t.Run("GroupToUsers", testGroupToManyRemoveOpUsers)
+	t.Run("UserToAudiences", testUserToManyRemoveOpAudiences)
 	t.Run("UserToGroups", testUserToManyRemoveOpGroups)
 }
 
 func TestReload(t *testing.T) {
+	t.Run("Audiences", testAudiencesReload)
 	t.Run("Groups", testGroupsReload)
 	t.Run("JWTKeys", testJWTKeysReload)
 	t.Run("Migrations", testMigrationsReload)
@@ -181,6 +203,7 @@ func TestReload(t *testing.T) {
 }
 
 func TestReloadAll(t *testing.T) {
+	t.Run("Audiences", testAudiencesReloadAll)
 	t.Run("Groups", testGroupsReloadAll)
 	t.Run("JWTKeys", testJWTKeysReloadAll)
 	t.Run("Migrations", testMigrationsReloadAll)
@@ -189,6 +212,7 @@ func TestReloadAll(t *testing.T) {
 }
 
 func TestSelect(t *testing.T) {
+	t.Run("Audiences", testAudiencesSelect)
 	t.Run("Groups", testGroupsSelect)
 	t.Run("JWTKeys", testJWTKeysSelect)
 	t.Run("Migrations", testMigrationsSelect)
@@ -197,6 +221,7 @@ func TestSelect(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
+	t.Run("Audiences", testAudiencesUpdate)
 	t.Run("Groups", testGroupsUpdate)
 	t.Run("JWTKeys", testJWTKeysUpdate)
 	t.Run("Migrations", testMigrationsUpdate)
@@ -205,6 +230,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestSliceUpdateAll(t *testing.T) {
+	t.Run("Audiences", testAudiencesSliceUpdateAll)
 	t.Run("Groups", testGroupsSliceUpdateAll)
 	t.Run("JWTKeys", testJWTKeysSliceUpdateAll)
 	t.Run("Migrations", testMigrationsSliceUpdateAll)

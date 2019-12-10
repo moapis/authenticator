@@ -21,18 +21,18 @@ import (
 	"github.com/volatiletech/sqlboiler/strmangle"
 )
 
-// Group is an object representing the database table.
-type Group struct {
+// Audience is an object representing the database table.
+type Audience struct {
 	ID        int       `boil:"id" json:"id" toml:"id" yaml:"id"`
 	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 	Name      string    `boil:"name" json:"name" toml:"name" yaml:"name"`
 
-	R *groupR `boil:"-" json:"-" toml:"-" yaml:"-"`
-	L groupL  `boil:"-" json:"-" toml:"-" yaml:"-"`
+	R *audienceR `boil:"-" json:"-" toml:"-" yaml:"-"`
+	L audienceL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
-var GroupColumns = struct {
+var AudienceColumns = struct {
 	ID        string
 	CreatedAt string
 	UpdatedAt string
@@ -46,68 +46,121 @@ var GroupColumns = struct {
 
 // Generated where
 
-var GroupWhere = struct {
+type whereHelperint struct{ field string }
+
+func (w whereHelperint) EQ(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
+func (w whereHelperint) NEQ(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
+func (w whereHelperint) LT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
+func (w whereHelperint) LTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
+func (w whereHelperint) GT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
+func (w whereHelperint) GTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
+func (w whereHelperint) IN(slice []int) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
+}
+
+type whereHelpertime_Time struct{ field string }
+
+func (w whereHelpertime_Time) EQ(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.EQ, x)
+}
+func (w whereHelpertime_Time) NEQ(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.NEQ, x)
+}
+func (w whereHelpertime_Time) LT(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpertime_Time) LTE(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpertime_Time) GT(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+
+type whereHelperstring struct{ field string }
+
+func (w whereHelperstring) EQ(x string) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
+func (w whereHelperstring) NEQ(x string) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
+func (w whereHelperstring) LT(x string) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
+func (w whereHelperstring) LTE(x string) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
+func (w whereHelperstring) GT(x string) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
+func (w whereHelperstring) GTE(x string) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
+func (w whereHelperstring) IN(slice []string) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
+}
+
+var AudienceWhere = struct {
 	ID        whereHelperint
 	CreatedAt whereHelpertime_Time
 	UpdatedAt whereHelpertime_Time
 	Name      whereHelperstring
 }{
-	ID:        whereHelperint{field: "\"groups\".\"id\""},
-	CreatedAt: whereHelpertime_Time{field: "\"groups\".\"created_at\""},
-	UpdatedAt: whereHelpertime_Time{field: "\"groups\".\"updated_at\""},
-	Name:      whereHelperstring{field: "\"groups\".\"name\""},
+	ID:        whereHelperint{field: "\"audiences\".\"id\""},
+	CreatedAt: whereHelpertime_Time{field: "\"audiences\".\"created_at\""},
+	UpdatedAt: whereHelpertime_Time{field: "\"audiences\".\"updated_at\""},
+	Name:      whereHelperstring{field: "\"audiences\".\"name\""},
 }
 
-// GroupRels is where relationship names are stored.
-var GroupRels = struct {
+// AudienceRels is where relationship names are stored.
+var AudienceRels = struct {
 	Users string
 }{
 	Users: "Users",
 }
 
-// groupR is where relationships are stored.
-type groupR struct {
+// audienceR is where relationships are stored.
+type audienceR struct {
 	Users UserSlice
 }
 
 // NewStruct creates a new relationship struct
-func (*groupR) NewStruct() *groupR {
-	return &groupR{}
+func (*audienceR) NewStruct() *audienceR {
+	return &audienceR{}
 }
 
-// groupL is where Load methods for each relationship are stored.
-type groupL struct{}
+// audienceL is where Load methods for each relationship are stored.
+type audienceL struct{}
 
 var (
-	groupAllColumns            = []string{"id", "created_at", "updated_at", "name"}
-	groupColumnsWithoutDefault = []string{"created_at", "updated_at", "name"}
-	groupColumnsWithDefault    = []string{"id"}
-	groupPrimaryKeyColumns     = []string{"id"}
+	audienceAllColumns            = []string{"id", "created_at", "updated_at", "name"}
+	audienceColumnsWithoutDefault = []string{"created_at", "updated_at", "name"}
+	audienceColumnsWithDefault    = []string{"id"}
+	audiencePrimaryKeyColumns     = []string{"id"}
 )
 
 type (
-	// GroupSlice is an alias for a slice of pointers to Group.
-	// This should generally be used opposed to []Group.
-	GroupSlice []*Group
-	// GroupHook is the signature for custom Group hook methods
-	GroupHook func(context.Context, boil.ContextExecutor, *Group) error
+	// AudienceSlice is an alias for a slice of pointers to Audience.
+	// This should generally be used opposed to []Audience.
+	AudienceSlice []*Audience
+	// AudienceHook is the signature for custom Audience hook methods
+	AudienceHook func(context.Context, boil.ContextExecutor, *Audience) error
 
-	groupQuery struct {
+	audienceQuery struct {
 		*queries.Query
 	}
 )
 
 // Cache for insert, update and upsert
 var (
-	groupType                 = reflect.TypeOf(&Group{})
-	groupMapping              = queries.MakeStructMapping(groupType)
-	groupPrimaryKeyMapping, _ = queries.BindMapping(groupType, groupMapping, groupPrimaryKeyColumns)
-	groupInsertCacheMut       sync.RWMutex
-	groupInsertCache          = make(map[string]insertCache)
-	groupUpdateCacheMut       sync.RWMutex
-	groupUpdateCache          = make(map[string]updateCache)
-	groupUpsertCacheMut       sync.RWMutex
-	groupUpsertCache          = make(map[string]insertCache)
+	audienceType                 = reflect.TypeOf(&Audience{})
+	audienceMapping              = queries.MakeStructMapping(audienceType)
+	audiencePrimaryKeyMapping, _ = queries.BindMapping(audienceType, audienceMapping, audiencePrimaryKeyColumns)
+	audienceInsertCacheMut       sync.RWMutex
+	audienceInsertCache          = make(map[string]insertCache)
+	audienceUpdateCacheMut       sync.RWMutex
+	audienceUpdateCache          = make(map[string]updateCache)
+	audienceUpsertCacheMut       sync.RWMutex
+	audienceUpsertCache          = make(map[string]insertCache)
 )
 
 var (
@@ -118,24 +171,24 @@ var (
 	_ = qmhelper.Where
 )
 
-var groupBeforeInsertHooks []GroupHook
-var groupBeforeUpdateHooks []GroupHook
-var groupBeforeDeleteHooks []GroupHook
-var groupBeforeUpsertHooks []GroupHook
+var audienceBeforeInsertHooks []AudienceHook
+var audienceBeforeUpdateHooks []AudienceHook
+var audienceBeforeDeleteHooks []AudienceHook
+var audienceBeforeUpsertHooks []AudienceHook
 
-var groupAfterInsertHooks []GroupHook
-var groupAfterSelectHooks []GroupHook
-var groupAfterUpdateHooks []GroupHook
-var groupAfterDeleteHooks []GroupHook
-var groupAfterUpsertHooks []GroupHook
+var audienceAfterInsertHooks []AudienceHook
+var audienceAfterSelectHooks []AudienceHook
+var audienceAfterUpdateHooks []AudienceHook
+var audienceAfterDeleteHooks []AudienceHook
+var audienceAfterUpsertHooks []AudienceHook
 
 // doBeforeInsertHooks executes all "before insert" hooks.
-func (o *Group) doBeforeInsertHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *Audience) doBeforeInsertHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range groupBeforeInsertHooks {
+	for _, hook := range audienceBeforeInsertHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -145,12 +198,12 @@ func (o *Group) doBeforeInsertHooks(ctx context.Context, exec boil.ContextExecut
 }
 
 // doBeforeUpdateHooks executes all "before Update" hooks.
-func (o *Group) doBeforeUpdateHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *Audience) doBeforeUpdateHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range groupBeforeUpdateHooks {
+	for _, hook := range audienceBeforeUpdateHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -160,12 +213,12 @@ func (o *Group) doBeforeUpdateHooks(ctx context.Context, exec boil.ContextExecut
 }
 
 // doBeforeDeleteHooks executes all "before Delete" hooks.
-func (o *Group) doBeforeDeleteHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *Audience) doBeforeDeleteHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range groupBeforeDeleteHooks {
+	for _, hook := range audienceBeforeDeleteHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -175,12 +228,12 @@ func (o *Group) doBeforeDeleteHooks(ctx context.Context, exec boil.ContextExecut
 }
 
 // doBeforeUpsertHooks executes all "before Upsert" hooks.
-func (o *Group) doBeforeUpsertHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *Audience) doBeforeUpsertHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range groupBeforeUpsertHooks {
+	for _, hook := range audienceBeforeUpsertHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -190,12 +243,12 @@ func (o *Group) doBeforeUpsertHooks(ctx context.Context, exec boil.ContextExecut
 }
 
 // doAfterInsertHooks executes all "after Insert" hooks.
-func (o *Group) doAfterInsertHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *Audience) doAfterInsertHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range groupAfterInsertHooks {
+	for _, hook := range audienceAfterInsertHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -205,12 +258,12 @@ func (o *Group) doAfterInsertHooks(ctx context.Context, exec boil.ContextExecuto
 }
 
 // doAfterSelectHooks executes all "after Select" hooks.
-func (o *Group) doAfterSelectHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *Audience) doAfterSelectHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range groupAfterSelectHooks {
+	for _, hook := range audienceAfterSelectHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -220,12 +273,12 @@ func (o *Group) doAfterSelectHooks(ctx context.Context, exec boil.ContextExecuto
 }
 
 // doAfterUpdateHooks executes all "after Update" hooks.
-func (o *Group) doAfterUpdateHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *Audience) doAfterUpdateHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range groupAfterUpdateHooks {
+	for _, hook := range audienceAfterUpdateHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -235,12 +288,12 @@ func (o *Group) doAfterUpdateHooks(ctx context.Context, exec boil.ContextExecuto
 }
 
 // doAfterDeleteHooks executes all "after Delete" hooks.
-func (o *Group) doAfterDeleteHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *Audience) doAfterDeleteHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range groupAfterDeleteHooks {
+	for _, hook := range audienceAfterDeleteHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -250,12 +303,12 @@ func (o *Group) doAfterDeleteHooks(ctx context.Context, exec boil.ContextExecuto
 }
 
 // doAfterUpsertHooks executes all "after Upsert" hooks.
-func (o *Group) doAfterUpsertHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *Audience) doAfterUpsertHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range groupAfterUpsertHooks {
+	for _, hook := range audienceAfterUpsertHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -264,33 +317,33 @@ func (o *Group) doAfterUpsertHooks(ctx context.Context, exec boil.ContextExecuto
 	return nil
 }
 
-// AddGroupHook registers your hook function for all future operations.
-func AddGroupHook(hookPoint boil.HookPoint, groupHook GroupHook) {
+// AddAudienceHook registers your hook function for all future operations.
+func AddAudienceHook(hookPoint boil.HookPoint, audienceHook AudienceHook) {
 	switch hookPoint {
 	case boil.BeforeInsertHook:
-		groupBeforeInsertHooks = append(groupBeforeInsertHooks, groupHook)
+		audienceBeforeInsertHooks = append(audienceBeforeInsertHooks, audienceHook)
 	case boil.BeforeUpdateHook:
-		groupBeforeUpdateHooks = append(groupBeforeUpdateHooks, groupHook)
+		audienceBeforeUpdateHooks = append(audienceBeforeUpdateHooks, audienceHook)
 	case boil.BeforeDeleteHook:
-		groupBeforeDeleteHooks = append(groupBeforeDeleteHooks, groupHook)
+		audienceBeforeDeleteHooks = append(audienceBeforeDeleteHooks, audienceHook)
 	case boil.BeforeUpsertHook:
-		groupBeforeUpsertHooks = append(groupBeforeUpsertHooks, groupHook)
+		audienceBeforeUpsertHooks = append(audienceBeforeUpsertHooks, audienceHook)
 	case boil.AfterInsertHook:
-		groupAfterInsertHooks = append(groupAfterInsertHooks, groupHook)
+		audienceAfterInsertHooks = append(audienceAfterInsertHooks, audienceHook)
 	case boil.AfterSelectHook:
-		groupAfterSelectHooks = append(groupAfterSelectHooks, groupHook)
+		audienceAfterSelectHooks = append(audienceAfterSelectHooks, audienceHook)
 	case boil.AfterUpdateHook:
-		groupAfterUpdateHooks = append(groupAfterUpdateHooks, groupHook)
+		audienceAfterUpdateHooks = append(audienceAfterUpdateHooks, audienceHook)
 	case boil.AfterDeleteHook:
-		groupAfterDeleteHooks = append(groupAfterDeleteHooks, groupHook)
+		audienceAfterDeleteHooks = append(audienceAfterDeleteHooks, audienceHook)
 	case boil.AfterUpsertHook:
-		groupAfterUpsertHooks = append(groupAfterUpsertHooks, groupHook)
+		audienceAfterUpsertHooks = append(audienceAfterUpsertHooks, audienceHook)
 	}
 }
 
-// One returns a single group record from the query.
-func (q groupQuery) One(ctx context.Context, exec boil.ContextExecutor) (*Group, error) {
-	o := &Group{}
+// One returns a single audience record from the query.
+func (q audienceQuery) One(ctx context.Context, exec boil.ContextExecutor) (*Audience, error) {
+	o := &Audience{}
 
 	queries.SetLimit(q.Query, 1)
 
@@ -299,7 +352,7 @@ func (q groupQuery) One(ctx context.Context, exec boil.ContextExecutor) (*Group,
 		if errors.Cause(err) == sql.ErrNoRows {
 			return nil, sql.ErrNoRows
 		}
-		return nil, errors.Wrap(err, "models: failed to execute a one query for groups")
+		return nil, errors.Wrap(err, "models: failed to execute a one query for audiences")
 	}
 
 	if err := o.doAfterSelectHooks(ctx, exec); err != nil {
@@ -309,16 +362,16 @@ func (q groupQuery) One(ctx context.Context, exec boil.ContextExecutor) (*Group,
 	return o, nil
 }
 
-// All returns all Group records from the query.
-func (q groupQuery) All(ctx context.Context, exec boil.ContextExecutor) (GroupSlice, error) {
-	var o []*Group
+// All returns all Audience records from the query.
+func (q audienceQuery) All(ctx context.Context, exec boil.ContextExecutor) (AudienceSlice, error) {
+	var o []*Audience
 
 	err := q.Bind(ctx, exec, &o)
 	if err != nil {
-		return nil, errors.Wrap(err, "models: failed to assign all query results to Group slice")
+		return nil, errors.Wrap(err, "models: failed to assign all query results to Audience slice")
 	}
 
-	if len(groupAfterSelectHooks) != 0 {
+	if len(audienceAfterSelectHooks) != 0 {
 		for _, obj := range o {
 			if err := obj.doAfterSelectHooks(ctx, exec); err != nil {
 				return o, err
@@ -329,8 +382,8 @@ func (q groupQuery) All(ctx context.Context, exec boil.ContextExecutor) (GroupSl
 	return o, nil
 }
 
-// Count returns the count of all Group records in the query.
-func (q groupQuery) Count(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
+// Count returns the count of all Audience records in the query.
+func (q audienceQuery) Count(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
 	var count int64
 
 	queries.SetSelect(q.Query, nil)
@@ -338,14 +391,14 @@ func (q groupQuery) Count(ctx context.Context, exec boil.ContextExecutor) (int64
 
 	err := q.Query.QueryRowContext(ctx, exec).Scan(&count)
 	if err != nil {
-		return 0, errors.Wrap(err, "models: failed to count groups rows")
+		return 0, errors.Wrap(err, "models: failed to count audiences rows")
 	}
 
 	return count, nil
 }
 
 // Exists checks if the row exists in the table.
-func (q groupQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bool, error) {
+func (q audienceQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bool, error) {
 	var count int64
 
 	queries.SetSelect(q.Query, nil)
@@ -354,22 +407,22 @@ func (q groupQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bool
 
 	err := q.Query.QueryRowContext(ctx, exec).Scan(&count)
 	if err != nil {
-		return false, errors.Wrap(err, "models: failed to check if groups exists")
+		return false, errors.Wrap(err, "models: failed to check if audiences exists")
 	}
 
 	return count > 0, nil
 }
 
 // Users retrieves all the user's Users with an executor.
-func (o *Group) Users(mods ...qm.QueryMod) userQuery {
+func (o *Audience) Users(mods ...qm.QueryMod) userQuery {
 	var queryMods []qm.QueryMod
 	if len(mods) != 0 {
 		queryMods = append(queryMods, mods...)
 	}
 
 	queryMods = append(queryMods,
-		qm.InnerJoin("\"user_groups\" on \"users\".\"id\" = \"user_groups\".\"user_id\""),
-		qm.Where("\"user_groups\".\"group_id\"=?", o.ID),
+		qm.InnerJoin("\"user_audiences\" on \"users\".\"id\" = \"user_audiences\".\"user_id\""),
+		qm.Where("\"user_audiences\".\"audience_id\"=?", o.ID),
 	)
 
 	query := Users(queryMods...)
@@ -384,27 +437,27 @@ func (o *Group) Users(mods ...qm.QueryMod) userQuery {
 
 // LoadUsers allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-M or N-M relationship.
-func (groupL) LoadUsers(ctx context.Context, e boil.ContextExecutor, singular bool, maybeGroup interface{}, mods queries.Applicator) error {
-	var slice []*Group
-	var object *Group
+func (audienceL) LoadUsers(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAudience interface{}, mods queries.Applicator) error {
+	var slice []*Audience
+	var object *Audience
 
 	if singular {
-		object = maybeGroup.(*Group)
+		object = maybeAudience.(*Audience)
 	} else {
-		slice = *maybeGroup.(*[]*Group)
+		slice = *maybeAudience.(*[]*Audience)
 	}
 
 	args := make([]interface{}, 0, 1)
 	if singular {
 		if object.R == nil {
-			object.R = &groupR{}
+			object.R = &audienceR{}
 		}
 		args = append(args, object.ID)
 	} else {
 	Outer:
 		for _, obj := range slice {
 			if obj.R == nil {
-				obj.R = &groupR{}
+				obj.R = &audienceR{}
 			}
 
 			for _, a := range args {
@@ -422,10 +475,10 @@ func (groupL) LoadUsers(ctx context.Context, e boil.ContextExecutor, singular bo
 	}
 
 	query := NewQuery(
-		qm.Select("\"users\".*, \"a\".\"group_id\""),
+		qm.Select("\"users\".*, \"a\".\"audience_id\""),
 		qm.From("\"users\""),
-		qm.InnerJoin("\"user_groups\" as \"a\" on \"users\".\"id\" = \"a\".\"user_id\""),
-		qm.WhereIn("\"a\".\"group_id\" in ?", args...),
+		qm.InnerJoin("\"user_audiences\" as \"a\" on \"users\".\"id\" = \"a\".\"user_id\""),
+		qm.WhereIn("\"a\".\"audience_id\" in ?", args...),
 	)
 	if mods != nil {
 		mods.Apply(query)
@@ -475,7 +528,7 @@ func (groupL) LoadUsers(ctx context.Context, e boil.ContextExecutor, singular bo
 			if foreign.R == nil {
 				foreign.R = &userR{}
 			}
-			foreign.R.Groups = append(foreign.R.Groups, object)
+			foreign.R.Audiences = append(foreign.R.Audiences, object)
 		}
 		return nil
 	}
@@ -488,7 +541,7 @@ func (groupL) LoadUsers(ctx context.Context, e boil.ContextExecutor, singular bo
 				if foreign.R == nil {
 					foreign.R = &userR{}
 				}
-				foreign.R.Groups = append(foreign.R.Groups, local)
+				foreign.R.Audiences = append(foreign.R.Audiences, local)
 				break
 			}
 		}
@@ -498,10 +551,10 @@ func (groupL) LoadUsers(ctx context.Context, e boil.ContextExecutor, singular bo
 }
 
 // AddUsers adds the given related objects to the existing relationships
-// of the group, optionally inserting them as new records.
+// of the audience, optionally inserting them as new records.
 // Appends related to o.R.Users.
-// Sets related.R.Groups appropriately.
-func (o *Group) AddUsers(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*User) error {
+// Sets related.R.Audiences appropriately.
+func (o *Audience) AddUsers(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*User) error {
 	var err error
 	for _, rel := range related {
 		if insert {
@@ -512,7 +565,7 @@ func (o *Group) AddUsers(ctx context.Context, exec boil.ContextExecutor, insert 
 	}
 
 	for _, rel := range related {
-		query := "insert into \"user_groups\" (\"group_id\", \"user_id\") values ($1, $2)"
+		query := "insert into \"user_audiences\" (\"audience_id\", \"user_id\") values ($1, $2)"
 		values := []interface{}{o.ID, rel.ID}
 
 		if boil.IsDebug(ctx) {
@@ -526,7 +579,7 @@ func (o *Group) AddUsers(ctx context.Context, exec boil.ContextExecutor, insert 
 		}
 	}
 	if o.R == nil {
-		o.R = &groupR{
+		o.R = &audienceR{
 			Users: related,
 		}
 	} else {
@@ -536,23 +589,23 @@ func (o *Group) AddUsers(ctx context.Context, exec boil.ContextExecutor, insert 
 	for _, rel := range related {
 		if rel.R == nil {
 			rel.R = &userR{
-				Groups: GroupSlice{o},
+				Audiences: AudienceSlice{o},
 			}
 		} else {
-			rel.R.Groups = append(rel.R.Groups, o)
+			rel.R.Audiences = append(rel.R.Audiences, o)
 		}
 	}
 	return nil
 }
 
 // SetUsers removes all previously related items of the
-// group replacing them completely with the passed
+// audience replacing them completely with the passed
 // in related items, optionally inserting them as new records.
-// Sets o.R.Groups's Users accordingly.
+// Sets o.R.Audiences's Users accordingly.
 // Replaces o.R.Users with related.
-// Sets related.R.Groups's Users accordingly.
-func (o *Group) SetUsers(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*User) error {
-	query := "delete from \"user_groups\" where \"group_id\" = $1"
+// Sets related.R.Audiences's Users accordingly.
+func (o *Audience) SetUsers(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*User) error {
+	query := "delete from \"user_audiences\" where \"audience_id\" = $1"
 	values := []interface{}{o.ID}
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -564,7 +617,7 @@ func (o *Group) SetUsers(ctx context.Context, exec boil.ContextExecutor, insert 
 		return errors.Wrap(err, "failed to remove relationships before set")
 	}
 
-	removeUsersFromGroupsSlice(o, related)
+	removeUsersFromAudiencesSlice(o, related)
 	if o.R != nil {
 		o.R.Users = nil
 	}
@@ -573,11 +626,11 @@ func (o *Group) SetUsers(ctx context.Context, exec boil.ContextExecutor, insert 
 
 // RemoveUsers relationships from objects passed in.
 // Removes related items from R.Users (uses pointer comparison, removal does not keep order)
-// Sets related.R.Groups.
-func (o *Group) RemoveUsers(ctx context.Context, exec boil.ContextExecutor, related ...*User) error {
+// Sets related.R.Audiences.
+func (o *Audience) RemoveUsers(ctx context.Context, exec boil.ContextExecutor, related ...*User) error {
 	var err error
 	query := fmt.Sprintf(
-		"delete from \"user_groups\" where \"group_id\" = $1 and \"user_id\" in (%s)",
+		"delete from \"user_audiences\" where \"audience_id\" = $1 and \"user_id\" in (%s)",
 		strmangle.Placeholders(dialect.UseIndexPlaceholders, len(related), 2, 1),
 	)
 	values := []interface{}{o.ID}
@@ -594,7 +647,7 @@ func (o *Group) RemoveUsers(ctx context.Context, exec boil.ContextExecutor, rela
 	if err != nil {
 		return errors.Wrap(err, "failed to remove relationships before set")
 	}
-	removeUsersFromGroupsSlice(o, related)
+	removeUsersFromAudiencesSlice(o, related)
 	if o.R == nil {
 		return nil
 	}
@@ -617,63 +670,63 @@ func (o *Group) RemoveUsers(ctx context.Context, exec boil.ContextExecutor, rela
 	return nil
 }
 
-func removeUsersFromGroupsSlice(o *Group, related []*User) {
+func removeUsersFromAudiencesSlice(o *Audience, related []*User) {
 	for _, rel := range related {
 		if rel.R == nil {
 			continue
 		}
-		for i, ri := range rel.R.Groups {
+		for i, ri := range rel.R.Audiences {
 			if o.ID != ri.ID {
 				continue
 			}
 
-			ln := len(rel.R.Groups)
+			ln := len(rel.R.Audiences)
 			if ln > 1 && i < ln-1 {
-				rel.R.Groups[i] = rel.R.Groups[ln-1]
+				rel.R.Audiences[i] = rel.R.Audiences[ln-1]
 			}
-			rel.R.Groups = rel.R.Groups[:ln-1]
+			rel.R.Audiences = rel.R.Audiences[:ln-1]
 			break
 		}
 	}
 }
 
-// Groups retrieves all the records using an executor.
-func Groups(mods ...qm.QueryMod) groupQuery {
-	mods = append(mods, qm.From("\"groups\""))
-	return groupQuery{NewQuery(mods...)}
+// Audiences retrieves all the records using an executor.
+func Audiences(mods ...qm.QueryMod) audienceQuery {
+	mods = append(mods, qm.From("\"audiences\""))
+	return audienceQuery{NewQuery(mods...)}
 }
 
-// FindGroup retrieves a single record by ID with an executor.
+// FindAudience retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindGroup(ctx context.Context, exec boil.ContextExecutor, iD int, selectCols ...string) (*Group, error) {
-	groupObj := &Group{}
+func FindAudience(ctx context.Context, exec boil.ContextExecutor, iD int, selectCols ...string) (*Audience, error) {
+	audienceObj := &Audience{}
 
 	sel := "*"
 	if len(selectCols) > 0 {
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"groups\" where \"id\"=$1", sel,
+		"select %s from \"audiences\" where \"id\"=$1", sel,
 	)
 
 	q := queries.Raw(query, iD)
 
-	err := q.Bind(ctx, exec, groupObj)
+	err := q.Bind(ctx, exec, audienceObj)
 	if err != nil {
 		if errors.Cause(err) == sql.ErrNoRows {
 			return nil, sql.ErrNoRows
 		}
-		return nil, errors.Wrap(err, "models: unable to select from groups")
+		return nil, errors.Wrap(err, "models: unable to select from audiences")
 	}
 
-	return groupObj, nil
+	return audienceObj, nil
 }
 
 // Insert a single record using an executor.
 // See boil.Columns.InsertColumnSet documentation to understand column list inference for inserts.
-func (o *Group) Insert(ctx context.Context, exec boil.ContextExecutor, columns boil.Columns) error {
+func (o *Audience) Insert(ctx context.Context, exec boil.ContextExecutor, columns boil.Columns) error {
 	if o == nil {
-		return errors.New("models: no groups provided for insertion")
+		return errors.New("models: no audiences provided for insertion")
 	}
 
 	var err error
@@ -692,33 +745,33 @@ func (o *Group) Insert(ctx context.Context, exec boil.ContextExecutor, columns b
 		return err
 	}
 
-	nzDefaults := queries.NonZeroDefaultSet(groupColumnsWithDefault, o)
+	nzDefaults := queries.NonZeroDefaultSet(audienceColumnsWithDefault, o)
 
 	key := makeCacheKey(columns, nzDefaults)
-	groupInsertCacheMut.RLock()
-	cache, cached := groupInsertCache[key]
-	groupInsertCacheMut.RUnlock()
+	audienceInsertCacheMut.RLock()
+	cache, cached := audienceInsertCache[key]
+	audienceInsertCacheMut.RUnlock()
 
 	if !cached {
 		wl, returnColumns := columns.InsertColumnSet(
-			groupAllColumns,
-			groupColumnsWithDefault,
-			groupColumnsWithoutDefault,
+			audienceAllColumns,
+			audienceColumnsWithDefault,
+			audienceColumnsWithoutDefault,
 			nzDefaults,
 		)
 
-		cache.valueMapping, err = queries.BindMapping(groupType, groupMapping, wl)
+		cache.valueMapping, err = queries.BindMapping(audienceType, audienceMapping, wl)
 		if err != nil {
 			return err
 		}
-		cache.retMapping, err = queries.BindMapping(groupType, groupMapping, returnColumns)
+		cache.retMapping, err = queries.BindMapping(audienceType, audienceMapping, returnColumns)
 		if err != nil {
 			return err
 		}
 		if len(wl) != 0 {
-			cache.query = fmt.Sprintf("INSERT INTO \"groups\" (\"%s\") %%sVALUES (%s)%%s", strings.Join(wl, "\",\""), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
+			cache.query = fmt.Sprintf("INSERT INTO \"audiences\" (\"%s\") %%sVALUES (%s)%%s", strings.Join(wl, "\",\""), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
 		} else {
-			cache.query = "INSERT INTO \"groups\" %sDEFAULT VALUES%s"
+			cache.query = "INSERT INTO \"audiences\" %sDEFAULT VALUES%s"
 		}
 
 		var queryOutput, queryReturning string
@@ -746,22 +799,22 @@ func (o *Group) Insert(ctx context.Context, exec boil.ContextExecutor, columns b
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "models: unable to insert into groups")
+		return errors.Wrap(err, "models: unable to insert into audiences")
 	}
 
 	if !cached {
-		groupInsertCacheMut.Lock()
-		groupInsertCache[key] = cache
-		groupInsertCacheMut.Unlock()
+		audienceInsertCacheMut.Lock()
+		audienceInsertCache[key] = cache
+		audienceInsertCacheMut.Unlock()
 	}
 
 	return o.doAfterInsertHooks(ctx, exec)
 }
 
-// Update uses an executor to update the Group.
+// Update uses an executor to update the Audience.
 // See boil.Columns.UpdateColumnSet documentation to understand column list inference for updates.
 // Update does not automatically update the record in case of default values. Use .Reload() to refresh the records.
-func (o *Group) Update(ctx context.Context, exec boil.ContextExecutor, columns boil.Columns) (int64, error) {
+func (o *Audience) Update(ctx context.Context, exec boil.ContextExecutor, columns boil.Columns) (int64, error) {
 	if !boil.TimestampsAreSkipped(ctx) {
 		currTime := time.Now().In(boil.GetLocation())
 
@@ -773,28 +826,28 @@ func (o *Group) Update(ctx context.Context, exec boil.ContextExecutor, columns b
 		return 0, err
 	}
 	key := makeCacheKey(columns, nil)
-	groupUpdateCacheMut.RLock()
-	cache, cached := groupUpdateCache[key]
-	groupUpdateCacheMut.RUnlock()
+	audienceUpdateCacheMut.RLock()
+	cache, cached := audienceUpdateCache[key]
+	audienceUpdateCacheMut.RUnlock()
 
 	if !cached {
 		wl := columns.UpdateColumnSet(
-			groupAllColumns,
-			groupPrimaryKeyColumns,
+			audienceAllColumns,
+			audiencePrimaryKeyColumns,
 		)
 
 		if !columns.IsWhitelist() {
 			wl = strmangle.SetComplement(wl, []string{"created_at"})
 		}
 		if len(wl) == 0 {
-			return 0, errors.New("models: unable to update groups, could not build whitelist")
+			return 0, errors.New("models: unable to update audiences, could not build whitelist")
 		}
 
-		cache.query = fmt.Sprintf("UPDATE \"groups\" SET %s WHERE %s",
+		cache.query = fmt.Sprintf("UPDATE \"audiences\" SET %s WHERE %s",
 			strmangle.SetParamNames("\"", "\"", 1, wl),
-			strmangle.WhereClause("\"", "\"", len(wl)+1, groupPrimaryKeyColumns),
+			strmangle.WhereClause("\"", "\"", len(wl)+1, audiencePrimaryKeyColumns),
 		)
-		cache.valueMapping, err = queries.BindMapping(groupType, groupMapping, append(wl, groupPrimaryKeyColumns...))
+		cache.valueMapping, err = queries.BindMapping(audienceType, audienceMapping, append(wl, audiencePrimaryKeyColumns...))
 		if err != nil {
 			return 0, err
 		}
@@ -810,42 +863,42 @@ func (o *Group) Update(ctx context.Context, exec boil.ContextExecutor, columns b
 	var result sql.Result
 	result, err = exec.ExecContext(ctx, cache.query, values...)
 	if err != nil {
-		return 0, errors.Wrap(err, "models: unable to update groups row")
+		return 0, errors.Wrap(err, "models: unable to update audiences row")
 	}
 
 	rowsAff, err := result.RowsAffected()
 	if err != nil {
-		return 0, errors.Wrap(err, "models: failed to get rows affected by update for groups")
+		return 0, errors.Wrap(err, "models: failed to get rows affected by update for audiences")
 	}
 
 	if !cached {
-		groupUpdateCacheMut.Lock()
-		groupUpdateCache[key] = cache
-		groupUpdateCacheMut.Unlock()
+		audienceUpdateCacheMut.Lock()
+		audienceUpdateCache[key] = cache
+		audienceUpdateCacheMut.Unlock()
 	}
 
 	return rowsAff, o.doAfterUpdateHooks(ctx, exec)
 }
 
 // UpdateAll updates all rows with the specified column values.
-func (q groupQuery) UpdateAll(ctx context.Context, exec boil.ContextExecutor, cols M) (int64, error) {
+func (q audienceQuery) UpdateAll(ctx context.Context, exec boil.ContextExecutor, cols M) (int64, error) {
 	queries.SetUpdate(q.Query, cols)
 
 	result, err := q.Query.ExecContext(ctx, exec)
 	if err != nil {
-		return 0, errors.Wrap(err, "models: unable to update all for groups")
+		return 0, errors.Wrap(err, "models: unable to update all for audiences")
 	}
 
 	rowsAff, err := result.RowsAffected()
 	if err != nil {
-		return 0, errors.Wrap(err, "models: unable to retrieve rows affected for groups")
+		return 0, errors.Wrap(err, "models: unable to retrieve rows affected for audiences")
 	}
 
 	return rowsAff, nil
 }
 
 // UpdateAll updates all rows with the specified column values, using an executor.
-func (o GroupSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor, cols M) (int64, error) {
+func (o AudienceSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor, cols M) (int64, error) {
 	ln := int64(len(o))
 	if ln == 0 {
 		return 0, nil
@@ -867,13 +920,13 @@ func (o GroupSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor, co
 
 	// Append all of the primary key values for each column
 	for _, obj := range o {
-		pkeyArgs := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(obj)), groupPrimaryKeyMapping)
+		pkeyArgs := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(obj)), audiencePrimaryKeyMapping)
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := fmt.Sprintf("UPDATE \"groups\" SET %s WHERE %s",
+	sql := fmt.Sprintf("UPDATE \"audiences\" SET %s WHERE %s",
 		strmangle.SetParamNames("\"", "\"", 1, colNames),
-		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), len(colNames)+1, groupPrimaryKeyColumns, len(o)))
+		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), len(colNames)+1, audiencePrimaryKeyColumns, len(o)))
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -882,21 +935,21 @@ func (o GroupSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor, co
 	}
 	result, err := exec.ExecContext(ctx, sql, args...)
 	if err != nil {
-		return 0, errors.Wrap(err, "models: unable to update all in group slice")
+		return 0, errors.Wrap(err, "models: unable to update all in audience slice")
 	}
 
 	rowsAff, err := result.RowsAffected()
 	if err != nil {
-		return 0, errors.Wrap(err, "models: unable to retrieve rows affected all in update all group")
+		return 0, errors.Wrap(err, "models: unable to retrieve rows affected all in update all audience")
 	}
 	return rowsAff, nil
 }
 
 // Upsert attempts an insert using an executor, and does an update or ignore on conflict.
 // See boil.Columns documentation for how to properly use updateColumns and insertColumns.
-func (o *Group) Upsert(ctx context.Context, exec boil.ContextExecutor, updateOnConflict bool, conflictColumns []string, updateColumns, insertColumns boil.Columns) error {
+func (o *Audience) Upsert(ctx context.Context, exec boil.ContextExecutor, updateOnConflict bool, conflictColumns []string, updateColumns, insertColumns boil.Columns) error {
 	if o == nil {
-		return errors.New("models: no groups provided for upsert")
+		return errors.New("models: no audiences provided for upsert")
 	}
 	if !boil.TimestampsAreSkipped(ctx) {
 		currTime := time.Now().In(boil.GetLocation())
@@ -911,7 +964,7 @@ func (o *Group) Upsert(ctx context.Context, exec boil.ContextExecutor, updateOnC
 		return err
 	}
 
-	nzDefaults := queries.NonZeroDefaultSet(groupColumnsWithDefault, o)
+	nzDefaults := queries.NonZeroDefaultSet(audienceColumnsWithDefault, o)
 
 	// Build cache key in-line uglily - mysql vs psql problems
 	buf := strmangle.GetBuffer()
@@ -941,41 +994,41 @@ func (o *Group) Upsert(ctx context.Context, exec boil.ContextExecutor, updateOnC
 	key := buf.String()
 	strmangle.PutBuffer(buf)
 
-	groupUpsertCacheMut.RLock()
-	cache, cached := groupUpsertCache[key]
-	groupUpsertCacheMut.RUnlock()
+	audienceUpsertCacheMut.RLock()
+	cache, cached := audienceUpsertCache[key]
+	audienceUpsertCacheMut.RUnlock()
 
 	var err error
 
 	if !cached {
 		insert, ret := insertColumns.InsertColumnSet(
-			groupAllColumns,
-			groupColumnsWithDefault,
-			groupColumnsWithoutDefault,
+			audienceAllColumns,
+			audienceColumnsWithDefault,
+			audienceColumnsWithoutDefault,
 			nzDefaults,
 		)
 		update := updateColumns.UpdateColumnSet(
-			groupAllColumns,
-			groupPrimaryKeyColumns,
+			audienceAllColumns,
+			audiencePrimaryKeyColumns,
 		)
 
 		if updateOnConflict && len(update) == 0 {
-			return errors.New("models: unable to upsert groups, could not build update column list")
+			return errors.New("models: unable to upsert audiences, could not build update column list")
 		}
 
 		conflict := conflictColumns
 		if len(conflict) == 0 {
-			conflict = make([]string, len(groupPrimaryKeyColumns))
-			copy(conflict, groupPrimaryKeyColumns)
+			conflict = make([]string, len(audiencePrimaryKeyColumns))
+			copy(conflict, audiencePrimaryKeyColumns)
 		}
-		cache.query = buildUpsertQueryPostgres(dialect, "\"groups\"", updateOnConflict, ret, update, conflict, insert)
+		cache.query = buildUpsertQueryPostgres(dialect, "\"audiences\"", updateOnConflict, ret, update, conflict, insert)
 
-		cache.valueMapping, err = queries.BindMapping(groupType, groupMapping, insert)
+		cache.valueMapping, err = queries.BindMapping(audienceType, audienceMapping, insert)
 		if err != nil {
 			return err
 		}
 		if len(ret) != 0 {
-			cache.retMapping, err = queries.BindMapping(groupType, groupMapping, ret)
+			cache.retMapping, err = queries.BindMapping(audienceType, audienceMapping, ret)
 			if err != nil {
 				return err
 			}
@@ -1003,31 +1056,31 @@ func (o *Group) Upsert(ctx context.Context, exec boil.ContextExecutor, updateOnC
 		_, err = exec.ExecContext(ctx, cache.query, vals...)
 	}
 	if err != nil {
-		return errors.Wrap(err, "models: unable to upsert groups")
+		return errors.Wrap(err, "models: unable to upsert audiences")
 	}
 
 	if !cached {
-		groupUpsertCacheMut.Lock()
-		groupUpsertCache[key] = cache
-		groupUpsertCacheMut.Unlock()
+		audienceUpsertCacheMut.Lock()
+		audienceUpsertCache[key] = cache
+		audienceUpsertCacheMut.Unlock()
 	}
 
 	return o.doAfterUpsertHooks(ctx, exec)
 }
 
-// Delete deletes a single Group record with an executor.
+// Delete deletes a single Audience record with an executor.
 // Delete will match against the primary key column to find the record to delete.
-func (o *Group) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
+func (o *Audience) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
 	if o == nil {
-		return 0, errors.New("models: no Group provided for delete")
+		return 0, errors.New("models: no Audience provided for delete")
 	}
 
 	if err := o.doBeforeDeleteHooks(ctx, exec); err != nil {
 		return 0, err
 	}
 
-	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), groupPrimaryKeyMapping)
-	sql := "DELETE FROM \"groups\" WHERE \"id\"=$1"
+	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), audiencePrimaryKeyMapping)
+	sql := "DELETE FROM \"audiences\" WHERE \"id\"=$1"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1036,12 +1089,12 @@ func (o *Group) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, e
 	}
 	result, err := exec.ExecContext(ctx, sql, args...)
 	if err != nil {
-		return 0, errors.Wrap(err, "models: unable to delete from groups")
+		return 0, errors.Wrap(err, "models: unable to delete from audiences")
 	}
 
 	rowsAff, err := result.RowsAffected()
 	if err != nil {
-		return 0, errors.Wrap(err, "models: failed to get rows affected by delete for groups")
+		return 0, errors.Wrap(err, "models: failed to get rows affected by delete for audiences")
 	}
 
 	if err := o.doAfterDeleteHooks(ctx, exec); err != nil {
@@ -1052,33 +1105,33 @@ func (o *Group) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, e
 }
 
 // DeleteAll deletes all matching rows.
-func (q groupQuery) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
+func (q audienceQuery) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
 	if q.Query == nil {
-		return 0, errors.New("models: no groupQuery provided for delete all")
+		return 0, errors.New("models: no audienceQuery provided for delete all")
 	}
 
 	queries.SetDelete(q.Query)
 
 	result, err := q.Query.ExecContext(ctx, exec)
 	if err != nil {
-		return 0, errors.Wrap(err, "models: unable to delete all from groups")
+		return 0, errors.Wrap(err, "models: unable to delete all from audiences")
 	}
 
 	rowsAff, err := result.RowsAffected()
 	if err != nil {
-		return 0, errors.Wrap(err, "models: failed to get rows affected by deleteall for groups")
+		return 0, errors.Wrap(err, "models: failed to get rows affected by deleteall for audiences")
 	}
 
 	return rowsAff, nil
 }
 
 // DeleteAll deletes all rows in the slice, using an executor.
-func (o GroupSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
+func (o AudienceSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
 	if len(o) == 0 {
 		return 0, nil
 	}
 
-	if len(groupBeforeDeleteHooks) != 0 {
+	if len(audienceBeforeDeleteHooks) != 0 {
 		for _, obj := range o {
 			if err := obj.doBeforeDeleteHooks(ctx, exec); err != nil {
 				return 0, err
@@ -1088,12 +1141,12 @@ func (o GroupSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (i
 
 	var args []interface{}
 	for _, obj := range o {
-		pkeyArgs := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(obj)), groupPrimaryKeyMapping)
+		pkeyArgs := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(obj)), audiencePrimaryKeyMapping)
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "DELETE FROM \"groups\" WHERE " +
-		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, groupPrimaryKeyColumns, len(o))
+	sql := "DELETE FROM \"audiences\" WHERE " +
+		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, audiencePrimaryKeyColumns, len(o))
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1102,15 +1155,15 @@ func (o GroupSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (i
 	}
 	result, err := exec.ExecContext(ctx, sql, args...)
 	if err != nil {
-		return 0, errors.Wrap(err, "models: unable to delete all from group slice")
+		return 0, errors.Wrap(err, "models: unable to delete all from audience slice")
 	}
 
 	rowsAff, err := result.RowsAffected()
 	if err != nil {
-		return 0, errors.Wrap(err, "models: failed to get rows affected by deleteall for groups")
+		return 0, errors.Wrap(err, "models: failed to get rows affected by deleteall for audiences")
 	}
 
-	if len(groupAfterDeleteHooks) != 0 {
+	if len(audienceAfterDeleteHooks) != 0 {
 		for _, obj := range o {
 			if err := obj.doAfterDeleteHooks(ctx, exec); err != nil {
 				return 0, err
@@ -1123,8 +1176,8 @@ func (o GroupSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (i
 
 // Reload refetches the object from the database
 // using the primary keys with an executor.
-func (o *Group) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindGroup(ctx, exec, o.ID)
+func (o *Audience) Reload(ctx context.Context, exec boil.ContextExecutor) error {
+	ret, err := FindAudience(ctx, exec, o.ID)
 	if err != nil {
 		return err
 	}
@@ -1135,26 +1188,26 @@ func (o *Group) Reload(ctx context.Context, exec boil.ContextExecutor) error {
 
 // ReloadAll refetches every row with matching primary key column values
 // and overwrites the original object slice with the newly updated slice.
-func (o *GroupSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) error {
+func (o *AudienceSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) error {
 	if o == nil || len(*o) == 0 {
 		return nil
 	}
 
-	slice := GroupSlice{}
+	slice := AudienceSlice{}
 	var args []interface{}
 	for _, obj := range *o {
-		pkeyArgs := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(obj)), groupPrimaryKeyMapping)
+		pkeyArgs := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(obj)), audiencePrimaryKeyMapping)
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "SELECT \"groups\".* FROM \"groups\" WHERE " +
-		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, groupPrimaryKeyColumns, len(*o))
+	sql := "SELECT \"audiences\".* FROM \"audiences\" WHERE " +
+		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, audiencePrimaryKeyColumns, len(*o))
 
 	q := queries.Raw(sql, args...)
 
 	err := q.Bind(ctx, exec, &slice)
 	if err != nil {
-		return errors.Wrap(err, "models: unable to reload all in GroupSlice")
+		return errors.Wrap(err, "models: unable to reload all in AudienceSlice")
 	}
 
 	*o = slice
@@ -1162,10 +1215,10 @@ func (o *GroupSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) e
 	return nil
 }
 
-// GroupExists checks if the Group row exists.
-func GroupExists(ctx context.Context, exec boil.ContextExecutor, iD int) (bool, error) {
+// AudienceExists checks if the Audience row exists.
+func AudienceExists(ctx context.Context, exec boil.ContextExecutor, iD int) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"groups\" where \"id\"=$1 limit 1)"
+	sql := "select exists(select 1 from \"audiences\" where \"id\"=$1 limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1176,7 +1229,7 @@ func GroupExists(ctx context.Context, exec boil.ContextExecutor, iD int) (bool, 
 
 	err := row.Scan(&exists)
 	if err != nil {
-		return false, errors.Wrap(err, "models: unable to check if groups exists")
+		return false, errors.Wrap(err, "models: unable to check if audiences exists")
 	}
 
 	return exists, nil
