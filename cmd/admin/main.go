@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"html/template"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/moapis/authenticator/models"
 	"github.com/moapis/multidb"
+	"github.com/volatiletech/sqlboiler/boil"
 )
 
 func tmplPaths(names ...string) []string {
@@ -63,14 +65,8 @@ var (
 	}
 )
 
-func userList(ctx context.Context) ([]listEntry, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	tx, err := mdb.MultiTx(ctx, nil, conf.SQLRoutines)
-	if err != nil {
-		return nil, err
-	}
-	users, err := models.Users().All(ctx, tx)
+func userList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, error) {
+	users, err := models.Users().All(ctx, exec)
 	if err != nil {
 		return nil, err
 	}
@@ -86,18 +82,34 @@ func userList(ctx context.Context) ([]listEntry, error) {
 	return list, nil
 }
 
-func usersHandler(w http.ResponseWriter, r *http.Request) {
-	list, err := userList(r.Context())
+func listHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+	tx, err := mdb.MultiTx(ctx, &sql.TxOptions{ReadOnly: true}, conf.SQLRoutines)
 	if isInternalError(w, err) {
 		return
 	}
-	tmpl := template.Must(template.ParseFiles(tmplPaths("users.html", "base.html")...))
+	defer tx.Rollback()
+
+	var list []listEntry
+	switch strings.Trim(r.URL.Path, "/") {
+	case "users":
+		list, err = userList(ctx, tx)
+	default:
+		http.NotFound(w, r)
+		return
+	}
+	if isInternalError(w, err) {
+		return
+	}
+	tmpl := template.Must(template.ParseFiles(tmplPaths("list.html", "base.html")...))
 	tmpl.ExecuteTemplate(w, "base", tmplData{Content: list})
 }
 
 var (
-	conf *ServerConfig
-	mdb  *multidb.MultiDB
+	conf      *ServerConfig
+	mdb       *multidb.MultiDB
+	listPaths = []string{"/users"}
 )
 
 func main() {
@@ -117,7 +129,10 @@ func main() {
 	r.PathPrefix("/plugins/").Handler(fs)
 
 	r.HandleFunc("/", homeHandler)
-	r.HandleFunc("/users", usersHandler)
+
+	for _, p := range listPaths {
+		r.HandleFunc(p, listHandler)
+	}
 	srv := &http.Server{
 		Handler:      r,
 		Addr:         "127.0.0.1:1234",
