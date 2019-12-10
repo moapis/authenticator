@@ -1,0 +1,11 @@
+{{ define "content" }}
+<div class="row">
+  <div class="col-12">
+    <ul class="list-group list-group-flush">
+      {{- range . }}
+      <li class="list-group-item">{{ .Name }}</li>
+      {{ end -}}
+    </ul>
+  </div>
+</div>
+{{ end }}
