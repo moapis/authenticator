@@ -91,7 +91,7 @@ const (
 )
 
 func (s *authServer) RegisterPwUser(ctx context.Context, pu *pb.NewPwUser) (*pb.AuthReply, error) {
-	rt, err := s.newTx(ctx, "RegisterPwUser", true)
+	rt, err := s.newTx(ctx, "RegisterPwUser", false)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (s *authServer) RegisterPwUser(ctx context.Context, pu *pb.NewPwUser) (*pb.
 }
 
 func (s *authServer) AuthenticatePwUser(ctx context.Context, up *pb.UserPassword) (*pb.AuthReply, error) {
-	rt, err := s.newTx(ctx, "AuthenticatePwUser", false)
+	rt, err := s.newTx(ctx, "AuthenticatePwUser", true)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func (s *authServer) AuthenticatePwUser(ctx context.Context, up *pb.UserPassword
 }
 
 func (s *authServer) ChangeUserPw(ctx context.Context, up *pb.NewUserPassword) (*pb.ChangePwReply, error) {
-	rt, err := s.newTx(ctx, "ChangeUserPw", true)
+	rt, err := s.newTx(ctx, "ChangeUserPw", false)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (s *authServer) ChangeUserPw(ctx context.Context, up *pb.NewUserPassword) (
 }
 
 func (s *authServer) CheckUserExists(ctx context.Context, ud *pb.UserData) (*pb.Exists, error) {
-	rt, err := s.newTx(ctx, "ChangeCheckUserExistsUserPw", false)
+	rt, err := s.newTx(ctx, "CheckUserExistsUserPw", true)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (s *authServer) CheckUserExists(ctx context.Context, ud *pb.UserData) (*pb.
 }
 
 func (s *authServer) RefreshToken(ctx context.Context, old *pb.AuthReply) (*pb.AuthReply, error) {
-	rt, err := s.newTx(ctx, "RefreshToken", false)
+	rt, err := s.newTx(ctx, "RefreshToken", true)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func (s *authServer) RefreshToken(ctx context.Context, old *pb.AuthReply) (*pb.A
 }
 
 func (s *authServer) PublicUserToken(ctx context.Context, pu *pb.PublicUser) (*pb.AuthReply, error) {
-	rt, err := s.newTx(ctx, "PublicUserToken", false)
+	rt, err := s.newTx(ctx, "PublicUserToken", true)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func (s *authServer) PublicUserToken(ctx context.Context, pu *pb.PublicUser) (*p
 }
 
 func (s *authServer) GetPubKey(ctx context.Context, k *pb.KeyID) (*pb.PublicKey, error) {
-	rt, err := s.newTx(ctx, "GetPubKey", false)
+	rt, err := s.newTx(ctx, "GetPubKey", true)
 	if err != nil {
 		return nil, err
 	}

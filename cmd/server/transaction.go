@@ -27,23 +27,25 @@ import (
 
 // requestTx holds the request transaction, context and reference to authServer
 type requestTx struct {
-	tx     boil.ContextTransactor
-	ctx    context.Context
-	cancel context.CancelFunc
-	log    *logrus.Entry
-	s      *authServer
+	tx       boil.ContextTransactor
+	ctx      context.Context
+	cancel   context.CancelFunc
+	log      *logrus.Entry
+	s        *authServer
+	readOnly bool
 }
 
-func (s *authServer) newTx(ctx context.Context, method string, master bool) (*requestTx, error) {
+func (s *authServer) newTx(ctx context.Context, method string, readOnly bool) (*requestTx, error) {
 	rt := &requestTx{
-		log: s.log.WithField("method", method),
-		s:   s,
+		log:      s.log.WithField("method", method),
+		s:        s,
+		readOnly: readOnly,
 	}
 	var err error
-	if master {
-		rt.tx, err = s.mdb.MasterTx(ctx, nil)
+	if readOnly {
+		rt.tx, err = s.mdb.MultiTx(ctx, &sql.TxOptions{ReadOnly: readOnly}, s.conf.SQLRoutines)
 	} else {
-		rt.tx, err = s.mdb.MultiTx(ctx, &sql.TxOptions{ReadOnly: true}, s.conf.SQLRoutines)
+		rt.tx, err = s.mdb.MasterTx(ctx, nil)
 	}
 	if err != nil {
 		rt.log.WithError(err).Error("Begin TX")
@@ -125,9 +127,11 @@ func (rt *requestTx) authReply(subject string, issued time.Time, set map[string]
 	st := string(token)
 	rt.log.WithField("token", st).Debug("authReply")
 
-	if err = rt.commit(); err != nil {
-		rt.log.WithError(err).Error("commit()")
-		return nil, status.Error(codes.Internal, errDB)
+	if !rt.readOnly {
+		if err = rt.commit(); err != nil {
+			rt.log.WithError(err).Error("commit()")
+			return nil, status.Error(codes.Internal, errDB)
+		}
 	}
 	return &pb.AuthReply{Jwt: st}, nil
 }
