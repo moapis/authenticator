@@ -1,0 +1,20 @@
+version: '3.6'
+
+services:
+    server:
+        image: moapis/authenticator-server:master
+        build: 
+            dockerfile: server.Dockerfile
+            context: .
+
+    login:
+        image: moapis/authenticator-login:master
+        build: 
+            dockerfile: login.Dockerfile
+            context: .
+    
+    migrations:
+        image: moapis/authenticator-migrations:master
+        build:
+            dockerfile: Dockerfile
+            context: migrations
