@@ -50,7 +50,7 @@ jobs:
     - name: Run migrations
       run: |
         export PATH=${PATH}:`go env GOPATH`/bin
-        cd cmd/server/migrations
+        cd migrations
         sql-migrate up -env="testing"
 
     - name: Tests

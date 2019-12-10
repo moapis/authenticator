@@ -2,7 +2,7 @@
 
 ## Migrations
 
-Run migrations for development on a local database `authenticator` with:
+From project root, run migrations for development on a local database `authenticator` with:
 
 ````
 cd migrations

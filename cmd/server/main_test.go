@@ -63,7 +63,7 @@ func migrations() {
 		log.WithError(err).Fatal("migrations()")
 	}
 	migrations := &migrate.FileMigrationSource{
-		Dir: "migrations",
+		Dir: "../../migrations",
 	}
 	n, err := migrate.Exec(m.DB, "postgres", migrations, migrate.Up)
 	if err != nil {
@@ -78,7 +78,7 @@ func migrateDown() {
 		log.WithError(err).Fatal("migrateDown")
 	}
 	migrations := &migrate.FileMigrationSource{
-		Dir: "migrations",
+		Dir: "../../migrations",
 	}
 	n, err := migrate.Exec(m.DB, "postgres", migrations, migrate.Down)
 	if err != nil {
