@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"flag"
+	"fmt"
 	"html/template"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -51,6 +53,7 @@ type listEntry struct {
 	Name    string
 	Created string
 	Updated string
+	Actions []action
 }
 
 const (
@@ -70,6 +73,7 @@ func userList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, erro
 	if err != nil {
 		return nil, err
 	}
+
 	list := make([]listEntry, len(users))
 	for i, u := range users {
 		list[i] = listEntry{
@@ -77,6 +81,13 @@ func userList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, erro
 			Name:    u.Name,
 			Created: u.CreatedAt.Format(listDate),
 			Updated: u.CreatedAt.Format(listDate),
+			Actions: make([]action, len(userActions)),
+		}
+		for n, name := range userActions {
+			list[i].Actions[n] = action{
+				Name: name,
+				URL:  url.PathEscape(fmt.Sprintf("/users/%s/%d", name, u.ID)),
+			}
 		}
 	}
 	return list, nil
