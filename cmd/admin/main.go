@@ -30,8 +30,9 @@ type tmplData struct {
 	Content interface{} // Data for the "content" template
 }
 
-func isInternalError(w http.ResponseWriter, err error) bool {
+func isInternalError(entry *logrus.Entry, w http.ResponseWriter, err error) bool {
 	if err != nil {
+		entry.WithError(err).Error("Internal server error")
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("Internal server error"))
 		return true
@@ -84,6 +85,27 @@ func userList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, erro
 	return list, nil
 }
 
+func groupList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, error) {
+	groups, err := models.Groups().All(ctx, exec)
+	if err != nil {
+		return nil, err
+	}
+
+	list := make([]listEntry, len(groups))
+	for i, g := range groups {
+		list[i] = listEntry{
+			ID:      g.ID,
+			Name:    g.Name,
+			Created: g.CreatedAt.Format(time.RFC3339),
+			Updated: g.CreatedAt.Format(time.RFC3339),
+			Actions: []action{
+				{"delete", fmt.Sprintf("/groups/delete/%d", g.ID), http.MethodDelete},
+			},
+		}
+	}
+	return list, nil
+}
+
 const (
 	errIntConv = "Parse %s of value %s: %w"
 )
@@ -101,66 +123,85 @@ func getActionVars(w http.ResponseWriter, r *http.Request) (string, int, error) 
 }
 
 func deleteHandler(w http.ResponseWriter, r *http.Request) {
-	tx, err := mdb.MasterTx(r.Context(), nil)
-	if isInternalError(w, err) {
-		return
-	}
-	defer tx.Rollback()
-
 	resource, id, err := getActionVars(w, r)
 	if err != nil {
 		return
 	}
-	log := log.WithFields(logrus.Fields{"resource": resource, "id": id})
+	entry := log.WithFields(logrus.Fields{"handler": "deleteHandler", "resource": resource, "id": id})
 
-	var affected int64
+	tx, err := mdb.MasterTx(r.Context(), nil)
+	if isInternalError(entry, w, err) {
+		return
+	}
+	defer tx.Rollback()
+
+	var rows int64
 	switch resource {
 	case "users":
-		affected, err = models.Users(models.UserWhere.ID.EQ(id)).DeleteAll(r.Context(), tx)
+		rows, err = models.Users(models.UserWhere.ID.EQ(id)).DeleteAll(r.Context(), tx)
+	case "groups":
+		rows, err = models.Groups(models.GroupWhere.ID.EQ(id)).DeleteAll(r.Context(), tx)
 	default:
-		log.Warn("Unknown resource")
+		entry.Warn("Unknown resource")
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("Unknown resource"))
 		return
 	}
-	if isInternalError(w, err) {
+	entry = entry.WithField("rows", rows)
+	if isInternalError(entry, w, err) {
 		return
 	}
-
-	if affected == 0 {
+	if rows == 0 {
+		log.Warn("Not found")
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(fmt.Sprintf("%s %d not found", strings.TrimSuffix(resource, "s"), id)))
 		return
 	}
+	if isInternalError(entry, w, tx.Commit()) {
+		return
+	}
+	entry.Info("Deleted")
 	w.Write([]byte(fmt.Sprintf("%s %d successfully deleted", strings.TrimSuffix(resource, "s"), id)))
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
+	resource := mux.Vars(r)["resource"]
+	entry := log.WithFields(logrus.Fields{"handler": "listHandler", "resource": resource})
+
 	tx, err := mdb.MultiTx(r.Context(), &sql.TxOptions{ReadOnly: true}, conf.SQLRoutines)
-	if isInternalError(w, err) {
+	if isInternalError(entry, w, err) {
 		return
 	}
 	defer tx.Rollback()
 
 	var list []listEntry
-	switch mux.Vars(r)["resource"] {
+	switch resource {
 	case "users":
 		list, err = userList(r.Context(), tx)
+	case "groups":
+		list, err = groupList(r.Context(), tx)
 	default:
+		entry.Warn("Unknown resource")
 		http.NotFound(w, r)
 		return
 	}
-	if isInternalError(w, err) {
+	if isInternalError(entry, w, err) {
 		return
 	}
-	tmpl := template.Must(template.ParseFiles(tmplPaths("list.html", "base.html")...))
+	entry = entry.WithField("list", list)
+
+	tmpl, err := template.ParseFiles(tmplPaths("list.html", "base.html")...)
+	if isInternalError(entry, w, err) {
+		return
+	}
+
 	tmpl.ExecuteTemplate(w, "base", tmplData{Content: list})
+	entry.Debug("Served")
 }
 
 var (
-	conf  *ServerConfig
-	mdb   *multidb.MultiDB
-	paths = []string{"/users"}
+	conf *ServerConfig
+	mdb  *multidb.MultiDB
 )
 
 func main() {
@@ -181,7 +222,7 @@ func main() {
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	r.HandleFunc("/", homeHandler)
-	r.HandleFunc("/{resource}", listHandler)
+	r.HandleFunc("/{resource}/", listHandler)
 
 	r.Path("/{resource}/delete/{id}").Methods("DELETE").HandlerFunc(deleteHandler)
 
