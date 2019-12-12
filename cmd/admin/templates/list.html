@@ -39,10 +39,9 @@
                 <time class="timeago" datetime="{{ .Updated }}"></time>
             </div>
             <div class="col-12 col-xl-3 col-lg-4 col-sm-6">
-              {{ range $k, $v := .Actions -}}
-              {{- if $k }} | {{ end -}}
-              <a href="{{ $v.URL }}">{{ $v.Name }}</a>
-              {{- end -}}
+              {{ range .Actions }}
+              <button type="button" class="btn btn-primary" onclick="actionCall('{{ .URL }}', '{{ .Method }}')">{{ .Name }}</button>
+              {{ end -}}
             </div>
           </div>
         </div>

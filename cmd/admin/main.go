@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/moapis/authenticator/models"
 	"github.com/moapis/multidb"
+	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/boil"
 )
 
@@ -44,8 +45,9 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type action struct {
-	Name string
-	URL  string
+	Name   string
+	URL    string
+	Method string
 }
 
 type listEntry struct {
@@ -58,14 +60,6 @@ type listEntry struct {
 
 const (
 	listDate = "_2 jan 06 15:04"
-)
-
-var (
-	userActions = []string{
-		"view",
-		"reset password",
-		"delete",
-	}
 )
 
 func userList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, error) {
@@ -81,30 +75,77 @@ func userList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, erro
 			Name:    u.Name,
 			Created: u.CreatedAt.Format(time.RFC3339),
 			Updated: u.CreatedAt.Format(time.RFC3339),
-		}
-		for n, name := range userActions {
-			list[i].Actions[n] = action{
-				Name: name,
-				URL:  url.PathEscape(fmt.Sprintf("/users/%s/%d", name, u.ID)),
-			}
+			Actions: []action{
+				{"reset password", fmt.Sprintf("/users/reset/%d", u.ID), http.MethodPut},
+				{"delete", fmt.Sprintf("/users/delete/%d", u.ID), http.MethodDelete},
+			},
 		}
 	}
 	return list, nil
 }
 
+const (
+	errIntConv = "Parse %s of value %s: %w"
+)
+
+func getActionVars(w http.ResponseWriter, r *http.Request) (string, int, error) {
+	v := mux.Vars(r)
+	id, err := strconv.Atoi(v["id"])
+	if err != nil {
+		err := fmt.Errorf(errIntConv, "ID", v["id"], err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return "", 0, err
+	}
+	return v["resource"], id, nil
+}
+
+func deleteHandler(w http.ResponseWriter, r *http.Request) {
+	tx, err := mdb.MasterTx(r.Context(), nil)
+	if isInternalError(w, err) {
+		return
+	}
+	defer tx.Rollback()
+
+	resource, id, err := getActionVars(w, r)
+	if err != nil {
+		return
+	}
+	log := log.WithFields(logrus.Fields{"resource": resource, "id": id})
+
+	var affected int64
+	switch resource {
+	case "users":
+		affected, err = models.Users(models.UserWhere.ID.EQ(id)).DeleteAll(r.Context(), tx)
+	default:
+		log.Warn("Unknown resource")
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Unknown resource"))
+		return
+	}
+	if isInternalError(w, err) {
+		return
+	}
+
+	if affected == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(fmt.Sprintf("%s %d not found", strings.TrimSuffix(resource, "s"), id)))
+		return
+	}
+	w.Write([]byte(fmt.Sprintf("%s %d successfully deleted", strings.TrimSuffix(resource, "s"), id)))
+}
+
 func listHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
-	tx, err := mdb.MultiTx(ctx, &sql.TxOptions{ReadOnly: true}, conf.SQLRoutines)
+	tx, err := mdb.MultiTx(r.Context(), &sql.TxOptions{ReadOnly: true}, conf.SQLRoutines)
 	if isInternalError(w, err) {
 		return
 	}
 	defer tx.Rollback()
 
 	var list []listEntry
-	switch strings.Trim(r.URL.Path, "/") {
+	switch mux.Vars(r)["resource"] {
 	case "users":
-		list, err = userList(ctx, tx)
+		list, err = userList(r.Context(), tx)
 	default:
 		http.NotFound(w, r)
 		return
@@ -117,9 +158,9 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 var (
-	conf      *ServerConfig
-	mdb       *multidb.MultiDB
-	listPaths = []string{"/users"}
+	conf  *ServerConfig
+	mdb   *multidb.MultiDB
+	paths = []string{"/users"}
 )
 
 func main() {
@@ -137,12 +178,13 @@ func main() {
 	fs := http.FileServer(http.Dir(conf.AdminLTE))
 	r.PathPrefix("/dist/").Handler(fs)
 	r.PathPrefix("/plugins/").Handler(fs)
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	r.HandleFunc("/", homeHandler)
+	r.HandleFunc("/{resource}", listHandler)
 
-	for _, p := range listPaths {
-		r.HandleFunc(p, listHandler)
-	}
+	r.Path("/{resource}/delete/{id}").Methods("DELETE").HandlerFunc(deleteHandler)
+
 	srv := &http.Server{
 		Handler:      r,
 		Addr:         "127.0.0.1:1234",
