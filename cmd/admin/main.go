@@ -27,7 +27,9 @@ func tmplPaths(names ...string) []string {
 }
 
 type tmplData struct {
-	Content interface{} // Data for the "content" template
+	Title       string
+	BreadCrumbs []breadCrumb
+	Content     interface{} // Data for the "content" template
 }
 
 func isInternalError(entry *logrus.Entry, w http.ResponseWriter, err error) bool {
@@ -187,6 +189,11 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(fmt.Sprintf("%s %d successfully deleted", strings.TrimSuffix(resource, "s"), id)))
 }
 
+type breadCrumb struct {
+	Name string
+	URL  string
+}
+
 func listHandler(w http.ResponseWriter, r *http.Request) {
 	resource := mux.Vars(r)["resource"]
 	entry := log.WithFields(logrus.Fields{"handler": "listHandler", "resource": resource})
@@ -220,7 +227,14 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl.ExecuteTemplate(w, "base", tmplData{Content: list})
+	tmpl.ExecuteTemplate(w, "base", tmplData{
+		Title: fmt.Sprintf("%s List", strings.Title(strings.TrimSuffix(resource, "s"))),
+		BreadCrumbs: []breadCrumb{
+			{"Home", "/"},
+			{resource, ""},
+		},
+		Content: list,
+	})
 	entry.Debug("Served")
 }
 
