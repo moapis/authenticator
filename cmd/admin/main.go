@@ -79,9 +79,8 @@ func userList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, erro
 		list[i] = listEntry{
 			ID:      u.ID,
 			Name:    u.Name,
-			Created: u.CreatedAt.Format(listDate),
-			Updated: u.CreatedAt.Format(listDate),
-			Actions: make([]action, len(userActions)),
+			Created: u.CreatedAt.Format(time.RFC3339),
+			Updated: u.CreatedAt.Format(time.RFC3339),
 		}
 		for n, name := range userActions {
 			list[i].Actions[n] = action{
