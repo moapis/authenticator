@@ -21,7 +21,9 @@ actionCall = function (url, method) {
                 method: method,
                 dataType:'text',
                 success : function(data) {
-                    swbb.fire("Done", data, 'success').then(location.reload(true));
+                    swbb.fire("Done", data, 'success').then((result) => {
+                        location.reload(true);
+                    });
                 },
                 error : function(request,error)
                 {
