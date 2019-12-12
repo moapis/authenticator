@@ -106,6 +106,27 @@ func groupList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, err
 	return list, nil
 }
 
+func audienceList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, error) {
+	audiences, err := models.Audiences().All(ctx, exec)
+	if err != nil {
+		return nil, err
+	}
+
+	list := make([]listEntry, len(audiences))
+	for i, a := range audiences {
+		list[i] = listEntry{
+			ID:      a.ID,
+			Name:    a.Name,
+			Created: a.CreatedAt.Format(time.RFC3339),
+			Updated: a.CreatedAt.Format(time.RFC3339),
+			Actions: []action{
+				{"delete", fmt.Sprintf("/audiences/delete/%d", a.ID), http.MethodDelete},
+			},
+		}
+	}
+	return list, nil
+}
+
 const (
 	errIntConv = "Parse %s of value %s: %w"
 )
@@ -141,6 +162,8 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 		rows, err = models.Users(models.UserWhere.ID.EQ(id)).DeleteAll(r.Context(), tx)
 	case "groups":
 		rows, err = models.Groups(models.GroupWhere.ID.EQ(id)).DeleteAll(r.Context(), tx)
+	case "audiences":
+		rows, err = models.Audiences(models.AudienceWhere.ID.EQ(id)).DeleteAll(r.Context(), tx)
 	default:
 		entry.Warn("Unknown resource")
 		w.WriteHeader(http.StatusNotFound)
@@ -180,6 +203,8 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 		list, err = userList(r.Context(), tx)
 	case "groups":
 		list, err = groupList(r.Context(), tx)
+	case "audiences":
+		list, err = audienceList(r.Context(), tx)
 	default:
 		entry.Warn("Unknown resource")
 		http.NotFound(w, r)
