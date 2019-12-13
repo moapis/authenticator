@@ -41,7 +41,7 @@
             <div class="col-12 col-xl-3 col-lg-4 col-sm-6">
               <a href="{{ .ID }}"><button type="button" class="btn btn-primary">View</button></a>
               {{ range .Actions }}
-              <button type="button" class="btn btn-primary" onclick="actionCall('{{ .URL }}', '{{ .Method }}')">{{ .Name }}</button>
+              <button type="button" class="btn btn-primary" onclick="actionAsk('{{ .URL }}', '{{ .Method }}')">{{ .Name }}</button>
               {{ end -}}
             </div>
           </div>

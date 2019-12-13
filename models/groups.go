@@ -23,39 +23,44 @@ import (
 
 // Group is an object representing the database table.
 type Group struct {
-	ID        int       `boil:"id" json:"id" toml:"id" yaml:"id"`
-	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	UpdatedAt time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
-	Name      string    `boil:"name" json:"name" toml:"name" yaml:"name"`
+	ID          int       `boil:"id" json:"id" toml:"id" yaml:"id"`
+	CreatedAt   time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	UpdatedAt   time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	Name        string    `boil:"name" json:"name" toml:"name" yaml:"name"`
+	Description string    `boil:"description" json:"description" toml:"description" yaml:"description"`
 
 	R *groupR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L groupL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var GroupColumns = struct {
-	ID        string
-	CreatedAt string
-	UpdatedAt string
-	Name      string
+	ID          string
+	CreatedAt   string
+	UpdatedAt   string
+	Name        string
+	Description string
 }{
-	ID:        "id",
-	CreatedAt: "created_at",
-	UpdatedAt: "updated_at",
-	Name:      "name",
+	ID:          "id",
+	CreatedAt:   "created_at",
+	UpdatedAt:   "updated_at",
+	Name:        "name",
+	Description: "description",
 }
 
 // Generated where
 
 var GroupWhere = struct {
-	ID        whereHelperint
-	CreatedAt whereHelpertime_Time
-	UpdatedAt whereHelpertime_Time
-	Name      whereHelperstring
+	ID          whereHelperint
+	CreatedAt   whereHelpertime_Time
+	UpdatedAt   whereHelpertime_Time
+	Name        whereHelperstring
+	Description whereHelperstring
 }{
-	ID:        whereHelperint{field: "\"groups\".\"id\""},
-	CreatedAt: whereHelpertime_Time{field: "\"groups\".\"created_at\""},
-	UpdatedAt: whereHelpertime_Time{field: "\"groups\".\"updated_at\""},
-	Name:      whereHelperstring{field: "\"groups\".\"name\""},
+	ID:          whereHelperint{field: "\"groups\".\"id\""},
+	CreatedAt:   whereHelpertime_Time{field: "\"groups\".\"created_at\""},
+	UpdatedAt:   whereHelpertime_Time{field: "\"groups\".\"updated_at\""},
+	Name:        whereHelperstring{field: "\"groups\".\"name\""},
+	Description: whereHelperstring{field: "\"groups\".\"description\""},
 }
 
 // GroupRels is where relationship names are stored.
@@ -79,8 +84,8 @@ func (*groupR) NewStruct() *groupR {
 type groupL struct{}
 
 var (
-	groupAllColumns            = []string{"id", "created_at", "updated_at", "name"}
-	groupColumnsWithoutDefault = []string{"created_at", "updated_at", "name"}
+	groupAllColumns            = []string{"id", "created_at", "updated_at", "name", "description"}
+	groupColumnsWithoutDefault = []string{"created_at", "updated_at", "name", "description"}
 	groupColumnsWithDefault    = []string{"id"}
 	groupPrimaryKeyColumns     = []string{"id"}
 )

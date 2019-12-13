@@ -16,6 +16,7 @@ import (
 	"github.com/moapis/multidb"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/boil"
+	"github.com/volatiletech/sqlboiler/queries/qm"
 )
 
 func tmplPaths(names ...string) []string {
@@ -65,6 +66,13 @@ const (
 	listDate = "_2 jan 06 15:04"
 )
 
+func userActions(id int) []action {
+	return []action{
+		{"reset password", fmt.Sprintf("/users/reset/%d", id), http.MethodPut},
+		{"delete", fmt.Sprintf("/users/delete/%d", id), http.MethodDelete},
+	}
+}
+
 func userList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, error) {
 	users, err := models.Users().All(ctx, exec)
 	if err != nil {
@@ -78,10 +86,7 @@ func userList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, erro
 			Name:    u.Name,
 			Created: u.CreatedAt.Format(time.RFC3339),
 			Updated: u.CreatedAt.Format(time.RFC3339),
-			Actions: []action{
-				{"reset password", fmt.Sprintf("/users/reset/%d", u.ID), http.MethodPut},
-				{"delete", fmt.Sprintf("/users/delete/%d", u.ID), http.MethodDelete},
-			},
+			Actions: userActions(u.ID),
 		}
 	}
 	return list, nil
@@ -238,6 +243,57 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	entry.Debug("Served")
 }
 
+type userView struct {
+	*models.User
+	Actions []action
+}
+
+func userHandler(w http.ResponseWriter, r *http.Request) {
+	_, id, err := getActionVars(w, r)
+	if err != nil {
+		return
+	}
+	entry := log.WithFields(logrus.Fields{"handler": "userHandler", "id": id})
+
+	tx, err := mdb.MultiTx(r.Context(), &sql.TxOptions{ReadOnly: true}, conf.SQLRoutines)
+	if isInternalError(entry, w, err) {
+		return
+	}
+	defer tx.Rollback()
+
+	um, err := models.Users(
+		models.UserWhere.ID.EQ(id),
+		qm.Load(models.UserRels.Password),
+		qm.Load(models.UserRels.Groups),
+		qm.Load(models.UserRels.Audiences),
+	).One(r.Context(), tx)
+	if err == sql.ErrNoRows {
+		http.NotFound(w, r)
+		return
+	} else if isInternalError(entry, w, err) {
+		return
+	}
+	entry = entry.WithFields(logrus.Fields{"user": um, "groups": um.R.Groups, "audiences": um.R.Audiences})
+
+	tmpl, err := template.ParseFiles(tmplPaths("user.html", "base.html")...)
+	if isInternalError(entry, w, err) {
+		return
+	}
+
+	if err = tmpl.ExecuteTemplate(w, "base", tmplData{
+		Title: fmt.Sprintf("User %d", id),
+		BreadCrumbs: []breadCrumb{
+			{"Home", "/"},
+			{"Users", "/users/"},
+			{strconv.Itoa(id), ""},
+		},
+		Content: userView{um, userActions(id)},
+	}); err != nil {
+		entry.WithError(err).Error("ExecuteTemplate")
+	}
+	entry.Debug("Served")
+}
+
 var (
 	conf *ServerConfig
 	mdb  *multidb.MultiDB
@@ -262,6 +318,8 @@ func main() {
 
 	r.HandleFunc("/", homeHandler)
 	r.HandleFunc("/{resource}/", listHandler)
+
+	r.HandleFunc("/users/{id}", userHandler)
 
 	r.Path("/{resource}/delete/{id}").Methods("DELETE").HandlerFunc(deleteHandler)
 

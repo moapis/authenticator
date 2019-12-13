@@ -25,6 +25,7 @@ create table groups (
 	created_at timestamp with time zone not null,
 	updated_at timestamp with time zone not null,
 	name character varying (24) not null,
+	description character varying (120) not null,
 	unique(name)
 );
 
@@ -49,10 +50,11 @@ create table audiences (
 	created_at timestamp with time zone not null,
 	updated_at timestamp with time zone not null,
 	name character varying (24) not null,
+	description character varying (120) not null,
 	unique(name)
 );
 
-insert into audiences (id, created_at, updated_at, name) values (0, now(), now(), 'default');
+insert into audiences (id, created_at, updated_at, name, description) values (0, now(), now(), 'default', 'Default fallback group');
 
 create table user_audiences (
 	user_id integer not null references users (id),
