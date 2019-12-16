@@ -54,6 +54,11 @@ type action struct {
 	Method string
 }
 
+type listContents struct {
+	Resource string
+	List     []listEntry
+}
+
 type listEntry struct {
 	ID      int
 	Name    string
@@ -73,8 +78,8 @@ func userActions(id int) []action {
 	}
 }
 
-func userList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, error) {
-	users, err := models.Users().All(ctx, exec)
+func userList(ctx context.Context, exec boil.ContextExecutor) (*listContents, error) {
+	users, err := models.Users(qm.OrderBy(models.UserColumns.ID)).All(ctx, exec)
 	if err != nil {
 		return nil, err
 	}
@@ -89,11 +94,11 @@ func userList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, erro
 			Actions: userActions(u.ID),
 		}
 	}
-	return list, nil
+	return &listContents{"users", list}, nil
 }
 
-func groupList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, error) {
-	groups, err := models.Groups().All(ctx, exec)
+func groupList(ctx context.Context, exec boil.ContextExecutor) (*listContents, error) {
+	groups, err := models.Groups(qm.OrderBy(models.GroupColumns.ID)).All(ctx, exec)
 	if err != nil {
 		return nil, err
 	}
@@ -110,11 +115,11 @@ func groupList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, err
 			},
 		}
 	}
-	return list, nil
+	return &listContents{"groups", list}, nil
 }
 
-func audienceList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, error) {
-	audiences, err := models.Audiences().All(ctx, exec)
+func audienceList(ctx context.Context, exec boil.ContextExecutor) (*listContents, error) {
+	audiences, err := models.Audiences(qm.OrderBy(models.AudienceColumns.ID)).All(ctx, exec)
 	if err != nil {
 		return nil, err
 	}
@@ -131,11 +136,12 @@ func audienceList(ctx context.Context, exec boil.ContextExecutor) ([]listEntry, 
 			},
 		}
 	}
-	return list, nil
+	return &listContents{"audiences", list}, nil
 }
 
 const (
-	errIntConv = "Parse %s of value %s: %w"
+	errIntConv      = "Parse %s of value %s: %w"
+	errMissingField = "Missing %s field data in form"
 )
 
 func aToiMap(entry *logrus.Entry, vars map[string]string) map[string]int {
@@ -208,14 +214,14 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback()
 
-	var list []listEntry
+	var content *listContents
 	switch vars["resource"] {
 	case "users":
-		list, err = userList(r.Context(), tx)
+		content, err = userList(r.Context(), tx)
 	case "groups":
-		list, err = groupList(r.Context(), tx)
+		content, err = groupList(r.Context(), tx)
 	case "audiences":
-		list, err = audienceList(r.Context(), tx)
+		content, err = audienceList(r.Context(), tx)
 	default:
 		entry.Warn("Unknown resource")
 		http.NotFound(w, r)
@@ -224,7 +230,7 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	if isInternalError(entry, w, err) {
 		return
 	}
-	entry = entry.WithField("list", list)
+	entry = entry.WithField("list", content)
 
 	tmpl, err := template.ParseFiles(tmplPaths("list.html", "base.html")...)
 	if isInternalError(entry, w, err) {
@@ -237,7 +243,7 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 			{"Home", "/"},
 			{vars["resource"], ""},
 		},
-		Content: list,
+		Content: content,
 	})
 	entry.Debug("Served")
 }
@@ -328,6 +334,111 @@ func removeUserRelationHandler(w http.ResponseWriter, r *http.Request) {
 	entry.Debug("Served")
 }
 
+func newEntityFormHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	entry := log.WithFields(logrus.Fields{"handler": "userHandler", "vars": vars})
+
+	var (
+		tmpl *template.Template
+		err  error
+	)
+	switch vars["resource"] {
+	case "groups", "audiences":
+		tmpl, err = template.ParseFiles(tmplPaths("new_relation.html", "base.html")...)
+	case "users":
+		tmpl, err = template.ParseFiles(tmplPaths("new_user.html", "base.html")...)
+	default:
+		http.NotFound(w, r)
+		log.Info("Resource not found")
+		return
+	}
+	if isInternalError(entry, w, err) {
+		return
+	}
+	plural := strings.Title(vars["resource"])
+	single := strings.TrimSuffix(plural, "s")
+	if err = tmpl.ExecuteTemplate(w, "base", tmplData{
+		Title: fmt.Sprintf("New %s", single),
+		BreadCrumbs: []breadCrumb{
+			{"Home", "/"},
+			{plural, fmt.Sprintf("/%s/", vars["resource"])},
+			{"New", ""},
+		},
+		Content: struct{ Name string }{single},
+	}); err != nil {
+		entry.WithError(err).Error("ExecuteTemplate")
+	}
+	entry.Debug("Served")
+}
+
+func parseForm(w http.ResponseWriter, r *http.Request, fields []string) (map[string]string, error) {
+	if err := r.ParseForm(); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("%d Bad request: Form data", http.StatusBadRequest)))
+		return nil, err
+	}
+	formData := make(map[string]string)
+	for _, f := range fields {
+		data := strings.TrimSpace(r.PostForm.Get(f))
+		if data == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(fmt.Sprintf("%d Bad request: Missing name or description", http.StatusBadRequest)))
+			return nil, fmt.Errorf(errMissingField, f)
+		}
+		formData[f] = data
+	}
+	return formData, nil
+}
+
+func newRelation(w http.ResponseWriter, r *http.Request, entry *logrus.Entry, relation string) {
+	data, err := parseForm(w, r, []string{"name", "description"})
+	if err != nil {
+		entry.WithError(err).Warn("parseForm")
+		return
+	}
+	entry = entry.WithField("data", data)
+
+	tx, err := mdb.MasterTx(r.Context(), nil)
+	if isInternalError(entry, w, err) {
+		return
+	}
+	defer tx.Rollback()
+
+	var id int
+	switch relation {
+	case "groups":
+		group := models.Group{Name: data["name"], Description: data["description"]}
+		err = group.Insert(r.Context(), tx, boil.Infer())
+		entry = entry.WithField("group", group)
+		id = group.ID
+	case "audiences":
+		audience := models.Audience{Name: data["name"], Description: data["description"]}
+		err = audience.Insert(r.Context(), tx, boil.Infer())
+		entry = entry.WithField("audience", audience)
+		id = audience.ID
+	}
+	if isInternalError(entry, w, err) {
+		return
+	}
+	if err := tx.Commit(); isInternalError(entry, w, err) {
+		return
+	}
+	entry.Info("New relation")
+	// Naive MultiDB propagation timeout
+	time.Sleep(5 * time.Second)
+	http.Redirect(w, r, fmt.Sprintf("/%s/%d", relation, id), http.StatusSeeOther)
+}
+
+func newGroupPostHandler(w http.ResponseWriter, r *http.Request) {
+	entry := log.WithFields(logrus.Fields{"handler": "newGroupPostHandler"})
+	newRelation(w, r, entry, "groups")
+}
+
+func newAudiencePostHandler(w http.ResponseWriter, r *http.Request) {
+	entry := log.WithFields(logrus.Fields{"handler": "newAudiencePostHandler"})
+	newRelation(w, r, entry, "audiences")
+}
+
 var (
 	conf *ServerConfig
 	mdb  *multidb.MultiDB
@@ -357,6 +468,10 @@ func main() {
 	r.Path("/users/{id}/remove/{relation}/{rid}").Methods(http.MethodPut).HandlerFunc(removeUserRelationHandler)
 
 	r.Path("/{resource}/delete/{id}").Methods(http.MethodDelete).HandlerFunc(deleteHandler)
+
+	r.Path("/new/{resource}").Methods(http.MethodGet).HandlerFunc(newEntityFormHandler)
+	r.Path("/new/audiences").Methods(http.MethodPost).HandlerFunc(newAudiencePostHandler)
+	r.Path("/new/groups").Methods(http.MethodPost).HandlerFunc(newGroupPostHandler)
 
 	srv := &http.Server{
 		Handler:      r,

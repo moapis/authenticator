@@ -1,6 +1,11 @@
 {{ define "content" }}
 <div class="row">
   <div class="col">
+    <a href="/new/{{ .Resource }}" type="button" class="btn btn-primary float-right"><i class="fas fa-plus"></i></a>
+  </div>
+</div>
+<div class="row">
+  <div class="col">
     <ul class="list-group list-group-flush">
         <li class="list-group-item">
             <div class="container-fluid">
@@ -22,7 +27,7 @@
                 </div>
               </div>
             </div>
-      {{ range . -}}
+      {{ range .List -}}
       <li class="list-group-item">
         <div class="container-fluid">
           <div class="row">

@@ -1,77 +1,75 @@
 {{ define "content" }}
 {{ $UID := .ID }}
-<div class="container-fluid">
-  <div class="row mb-4">
-    <div class="col">
-      <div class="float-sm-right">
-        {{ range .Actions }}
-        <button type="button" class="btn btn-primary" onclick="actionAsk('{{ .URL }}', '{{ .Method }}')">{{ .Name }}</button>
-        {{ end -}}
-      </div>
+<div class="row mb-4">
+  <div class="col">
+    <div class="float-sm-right">
+      {{ range .Actions }}
+      <button type="button" class="btn btn-primary" onclick="actionAsk('{{ .URL }}', '{{ .Method }}')">{{ .Name }}</button>
+      {{ end -}}
     </div>
   </div>
-  <div class="row">
-    <div class="col-12 col-sm-6 mb-2">
-        <div class="info-box m-0 h-100">
-          <span class="info-box-icon bg-primary"><i class="fas fa-user"></i></span>
-          <div class="info-box-content">
-            <span class="info-box-text">{{ .Name }} </span>
-            <span class="info-box-text">{{ .Email }} </span>
-            <span class="info-box-number">Created <time class="timeago" datetime="{{ .CreatedAt.Format `2006-01-02T15:04:05Z07:00` }}"></time></span>    
-          </div>
-          <!-- /.info-box-content -->
-        </div>
-        <!-- /.info-box -->
-    </div>
-    {{ if .R.Password }}
-    <div class="col-12 col-sm-6 mb-2">
+</div>
+<div class="row">
+  <div class="col-12 col-sm-6 mb-2">
       <div class="info-box m-0 h-100">
-        <span class="info-box-icon bg-primary"><i class="fas fa-key"></i></span>
+        <span class="info-box-icon bg-primary"><i class="fas fa-user"></i></span>
         <div class="info-box-content">
-          <span class="info-box-text">{{ range .R.Password.Hash }}&bull;{{ end }}</span>
-          <span class="info-box-number">Updated <time class="timeago" datetime="{{ .R.Password.UpdatedAt.Format `2006-01-02T15:04:05Z07:00` }}"></time></span>    
+          <span class="info-box-text">{{ .Name }} </span>
+          <span class="info-box-text">{{ .Email }} </span>
+          <span class="info-box-number">Created <time class="timeago" datetime="{{ .CreatedAt.Format `2006-01-02T15:04:05Z07:00` }}"></time></span>    
         </div>
         <!-- /.info-box-content -->
       </div>
       <!-- /.info-box -->
-    </div>
-    {{ end }} 
   </div>
-  <h2 class="m-2"><i class="fas fa-users"></i> Groups</h2>
-  <div class="row">
-    {{ range .R.Groups }}
-    <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">{{ .Name }}</h3>
-            <div class="card-tools">
-              <button type="button" class="btn btn-primary" onclick="actionAsk('/users/{{ $UID }}/remove/groups/{{ .ID }}', 'PUT')"><i class="far fa-window-close"></i> Remove</button>
-            </div>
-          </div>
-          <div class="card-body">
-            {{ .Description }}
-          </div>
-        </div>
+  {{ if .R.Password }}
+  <div class="col-12 col-sm-6 mb-2">
+    <div class="info-box m-0 h-100">
+      <span class="info-box-icon bg-primary"><i class="fas fa-key"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">{{ range .R.Password.Hash }}&bull;{{ end }}</span>
+        <span class="info-box-number">Updated <time class="timeago" datetime="{{ .R.Password.UpdatedAt.Format `2006-01-02T15:04:05Z07:00` }}"></time></span>    
+      </div>
+      <!-- /.info-box-content -->
     </div>
-    {{ end }}
+    <!-- /.info-box -->
   </div>
-  <h2 class="m-2"><i class="fas fa-server"></i> Audiences</h2>
-  <div class="row">
-    {{ range .R.Audiences }}
-    <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+  {{ end }} 
+</div>
+<h2 class="m-2"><i class="fas fa-users"></i> Groups</h2>
+<div class="row">
+  {{ range .R.Groups }}
+  <div class="col-12 col-sm-6 col-md-4 col-xl-3">
       <div class="card">
         <div class="card-header">
           <h3 class="card-title">{{ .Name }}</h3>
           <div class="card-tools">
-              <button type="button" class="btn btn-primary" onclick="actionAsk('/users/{{ $UID }}/remove/audiences/{{ .ID }}', 'PUT')"><i class="far fa-window-close"></i> Remove</button>
+            <button type="button" class="btn btn-primary" onclick="actionAsk('/users/{{ $UID }}/remove/groups/{{ .ID }}', 'PUT')"><i class="far fa-window-close"></i> Remove</button>
           </div>
         </div>
         <div class="card-body">
           {{ .Description }}
         </div>
       </div>
-    </div>
-    {{ end }}
   </div>
+  {{ end }}
+</div>
+<h2 class="m-2"><i class="fas fa-server"></i> Audiences</h2>
+<div class="row">
+  {{ range .R.Audiences }}
+  <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">{{ .Name }}</h3>
+        <div class="card-tools">
+            <button type="button" class="btn btn-primary" onclick="actionAsk('/users/{{ $UID }}/remove/audiences/{{ .ID }}', 'PUT')"><i class="far fa-window-close"></i> Remove</button>
+        </div>
+      </div>
+      <div class="card-body">
+        {{ .Description }}
+      </div>
+    </div>
+  </div>
+  {{ end }}
 </div>
 {{ end }}
