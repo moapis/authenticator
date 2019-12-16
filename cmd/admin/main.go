@@ -138,24 +138,23 @@ const (
 	errIntConv = "Parse %s of value %s: %w"
 )
 
-func getActionVars(w http.ResponseWriter, r *http.Request) (string, int, error) {
-	v := mux.Vars(r)
-	id, err := strconv.Atoi(v["id"])
-	if err != nil {
-		err := fmt.Errorf(errIntConv, "ID", v["id"], err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-		return "", 0, err
+func aToiMap(entry *logrus.Entry, vars map[string]string) map[string]int {
+	intMap := make(map[string]int)
+	for k, v := range vars {
+		i, err := strconv.Atoi(v)
+		if err != nil {
+			entry.WithError(fmt.Errorf(errIntConv, "ID", v, err)).Debug("Skipped")
+			continue
+		}
+		intMap[k] = i
 	}
-	return v["resource"], id, nil
+	return intMap
 }
 
 func deleteHandler(w http.ResponseWriter, r *http.Request) {
-	resource, id, err := getActionVars(w, r)
-	if err != nil {
-		return
-	}
-	entry := log.WithFields(logrus.Fields{"handler": "deleteHandler", "resource": resource, "id": id})
+	vars := mux.Vars(r)
+	entry := log.WithFields(logrus.Fields{"handler": "deleteHandler", "vars": vars})
+	id := aToiMap(entry, vars)["id"]
 
 	tx, err := mdb.MasterTx(r.Context(), nil)
 	if isInternalError(entry, w, err) {
@@ -164,7 +163,7 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 	defer tx.Rollback()
 
 	var rows int64
-	switch resource {
+	switch vars["resource"] {
 	case "users":
 		rows, err = models.Users(models.UserWhere.ID.EQ(id)).DeleteAll(r.Context(), tx)
 	case "groups":
@@ -184,14 +183,14 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 	if rows == 0 {
 		log.Warn("Not found")
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(fmt.Sprintf("%s %d not found", strings.TrimSuffix(resource, "s"), id)))
+		w.Write([]byte(fmt.Sprintf("%s %d not found", strings.TrimSuffix(vars["resource"], "s"), id)))
 		return
 	}
 	if isInternalError(entry, w, tx.Commit()) {
 		return
 	}
 	entry.Info("Deleted")
-	w.Write([]byte(fmt.Sprintf("%s %d successfully deleted", strings.TrimSuffix(resource, "s"), id)))
+	w.Write([]byte(fmt.Sprintf("%s %d successfully deleted", strings.TrimSuffix(vars["resource"], "s"), id)))
 }
 
 type breadCrumb struct {
@@ -200,8 +199,8 @@ type breadCrumb struct {
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
-	resource := mux.Vars(r)["resource"]
-	entry := log.WithFields(logrus.Fields{"handler": "listHandler", "resource": resource})
+	vars := mux.Vars(r)
+	entry := log.WithFields(logrus.Fields{"handler": "listHandler", "vars": vars})
 
 	tx, err := mdb.MultiTx(r.Context(), &sql.TxOptions{ReadOnly: true}, conf.SQLRoutines)
 	if isInternalError(entry, w, err) {
@@ -210,7 +209,7 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	defer tx.Rollback()
 
 	var list []listEntry
-	switch resource {
+	switch vars["resource"] {
 	case "users":
 		list, err = userList(r.Context(), tx)
 	case "groups":
@@ -233,10 +232,10 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl.ExecuteTemplate(w, "base", tmplData{
-		Title: fmt.Sprintf("%s List", strings.Title(strings.TrimSuffix(resource, "s"))),
+		Title: fmt.Sprintf("%s List", strings.Title(strings.TrimSuffix(vars["resource"], "s"))),
 		BreadCrumbs: []breadCrumb{
 			{"Home", "/"},
-			{resource, ""},
+			{vars["resource"], ""},
 		},
 		Content: list,
 	})
@@ -249,11 +248,9 @@ type userView struct {
 }
 
 func userHandler(w http.ResponseWriter, r *http.Request) {
-	_, id, err := getActionVars(w, r)
-	if err != nil {
-		return
-	}
-	entry := log.WithFields(logrus.Fields{"handler": "userHandler", "id": id})
+	vars := mux.Vars(r)
+	entry := log.WithFields(logrus.Fields{"handler": "userHandler", "vars": vars})
+	id := aToiMap(entry, vars)["id"]
 
 	tx, err := mdb.MultiTx(r.Context(), &sql.TxOptions{ReadOnly: true}, conf.SQLRoutines)
 	if isInternalError(entry, w, err) {
@@ -294,6 +291,43 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 	entry.Debug("Served")
 }
 
+func removeUserRelationHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	entry := log.WithFields(logrus.Fields{"handler": "userHandler", "vars": vars})
+	iv := aToiMap(entry, vars)
+
+	tx, err := mdb.MasterTx(r.Context(), nil)
+	if isInternalError(entry, w, err) {
+		return
+	}
+	defer tx.Rollback()
+
+	um := &models.User{ID: iv["id"]}
+	switch vars["relation"] {
+	case "groups":
+		err = um.RemoveGroups(r.Context(), tx, &models.Group{ID: iv["rid"]})
+	case "audiences":
+		err = um.RemoveAudiences(r.Context(), tx, &models.Audience{ID: iv["rid"]})
+	}
+	if isInternalError(entry, w, err) {
+		return
+	}
+	if err = tx.Commit(); isInternalError(entry, w, err) {
+		return
+	}
+	entry.Info("Removed user relation")
+	if _, err = w.Write([]byte(
+		fmt.Sprintf(
+			"%s %d successfully removed from user %d",
+			strings.TrimSuffix(vars["relation"], "s"),
+			iv["rid"], iv["id"],
+		),
+	)); err != nil {
+		entry.WithError(err).Error("Writing response")
+	}
+	entry.Debug("Served")
+}
+
 var (
 	conf *ServerConfig
 	mdb  *multidb.MultiDB
@@ -320,8 +354,9 @@ func main() {
 	r.HandleFunc("/{resource}/", listHandler)
 
 	r.HandleFunc("/users/{id}", userHandler)
+	r.Path("/users/{id}/remove/{relation}/{rid}").Methods(http.MethodPut).HandlerFunc(removeUserRelationHandler)
 
-	r.Path("/{resource}/delete/{id}").Methods("DELETE").HandlerFunc(deleteHandler)
+	r.Path("/{resource}/delete/{id}").Methods(http.MethodDelete).HandlerFunc(deleteHandler)
 
 	srv := &http.Server{
 		Handler:      r,
