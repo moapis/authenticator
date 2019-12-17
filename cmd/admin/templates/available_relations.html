@@ -1,0 +1,21 @@
+{{ define "content" }}
+<div class="container-fluid"></div>
+  <div class="row">
+    {{ range .}}
+    <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">{{ .Name }}</h3>
+          <div class="card-tools">
+            <button type="button" class="btn btn-primary" onclick="actionCall('./{{ .ID }}', 'PUT')"><i class="fas fa-plus"></i> Add</button>
+          </div>
+        </div>
+        <div class="card-body">
+          {{ .Description }}
+        </div>
+      </div>
+    </div>
+    {{ end }}
+  </div>
+</div>
+{{ end }}

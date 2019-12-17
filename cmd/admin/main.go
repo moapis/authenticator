@@ -17,6 +17,7 @@ import (
 	"github.com/moapis/multidb"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/boil"
+	"github.com/volatiletech/sqlboiler/queries"
 	"github.com/volatiletech/sqlboiler/queries/qm"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -472,6 +473,112 @@ func newUserPostHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/%s/%d", "users", reply.UserId), http.StatusSeeOther)
 }
 
+const (
+	availableGroupsQuery = `
+	select * 
+	from groups
+	where id not in (
+		select group_id
+		from user_groups
+		where user_id = $1
+	);`
+	availableAudiencesQuery = `
+	select * 
+	from audiences
+	where id not in (
+		select audience_id
+		from user_audiences
+		where user_id = $1
+	);`
+)
+
+func listAvailableRelationsHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	entry := log.WithFields(logrus.Fields{"handler": "listAvailableRelationsHandler", "vars": vars})
+	iv := aToiMap(entry, vars)
+
+	tx, err := mdb.MultiTx(r.Context(), nil, conf.SQLRoutines)
+	if isInternalError(entry, w, err) {
+		return
+	}
+	defer tx.Rollback()
+
+	var content interface{}
+
+	switch vars["relation"] {
+	case "groups":
+		var groups models.GroupSlice
+		err = queries.Raw(availableGroupsQuery, iv["id"]).Bind(r.Context(), tx, &groups)
+		content = groups
+	case "audiences":
+		var audiences models.AudienceSlice
+		err = queries.Raw(availableAudiencesQuery, iv["id"]).Bind(r.Context(), tx, &audiences)
+		content = audiences
+	}
+
+	if isInternalError(entry, w, err) {
+		return
+	}
+	entry = entry.WithField("content", content)
+
+	tmpl, err := template.ParseFiles(tmplPaths("available_relations.html", "base.html")...)
+	if isInternalError(entry, w, err) {
+		return
+	}
+
+	plural := strings.Title(vars["relation"])
+	if err = tmpl.ExecuteTemplate(w, "base", tmplData{
+		Title: fmt.Sprintf("Available %s for User %d", plural, iv["id"]),
+		BreadCrumbs: []breadCrumb{
+			{"Home", "/"},
+			{"Users", "/users/"},
+			{strconv.Itoa(iv["id"]), fmt.Sprintf("/users/%d", iv["id"])},
+			{fmt.Sprintf("Available %s", plural), ""},
+		},
+		Content: content,
+	}); err != nil {
+		entry.WithError(err).Error("ExecuteTemplate")
+	}
+	entry.Debug("Served")
+}
+
+func setUserRelationHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	entry := log.WithFields(logrus.Fields{"handler": "setUserRelation", "vars": vars})
+	iv := aToiMap(entry, vars)
+
+	tx, err := mdb.MasterTx(r.Context(), nil)
+	if isInternalError(entry, w, err) {
+		return
+	}
+	defer tx.Rollback()
+
+	um := &models.User{ID: iv["id"]}
+	switch vars["relation"] {
+	case "groups":
+		err = um.AddGroups(r.Context(), tx, false, &models.Group{ID: iv["rid"]})
+	case "audiences":
+		err = um.AddAudiences(r.Context(), tx, false, &models.Audience{ID: iv["rid"]})
+	}
+	if isInternalError(entry, w, err) {
+		return
+	}
+	if err = tx.Commit(); isInternalError(entry, w, err) {
+		return
+	}
+	entry.Info("Set user relation")
+	if _, err = w.Write([]byte(
+		fmt.Sprintf(
+			"%s %d successfully set to user %d",
+			strings.TrimSuffix(vars["relation"], "s"),
+			iv["rid"], iv["id"],
+		),
+	)); err != nil {
+		entry.WithError(err).Error("Writing response")
+	}
+	entry.Debug("Served")
+}
+
 var (
 	conf       *ServerConfig
 	mdb        *multidb.MultiDB
@@ -499,6 +606,8 @@ func main() {
 	r.HandleFunc("/{resource}/", listHandler)
 
 	r.HandleFunc("/users/{id}", userHandler)
+	r.Path("/users/{id}/{relation}/").Methods(http.MethodGet).HandlerFunc(listAvailableRelationsHandler)
+	r.Path("/users/{id}/{relation}/{rid}").Methods(http.MethodPut).HandlerFunc(setUserRelationHandler)
 	r.Path("/users/{id}/remove/{relation}/{rid}").Methods(http.MethodPut).HandlerFunc(removeUserRelationHandler)
 
 	r.Path("/{resource}/delete/{id}").Methods(http.MethodDelete).HandlerFunc(deleteHandler)

@@ -15,6 +15,7 @@ import (
 	"github.com/moapis/multidb"
 	pg "github.com/moapis/multidb/drivers/postgresql"
 	"github.com/sirupsen/logrus"
+	"github.com/volatiletech/sqlboiler/boil"
 )
 
 var (
@@ -150,6 +151,9 @@ func configure(c ServerConfig) (*ServerConfig, error) {
 	}
 	log.WithField("level", lvl).Info("Setting log level")
 	log.SetLevel(lvl)
+	if s.LogLevel == DebugLevel || s.LogLevel == TraceLevel {
+		boil.DebugMode = true
+	}
 
 	log.WithField("config", *s).Debug("Config loaded")
 
