@@ -166,7 +166,7 @@ func Test_authServer_RegisterPwUser(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		pu  *pb.NewPwUser
+		pu  *pb.UserData
 	}
 	tests := []struct {
 		name    string
@@ -185,7 +185,7 @@ func Test_authServer_RegisterPwUser(t *testing.T) {
 			"Empty user",
 			args{
 				testCtx,
-				&pb.NewPwUser{},
+				&pb.UserData{},
 			},
 			true,
 		},
@@ -193,10 +193,9 @@ func Test_authServer_RegisterPwUser(t *testing.T) {
 			"Valid user",
 			args{
 				testCtx,
-				&pb.NewPwUser{
-					Email:    "hello@world.com",
-					Name:     "hello",
-					Password: "something",
+				&pb.UserData{
+					Email: "hello@world.com",
+					Name:  "hello",
 				},
 			},
 			false,

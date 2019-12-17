@@ -7,6 +7,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/moapis/multidb"
 	pg "github.com/moapis/multidb/drivers/postgresql"
 	"github.com/sirupsen/logrus"
+	"github.com/volatiletech/sqlboiler/boil"
 )
 
 var (
@@ -57,6 +59,10 @@ type AuthServerConfig struct {
 	Port uint16
 }
 
+func (acs AuthServerConfig) String() string {
+	return fmt.Sprintf("%s:%d", acs.Host, acs.Port)
+}
+
 // ServerConfig is a collection on config
 type ServerConfig struct {
 	Addres      string           `json:"address"`     // HTTP listen Address
@@ -81,12 +87,13 @@ func (c *ServerConfig) writeOut(filename string) error {
 
 // Default confing
 var Default = ServerConfig{
-	Addres:    "127.0.0.1",
-	Port:      1234,
-	AdminLTE:  "AdminLTE",
-	Templates: "templates",
-	LogLevel:  DebugLevel,
-	TLS:       nil,
+	Addres:     "127.0.0.1",
+	Port:       1234,
+	AdminLTE:   "AdminLTE",
+	Templates:  "templates",
+	LogLevel:   DebugLevel,
+	TLS:        nil,
+	AuthServer: AuthServerConfig{"127.0.0.1", 8765},
 	MultiDB: multidb.Config{
 		StatsLen:      100,
 		MaxFails:      10,
@@ -144,6 +151,9 @@ func configure(c ServerConfig) (*ServerConfig, error) {
 	}
 	log.WithField("level", lvl).Info("Setting log level")
 	log.SetLevel(lvl)
+	if s.LogLevel == DebugLevel || s.LogLevel == TraceLevel {
+		boil.DebugMode = true
+	}
 
 	log.WithField("config", *s).Debug("Config loaded")
 

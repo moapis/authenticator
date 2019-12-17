@@ -588,7 +588,7 @@ func (userL) LoadAudiences(ctx context.Context, e boil.ContextExecutor, singular
 		one := new(Audience)
 		var localJoinCol int
 
-		err = results.Scan(&one.ID, &one.CreatedAt, &one.UpdatedAt, &one.Name, &localJoinCol)
+		err = results.Scan(&one.ID, &one.CreatedAt, &one.UpdatedAt, &one.Name, &one.Description, &localJoinCol)
 		if err != nil {
 			return errors.Wrap(err, "failed to scan eager loaded results for audiences")
 		}
@@ -703,7 +703,7 @@ func (userL) LoadGroups(ctx context.Context, e boil.ContextExecutor, singular bo
 		one := new(Group)
 		var localJoinCol int
 
-		err = results.Scan(&one.ID, &one.CreatedAt, &one.UpdatedAt, &one.Name, &localJoinCol)
+		err = results.Scan(&one.ID, &one.CreatedAt, &one.UpdatedAt, &one.Name, &one.Description, &localJoinCol)
 		if err != nil {
 			return errors.Wrap(err, "failed to scan eager loaded results for groups")
 		}

@@ -880,7 +880,7 @@ func testAudiencesSelect(t *testing.T) {
 }
 
 var (
-	audienceDBTypes = map[string]string{`ID`: `integer`, `CreatedAt`: `timestamp with time zone`, `UpdatedAt`: `timestamp with time zone`, `Name`: `character varying`}
+	audienceDBTypes = map[string]string{`ID`: `integer`, `CreatedAt`: `timestamp with time zone`, `UpdatedAt`: `timestamp with time zone`, `Name`: `character varying`, `Description`: `character varying`}
 	_               = bytes.MinRead
 )
 

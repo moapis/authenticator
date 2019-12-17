@@ -23,25 +23,28 @@ import (
 
 // Audience is an object representing the database table.
 type Audience struct {
-	ID        int       `boil:"id" json:"id" toml:"id" yaml:"id"`
-	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	UpdatedAt time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
-	Name      string    `boil:"name" json:"name" toml:"name" yaml:"name"`
+	ID          int       `boil:"id" json:"id" toml:"id" yaml:"id"`
+	CreatedAt   time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	UpdatedAt   time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	Name        string    `boil:"name" json:"name" toml:"name" yaml:"name"`
+	Description string    `boil:"description" json:"description" toml:"description" yaml:"description"`
 
 	R *audienceR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L audienceL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var AudienceColumns = struct {
-	ID        string
-	CreatedAt string
-	UpdatedAt string
-	Name      string
+	ID          string
+	CreatedAt   string
+	UpdatedAt   string
+	Name        string
+	Description string
 }{
-	ID:        "id",
-	CreatedAt: "created_at",
-	UpdatedAt: "updated_at",
-	Name:      "name",
+	ID:          "id",
+	CreatedAt:   "created_at",
+	UpdatedAt:   "updated_at",
+	Name:        "name",
+	Description: "description",
 }
 
 // Generated where
@@ -100,15 +103,17 @@ func (w whereHelperstring) IN(slice []string) qm.QueryMod {
 }
 
 var AudienceWhere = struct {
-	ID        whereHelperint
-	CreatedAt whereHelpertime_Time
-	UpdatedAt whereHelpertime_Time
-	Name      whereHelperstring
+	ID          whereHelperint
+	CreatedAt   whereHelpertime_Time
+	UpdatedAt   whereHelpertime_Time
+	Name        whereHelperstring
+	Description whereHelperstring
 }{
-	ID:        whereHelperint{field: "\"audiences\".\"id\""},
-	CreatedAt: whereHelpertime_Time{field: "\"audiences\".\"created_at\""},
-	UpdatedAt: whereHelpertime_Time{field: "\"audiences\".\"updated_at\""},
-	Name:      whereHelperstring{field: "\"audiences\".\"name\""},
+	ID:          whereHelperint{field: "\"audiences\".\"id\""},
+	CreatedAt:   whereHelpertime_Time{field: "\"audiences\".\"created_at\""},
+	UpdatedAt:   whereHelpertime_Time{field: "\"audiences\".\"updated_at\""},
+	Name:        whereHelperstring{field: "\"audiences\".\"name\""},
+	Description: whereHelperstring{field: "\"audiences\".\"description\""},
 }
 
 // AudienceRels is where relationship names are stored.
@@ -132,8 +137,8 @@ func (*audienceR) NewStruct() *audienceR {
 type audienceL struct{}
 
 var (
-	audienceAllColumns            = []string{"id", "created_at", "updated_at", "name"}
-	audienceColumnsWithoutDefault = []string{"created_at", "updated_at", "name"}
+	audienceAllColumns            = []string{"id", "created_at", "updated_at", "name", "description"}
+	audienceColumnsWithoutDefault = []string{"created_at", "updated_at", "name", "description"}
 	audienceColumnsWithDefault    = []string{"id"}
 	audiencePrimaryKeyColumns     = []string{"id"}
 )

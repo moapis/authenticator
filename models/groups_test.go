@@ -880,7 +880,7 @@ func testGroupsSelect(t *testing.T) {
 }
 
 var (
-	groupDBTypes = map[string]string{`ID`: `integer`, `CreatedAt`: `timestamp with time zone`, `UpdatedAt`: `timestamp with time zone`, `Name`: `character varying`}
+	groupDBTypes = map[string]string{`ID`: `integer`, `CreatedAt`: `timestamp with time zone`, `UpdatedAt`: `timestamp with time zone`, `Name`: `character varying`, `Description`: `character varying`}
 	_            = bytes.MinRead
 )
 

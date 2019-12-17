@@ -1,22 +1,53 @@
 {{ define "content" }}
 <div class="row">
-  <div class="col-12">
+  <div class="col">
+    <a href="/new/{{ .Resource }}" type="button" class="btn btn-primary float-right"><i class="fas fa-plus"></i></a>
+  </div>
+</div>
+<div class="row">
+  <div class="col">
     <ul class="list-group list-group-flush">
-      {{- range . }}
+        <li class="list-group-item">
+            <div class="container-fluid">
+              <div class="row">
+                <div class="col-1">
+                  ID
+                </div>
+                <div class="col-11 col-xl-4 col-lg-3">
+                  Name
+                </div>
+                <div class="col-6 col-lg-2 col-sm-3">
+                  Created
+                </div>
+                <div class="col-6 col-lg-2 col-sm-3">
+                  Updated
+                </div>
+                <div class="col-12 col-xl-3 col-lg-4 col-sm-6">
+                  Actions
+                </div>
+              </div>
+            </div>
+      {{ range .List -}}
       <li class="list-group-item">
-        <div class="container">
+        <div class="container-fluid">
           <div class="row">
             <div class="col-1">
               {{ .ID }}
             </div>
-            <div class="col-2">
+            <div class="col-11 col-xl-4 col-lg-3">
               {{ .Name }}
             </div>
-            <div class="col-3">
-              {{ .Created }}
+            <div class="col-6 col-lg-2 col-sm-3">
+                <time class="timeago" datetime="{{ .Created }}"></time>
             </div>
-            <div class="col-3">
-              {{ .Updated }}
+            <div class="col-6 col-lg-2 col-sm-3">
+                <time class="timeago" datetime="{{ .Updated }}"></time>
+            </div>
+            <div class="col-12 col-xl-3 col-lg-4 col-sm-6">
+              <a href="{{ .ID }}"><button type="button" class="btn btn-primary">View</button></a>
+              {{ range .Actions }}
+              <button type="button" class="btn btn-primary" onclick="actionAsk('{{ .URL }}', '{{ .Method }}')">{{ .Name }}</button>
+              {{ end -}}
             </div>
           </div>
         </div>

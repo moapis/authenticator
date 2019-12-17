@@ -6,7 +6,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
 	"fmt"
 	"time"
@@ -253,8 +252,8 @@ func (rt *requestTx) setUserPassword(user *models.User, password string, read fu
 	return nil
 }
 
-func (rt *requestTx) insertPwUser(email, name, password string) (*models.User, error) {
-	rt.log = rt.log.WithFields(logrus.Fields{"email": email, "name": name, "passwordLen": len(password)})
+func (rt *requestTx) insertPwUser(email, name string) (*models.User, error) {
+	rt.log = rt.log.WithFields(logrus.Fields{"email": email, "name": name})
 	if email == "" || name == "" {
 		rt.log.WithError(errors.New(errMissingEmailOrName)).Warn("insertPWUser")
 		return nil, status.Error(codes.InvalidArgument, errMissingEmailOrName)
@@ -271,8 +270,10 @@ func (rt *requestTx) insertPwUser(email, name, password string) (*models.User, e
 		return nil, status.Error(codes.Internal, errDB)
 	}
 	rt.log.Debug("Insert user")
-
-	return user, rt.setUserPassword(user, password, rand.Read)
+	if err := rt.commit(); err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 func (rt *requestTx) dbAuthError(action, entry string, err error) error {
