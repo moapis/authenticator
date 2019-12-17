@@ -614,6 +614,12 @@ func Test_requestTx_insertPwUser(t *testing.T) {
 			if tt.wantErr {
 				return
 			}
+
+			rt, err = tas.newTx(testCtx, "testing", false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rt.done()
 			got, err := models.FindUser(testCtx, rt.tx, want.ID)
 			if err != nil {
 				t.Fatal(err)
