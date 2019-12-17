@@ -90,14 +90,14 @@ const (
 	errMailer             = "Failed to send verification mail"
 )
 
-func (s *authServer) RegisterPwUser(ctx context.Context, pu *pb.NewPwUser) (*pb.AuthReply, error) {
+func (s *authServer) RegisterPwUser(ctx context.Context, pu *pb.UserData) (*pb.RegistrationReply, error) {
 	rt, err := s.newTx(ctx, "RegisterPwUser", false)
 	if err != nil {
 		return nil, err
 	}
 	defer rt.done()
 
-	user, err := rt.insertPwUser(pu.GetEmail(), pu.GetName(), pu.GetPassword())
+	user, err := rt.insertPwUser(pu.GetEmail(), pu.GetName())
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (s *authServer) RegisterPwUser(ctx context.Context, pu *pb.NewPwUser) (*pb.
 		}
 		logger.Debug(action)
 	*/
-	return rt.userAuthReply(user, time.Now())
+	return &pb.RegistrationReply{UserId: int32(user.ID)}, nil
 }
 
 func (s *authServer) AuthenticatePwUser(ctx context.Context, up *pb.UserPassword) (*pb.AuthReply, error) {

@@ -566,9 +566,8 @@ func Test_requestTx_setUserPassword(t *testing.T) {
 
 func Test_requestTx_insertPwUser(t *testing.T) {
 	type args struct {
-		email    string
-		name     string
-		password string
+		email string
+		name  string
 	}
 	tests := []struct {
 		name    string
@@ -580,7 +579,6 @@ func Test_requestTx_insertPwUser(t *testing.T) {
 			args{
 				"",
 				"foo",
-				"pass",
 			},
 			true,
 		},
@@ -589,7 +587,6 @@ func Test_requestTx_insertPwUser(t *testing.T) {
 			args{
 				"foo@bar.com",
 				"foo",
-				"pass",
 			},
 			false,
 		},
@@ -598,7 +595,6 @@ func Test_requestTx_insertPwUser(t *testing.T) {
 			args{
 				"foo@bar.com",
 				"foo",
-				"pass",
 			},
 			true,
 		},
@@ -610,7 +606,7 @@ func Test_requestTx_insertPwUser(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer rt.done()
-			want, err := rt.insertPwUser(tt.args.email, tt.args.name, tt.args.password)
+			want, err := rt.insertPwUser(tt.args.email, tt.args.name)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("requestTx.insertPwUser() error = %v, wantErr %v", err, tt.wantErr)
 				return

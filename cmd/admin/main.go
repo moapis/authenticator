@@ -13,10 +13,14 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/moapis/authenticator/models"
+	pb "github.com/moapis/authenticator/pb"
 	"github.com/moapis/multidb"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/boil"
 	"github.com/volatiletech/sqlboiler/queries/qm"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func tmplPaths(names ...string) []string {
@@ -299,7 +303,7 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 
 func removeUserRelationHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	entry := log.WithFields(logrus.Fields{"handler": "userHandler", "vars": vars})
+	entry := log.WithFields(logrus.Fields{"handler": "removeUserRelationHandler", "vars": vars})
 	iv := aToiMap(entry, vars)
 
 	tx, err := mdb.MasterTx(r.Context(), nil)
@@ -336,7 +340,7 @@ func removeUserRelationHandler(w http.ResponseWriter, r *http.Request) {
 
 func newEntityFormHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	entry := log.WithFields(logrus.Fields{"handler": "userHandler", "vars": vars})
+	entry := log.WithFields(logrus.Fields{"handler": "newEntityFormHandler", "vars": vars})
 
 	var (
 		tmpl *template.Template
@@ -382,7 +386,7 @@ func parseForm(w http.ResponseWriter, r *http.Request, fields []string) (map[str
 		data := strings.TrimSpace(r.PostForm.Get(f))
 		if data == "" {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(fmt.Sprintf("%d Bad request: Missing name or description", http.StatusBadRequest)))
+			w.Write([]byte(fmt.Sprintf("%d Bad request: Missing %s", http.StatusBadRequest, f)))
 			return nil, fmt.Errorf(errMissingField, f)
 		}
 		formData[f] = data
@@ -424,8 +428,6 @@ func newRelation(w http.ResponseWriter, r *http.Request, entry *logrus.Entry, re
 		return
 	}
 	entry.Info("New relation")
-	// Naive MultiDB propagation timeout
-	time.Sleep(5 * time.Second)
 	http.Redirect(w, r, fmt.Sprintf("/%s/%d", relation, id), http.StatusSeeOther)
 }
 
@@ -439,9 +441,41 @@ func newAudiencePostHandler(w http.ResponseWriter, r *http.Request) {
 	newRelation(w, r, entry, "audiences")
 }
 
+func newUserPostHandler(w http.ResponseWriter, r *http.Request) {
+	entry := log.WithFields(logrus.Fields{"handler": "newUserPostHandler"})
+	data, err := parseForm(w, r, []string{"email", "name"})
+	if err != nil {
+		entry.WithError(err).Warn("parseForm")
+		return
+	}
+	entry = entry.WithField("data", data)
+
+	reply, err := authClient.RegisterPwUser(r.Context(), &pb.UserData{
+		Email: data["email"],
+		Name:  data["name"],
+	})
+	switch status.Code(err) {
+	case codes.OK:
+		break
+	case codes.InvalidArgument:
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("%d Bad request: Invalid arguments in gRPC call", http.StatusBadRequest)))
+		entry.WithError(err).Error("authClient.RegisterPwUser")
+		return
+	default:
+		isInternalError(entry, w, err)
+		return
+	}
+	entry = entry.WithField("reply", *reply)
+
+	entry.Info("New user")
+	http.Redirect(w, r, fmt.Sprintf("/%s/%d", "users", reply.UserId), http.StatusSeeOther)
+}
+
 var (
-	conf *ServerConfig
-	mdb  *multidb.MultiDB
+	conf       *ServerConfig
+	mdb        *multidb.MultiDB
+	authClient pb.AuthenticatorClient
 )
 
 func main() {
@@ -472,6 +506,17 @@ func main() {
 	r.Path("/new/{resource}").Methods(http.MethodGet).HandlerFunc(newEntityFormHandler)
 	r.Path("/new/audiences").Methods(http.MethodPost).HandlerFunc(newAudiencePostHandler)
 	r.Path("/new/groups").Methods(http.MethodPost).HandlerFunc(newGroupPostHandler)
+	r.Path("/new/users").Methods(http.MethodPost).HandlerFunc(newUserPostHandler)
+
+	entry := log.WithField("address", conf.AuthServer.String())
+	entry.Info("Start gRPC Dail")
+	cc, err := grpc.Dial(conf.AuthServer.String(), grpc.WithBlock(), grpc.WithInsecure())
+	if err != nil {
+		entry.WithError(err).Fatal("gRPC Dail")
+	}
+	defer cc.Close()
+	authClient = pb.NewAuthenticatorClient(cc)
+	entry.Info("gRPC Dail done")
 
 	srv := &http.Server{
 		Handler:      r,

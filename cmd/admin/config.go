@@ -7,6 +7,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"strings"
 	"time"
@@ -57,6 +58,10 @@ type AuthServerConfig struct {
 	Port uint16
 }
 
+func (acs AuthServerConfig) String() string {
+	return fmt.Sprintf("%s:%d", acs.Host, acs.Port)
+}
+
 // ServerConfig is a collection on config
 type ServerConfig struct {
 	Addres      string           `json:"address"`     // HTTP listen Address
@@ -81,12 +86,13 @@ func (c *ServerConfig) writeOut(filename string) error {
 
 // Default confing
 var Default = ServerConfig{
-	Addres:    "127.0.0.1",
-	Port:      1234,
-	AdminLTE:  "AdminLTE",
-	Templates: "templates",
-	LogLevel:  DebugLevel,
-	TLS:       nil,
+	Addres:     "127.0.0.1",
+	Port:       1234,
+	AdminLTE:   "AdminLTE",
+	Templates:  "templates",
+	LogLevel:   DebugLevel,
+	TLS:        nil,
+	AuthServer: AuthServerConfig{"127.0.0.1", 8765},
 	MultiDB: multidb.Config{
 		StatsLen:      100,
 		MaxFails:      10,
