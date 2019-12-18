@@ -48,11 +48,6 @@ func isInternalError(entry *logrus.Entry, w http.ResponseWriter, err error) bool
 	return false
 }
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles(tmplPaths("home.html", "base.html")...))
-	tmpl.ExecuteTemplate(w, "base", nil)
-}
-
 type action struct {
 	Name   string
 	URL    string
@@ -454,6 +449,7 @@ func newUserPostHandler(w http.ResponseWriter, r *http.Request) {
 	reply, err := authClient.RegisterPwUser(r.Context(), &pb.RegistrationData{
 		Email: data["email"],
 		Name:  data["name"],
+		// Set the CallBackURL!!!!
 	})
 	switch status.Code(err) {
 	case codes.OK:
@@ -602,7 +598,7 @@ func main() {
 	r.PathPrefix("/plugins/").Handler(fs)
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
-	r.HandleFunc("/", homeHandler)
+	r.Handle("/", http.RedirectHandler("/users/", http.StatusMovedPermanently))
 	r.HandleFunc("/{resource}/", listHandler)
 
 	r.HandleFunc("/users/{id}", userHandler)
