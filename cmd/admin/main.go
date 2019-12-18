@@ -35,6 +35,8 @@ func tmplPaths(names ...string) []string {
 type tmplData struct {
 	Title       string
 	BreadCrumbs []breadCrumb
+	Panel       bool
+	Error       string
 	Content     interface{} // Data for the "content" template
 }
 
@@ -232,13 +234,14 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	entry = entry.WithField("list", content)
 
-	tmpl, err := template.ParseFiles(tmplPaths("list.html", "base.html")...)
+	tmpl, err := template.ParseFiles(tmplPaths("list.html", "panel.html", "base.html")...)
 	if isInternalError(entry, w, err) {
 		return
 	}
 
 	tmpl.ExecuteTemplate(w, "base", tmplData{
 		Title: fmt.Sprintf("%s List", strings.Title(strings.TrimSuffix(vars["resource"], "s"))),
+		Panel: true,
 		BreadCrumbs: []breadCrumb{
 			{"Home", "/"},
 			{vars["resource"], ""},
@@ -278,13 +281,14 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	entry = entry.WithFields(logrus.Fields{"user": um, "groups": um.R.Groups, "audiences": um.R.Audiences})
 
-	tmpl, err := template.ParseFiles(tmplPaths("user.html", "base.html")...)
+	tmpl, err := template.ParseFiles(tmplPaths("user.html", "panel.html", "base.html")...)
 	if isInternalError(entry, w, err) {
 		return
 	}
 
 	if err = tmpl.ExecuteTemplate(w, "base", tmplData{
 		Title: fmt.Sprintf("User %d", id),
+		Panel: true,
 		BreadCrumbs: []breadCrumb{
 			{"Home", "/"},
 			{"Users", "/users/"},
@@ -344,9 +348,9 @@ func newEntityFormHandler(w http.ResponseWriter, r *http.Request) {
 	)
 	switch vars["resource"] {
 	case "groups", "audiences":
-		tmpl, err = template.ParseFiles(tmplPaths("new_relation.html", "base.html")...)
+		tmpl, err = template.ParseFiles(tmplPaths("new_relation.html", "panel.html", "base.html")...)
 	case "users":
-		tmpl, err = template.ParseFiles(tmplPaths("new_user.html", "base.html")...)
+		tmpl, err = template.ParseFiles(tmplPaths("new_user.html", "panel.html", "base.html")...)
 	default:
 		http.NotFound(w, r)
 		log.Info("Resource not found")
@@ -359,6 +363,7 @@ func newEntityFormHandler(w http.ResponseWriter, r *http.Request) {
 	single := strings.TrimSuffix(plural, "s")
 	if err = tmpl.ExecuteTemplate(w, "base", tmplData{
 		Title: fmt.Sprintf("New %s", single),
+		Panel: true,
 		BreadCrumbs: []breadCrumb{
 			{"Home", "/"},
 			{plural, fmt.Sprintf("/%s/", vars["resource"])},
@@ -517,7 +522,7 @@ func listAvailableRelationsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	entry = entry.WithField("content", content)
 
-	tmpl, err := template.ParseFiles(tmplPaths("available_relations.html", "base.html")...)
+	tmpl, err := template.ParseFiles(tmplPaths("available_relations.html", "panel.html", "base.html")...)
 	if isInternalError(entry, w, err) {
 		return
 	}
@@ -525,6 +530,7 @@ func listAvailableRelationsHandler(w http.ResponseWriter, r *http.Request) {
 	plural := strings.Title(vars["relation"])
 	if err = tmpl.ExecuteTemplate(w, "base", tmplData{
 		Title: fmt.Sprintf("Available %s for User %d", plural, iv["id"]),
+		Panel: true,
 		BreadCrumbs: []breadCrumb{
 			{"Home", "/"},
 			{"Users", "/users/"},

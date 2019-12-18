@@ -1,16 +1,4 @@
-{{ define "login" }}
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Authenticator | Log in</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
-  <link rel="stylesheet" href="/dist/css/adminlte.min.css">
-  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
-</head>
+{{ define "main" }}{{ with .Content }}
 <body class="hold-transition login-page">
 <div class="login-box">
   <div class="login-logo">
@@ -23,7 +11,7 @@
 
       <form method="post">
         <div class="input-group mb-3">
-          <input type="email" class="form-control" placeholder="Email" name="email">
+          <input type="email" class="form-control" placeholder="Email" name="email" required>
           <div class="input-group-append">
             <div class="input-group-text">
               <span class="fas fa-envelope"></span>
@@ -31,7 +19,7 @@
           </div>
         </div>
         <div class="input-group mb-3">
-          <input type="password" class="form-control" placeholder="Password" name="password">
+          <input type="password" class="form-control" placeholder="Password" name="password" required>
           <div class="input-group-append">
             <div class="input-group-text">
               <span class="fas fa-lock"></span>
@@ -54,25 +42,4 @@
   </div>
 </div>
 <!-- /.login-box -->
-
-<script src="/plugins/jquery/jquery.min.js"></script>
-<script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="/dist/js/adminlte.min.js"></script>
-
-{{ if .Error }}
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@9"></script>
-<script>
-  $( document ).ready(function(){
-    Swal.fire({
-      icon: 'error',
-      title: 'Oops!',
-      text: '{{ .Error }}',
-      timer: 5000
-})
-  });
-</script>
-{{ end }}
-
-</body>
-</html>
-{{ end }}
+{{ end }}{{ end -}}

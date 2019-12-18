@@ -30,20 +30,29 @@ func loginParseForm(w http.ResponseWriter, r *http.Request) (string, error) {
 	return redirect, nil
 }
 
-type loginTmplData struct {
+const (
+	loginTitle = "Please Login"
+)
+
+type loginRedirect struct {
 	Redirect string
-	Error    string
 }
 
-func loginTemplate(entry *logrus.Entry, w http.ResponseWriter, data loginTmplData, status ...int) {
-	tmpl, err := template.ParseFiles(tmplPaths("login.html")...)
+func loginTemplate(entry *logrus.Entry, w http.ResponseWriter, redirect, errMsg string, status ...int) {
+	tmpl, err := template.ParseFiles(tmplPaths("login.html", "base.html")...)
 	if isInternalError(entry, w, err) {
 		return
 	}
 	if status != nil {
 		w.WriteHeader(status[0])
 	}
-	if err = tmpl.ExecuteTemplate(w, "login", data); err != nil {
+	if err = tmpl.ExecuteTemplate(w, "base",
+		tmplData{
+			Title:   loginTitle,
+			Error:   errMsg,
+			Content: loginRedirect{redirect},
+		},
+	); err != nil {
 		entry.WithError(err).Error("ExecuteTemplate")
 	}
 	entry.Debug("Served")
@@ -57,7 +66,7 @@ func loginFormHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	entry = entry.WithField("redirect", redirect)
-	loginTemplate(entry, w, loginTmplData{Redirect: redirect})
+	loginTemplate(entry, w, redirect, "")
 }
 
 func loginPostHandler(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +81,7 @@ func loginPostHandler(w http.ResponseWriter, r *http.Request) {
 	email, password := r.PostForm.Get("email"), r.PostForm.Get("password")
 	if email == "" || password == "" {
 		log.Warn("Missing email or password")
-		loginTemplate(entry, w, loginTmplData{Redirect: redirect, Error: "Missing email or password"}, http.StatusBadRequest)
+		loginTemplate(entry, w, redirect, "Missing email or password", http.StatusBadRequest)
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
@@ -87,10 +96,10 @@ func loginPostHandler(w http.ResponseWriter, r *http.Request) {
 		s, ok := status.FromError(err)
 		if !ok || s.Code() != codes.Unauthenticated {
 			entry.Error("gRPC call")
-			loginTemplate(entry, w, loginTmplData{redirect, "Internal server error"}, http.StatusInternalServerError)
+			loginTemplate(entry, w, redirect, "Internal server error", http.StatusInternalServerError)
 		} else {
 			entry.Warn("gRPC call")
-			loginTemplate(entry, w, loginTmplData{redirect, "Wrong email or password"}, http.StatusUnauthorized)
+			loginTemplate(entry, w, redirect, "Wrong email or password", http.StatusUnauthorized)
 		}
 		return
 	}
