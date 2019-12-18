@@ -451,7 +451,7 @@ func newUserPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	entry = entry.WithField("data", data)
 
-	reply, err := authClient.RegisterPwUser(r.Context(), &pb.UserData{
+	reply, err := authClient.RegisterPwUser(r.Context(), &pb.RegistrationData{
 		Email: data["email"],
 		Name:  data["name"],
 	})
@@ -616,6 +616,9 @@ func main() {
 	r.Path("/new/audiences").Methods(http.MethodPost).HandlerFunc(newAudiencePostHandler)
 	r.Path("/new/groups").Methods(http.MethodPost).HandlerFunc(newGroupPostHandler)
 	r.Path("/new/users").Methods(http.MethodPost).HandlerFunc(newUserPostHandler)
+
+	r.Path("/login").Methods(http.MethodGet).HandlerFunc(loginFormHandler)
+	r.Path("/login").Methods(http.MethodPost).HandlerFunc(loginPostHandler)
 
 	entry := log.WithField("address", conf.AuthServer.String())
 	entry.Info("Start gRPC Dail")

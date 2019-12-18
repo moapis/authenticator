@@ -7,10 +7,10 @@ services:
             dockerfile: server.Dockerfile
             context: .
 
-    login:
-        image: moapis/authenticator-login:master
+    admin:
+        image: moapis/authenticator-admin:master
         build: 
-            dockerfile: login.Dockerfile
+            dockerfile: admin.Dockerfile
             context: .
     
     migrations:
