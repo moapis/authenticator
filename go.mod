@@ -9,6 +9,7 @@ require (
 	github.com/gorilla/mux v1.7.3
 	github.com/kat-co/vala v0.0.0-20170210184112-42e1d8b61f12
 	github.com/lib/pq v1.2.0
+	github.com/moapis/mailer v0.2.0
 	github.com/moapis/multidb v0.1.1-0.20191208140004-e40c963dc2a8
 	github.com/pascaldekloe/jwt v1.6.0
 	github.com/rubenv/sql-migrate v0.0.0-20191121092708-da1cb182f00e

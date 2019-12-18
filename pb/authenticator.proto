@@ -10,7 +10,7 @@ service Authenticator {
     // RegisterPwUser registers a new user which can authenticate using a PW.
     // Server implementation should grant the user only a public role untill verification is complete.
     // Authorization: Public
-    rpc RegisterPwUser (UserData) returns (RegistrationReply) {}
+    rpc RegisterPwUser (RegistrationData) returns (RegistrationReply) {}
     
     // PasswordAuth authenticates the user by its registered email or username and password.
     // Authorization: Public
@@ -46,6 +46,25 @@ service Authenticator {
 message UserData {
     string email = 1;
     string name = 2;
+}
+
+message StringSlice {
+    repeated string slice = 1;
+}
+
+message CallBackUrl {
+    string base_url = 1;
+    // Query paramater key under which the token will be set in the callback URL.
+    // If empty, it defaults to "token"
+    string token_key = 2;
+    // Other query parameters which need to be added to the callback URL.
+    map<string, StringSlice> params = 3;
+}
+
+message RegistrationData {
+    string email = 1;
+    string name = 2;
+    CallBackUrl url = 3;
 }
 
 message RegistrationReply{

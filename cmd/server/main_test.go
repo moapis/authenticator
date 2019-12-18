@@ -6,11 +6,15 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"html/template"
+	"net/smtp"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/moapis/authenticator/models"
+	"github.com/moapis/mailer"
 	"github.com/moapis/multidb"
 	migrate "github.com/rubenv/sql-migrate"
 	"github.com/sirupsen/logrus"
@@ -196,6 +200,17 @@ func TestMain(m *testing.M) {
 		conf:    testConfig,
 		mdb:     mdb,
 		privKey: privateKey{"10", []byte(testPrivKey)},
+		mail: mailer.New(
+			template.Must(template.ParseGlob(testConfig.Mail.TemplateGlob)),
+			fmt.Sprintf("%s:%d", testConfig.Mail.Host, testConfig.Mail.Port),
+			testConfig.Mail.From,
+			smtp.PlainAuth(
+				testConfig.Mail.Identity,
+				testConfig.Mail.Username,
+				testConfig.Mail.Password,
+				testConfig.Mail.Host,
+			),
+		),
 	}
 
 	code := m.Run()

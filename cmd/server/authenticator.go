@@ -5,16 +5,20 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"fmt"
 	"io"
+	"net/url"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/moapis/authenticator/models"
 	pb "github.com/moapis/authenticator/pb"
+	"github.com/moapis/mailer"
 	"github.com/moapis/multidb"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/boil"
@@ -33,6 +37,7 @@ type authServer struct {
 	keyMtx  sync.RWMutex //Protects privKey during updates
 	log     *logrus.Entry
 	conf    *ServerConfig
+	mail    *mailer.Mailer
 }
 
 func (s *authServer) updateKeyPair(ctx context.Context, r io.Reader) error {
@@ -90,26 +95,56 @@ const (
 	errMailer             = "Failed to send verification mail"
 )
 
-func (s *authServer) RegisterPwUser(ctx context.Context, pu *pb.UserData) (*pb.RegistrationReply, error) {
+func callBackURL(cb *pb.CallBackUrl, token string) string {
+	buf := bytes.NewBufferString(cb.GetBaseUrl())
+	if buf.Len() > 0 {
+		buf.WriteByte('?')
+	}
+
+	tokenKey := cb.GetTokenKey()
+	if tokenKey == "" {
+		tokenKey = "token"
+	}
+	values := url.Values{tokenKey: {token}}
+	for k, ss := range cb.GetParams() {
+		values[k] = ss.GetSlice()
+	}
+	buf.WriteString(values.Encode())
+
+	return buf.String()
+}
+
+const (
+	registrationSubject = "Please verify your e-mail"
+)
+
+func (s *authServer) RegisterPwUser(ctx context.Context, rd *pb.RegistrationData) (*pb.RegistrationReply, error) {
 	rt, err := s.newTx(ctx, "RegisterPwUser", false)
 	if err != nil {
 		return nil, err
 	}
 	defer rt.done()
 
-	user, err := rt.insertPwUser(pu.GetEmail(), pu.GetName())
+	user, err := rt.insertPwUser(rd.GetEmail(), rd.GetName())
 	if err != nil {
 		return nil, err
 	}
+	auth, err := rt.authReply(user.Email, time.Now(), nil, fmt.Sprintf("verify@%s", rt.s.conf.JWT.Issuer))
+	if err != nil {
+		return nil, err
+	}
+	if err := rt.sendMail(
+		"registration", mailData{
+			user, registrationSubject,
+			callBackURL(
+				rd.GetUrl(),
+				auth.GetJwt(),
+			),
+		},
+	); err != nil {
+		return nil, err
+	}
 
-	/*
-		action = "Send verification mail"
-		if err := sendVerificationMail(ctx); err != nil {
-			logger.WithError(err).Error(action)
-			return nil, status.Error(codes.Internal, errMailer)
-		}
-		logger.Debug(action)
-	*/
 	return &pb.RegistrationReply{UserId: int32(user.ID)}, nil
 }
 

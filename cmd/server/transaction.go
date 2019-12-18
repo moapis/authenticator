@@ -16,6 +16,7 @@ import (
 	"github.com/moapis/authenticator/models"
 	pb "github.com/moapis/authenticator/pb"
 	"github.com/moapis/authenticator/verify"
+	"github.com/moapis/mailer"
 	"github.com/pascaldekloe/jwt"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/boil"
@@ -270,9 +271,6 @@ func (rt *requestTx) insertPwUser(email, name string) (*models.User, error) {
 		return nil, status.Error(codes.Internal, errDB)
 	}
 	rt.log.Debug("Insert user")
-	if err := rt.commit(); err != nil {
-		return nil, err
-	}
 	return user, nil
 }
 
@@ -403,4 +401,25 @@ func (rt *requestTx) getPubKey(kid int) (*pb.PublicKey, error) {
 		return nil, err
 	}
 	return &pb.PublicKey{Key: key}, nil
+}
+
+type mailData struct {
+	*models.User
+	Subject, URL string
+}
+
+func (rt *requestTx) sendMail(template string, data mailData) error {
+	headers := []mailer.Header{
+		{Key: "from", Values: []string{rt.s.conf.Mail.From}},
+		{Key: "subject", Values: []string{data.Subject}},
+		{Key: "to", Values: []string{data.Email}},
+	}
+	log := rt.log.WithFields(logrus.Fields{"headers": headers, "data": data})
+
+	if err := rt.s.mail.Send(headers, template, data, data.Email); err != nil {
+		log.WithError(err).Error("sendMail")
+		return status.Error(codes.Internal, "Mailer error")
+	}
+	log.Debug("sendMail")
+	return nil
 }

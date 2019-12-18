@@ -109,6 +109,8 @@ github.com/mitchellh/cli v1.0.0/go.mod h1:hNIlj7HEI86fIcpObd7a0FcrxTWetlwJDGcceT
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
 github.com/mitchellh/mapstructure v1.1.2 h1:fmNYVwqnSfB9mZU6OS2O6GsXM+wcskZDuKQzvN1EDeE=
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
+github.com/moapis/mailer v0.2.0 h1:/gU463BlTj3UpMUcsA8hwTddCRFDCR1+coHha8W/BKM=
+github.com/moapis/mailer v0.2.0/go.mod h1:X+Cf9PfuWXmdefjXfUsxNjOL+rCQ6S0UQAoFWsuvMQk=
 github.com/moapis/multidb v0.1.1-0.20191208140004-e40c963dc2a8 h1:ah+hKI0XAWk27YX7gh/s15E6mGSAOUsstQQi/VyocEo=
 github.com/moapis/multidb v0.1.1-0.20191208140004-e40c963dc2a8/go.mod h1:mTxQ7/IWj/UCqCGSpSV5MXn1j4KBmtKjBlbyud0LSbA=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=

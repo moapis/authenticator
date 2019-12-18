@@ -1,0 +1,17 @@
+{{ define "test" }}
+<html>
+    <body>
+        <h1>Authenticator</h1>
+        <p>
+            This is unit test output from https://github.com/moapis/authenticator/cmd/server mailer.
+            The following fields should be populated:
+            <ul>
+                <li>User Name: {{ .Name }}</li>
+                <li>User E-mail: {{ .Email}}</li>
+                <li>Subject: {{ .Subject}}</li>
+                <li>Callback URL: {{ .URL }}</li>
+            </ul>
+        </p>
+    </body>
+</html>
+{{ end }}

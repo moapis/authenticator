@@ -615,11 +615,6 @@ func Test_requestTx_insertPwUser(t *testing.T) {
 				return
 			}
 
-			rt, err = tas.newTx(testCtx, "testing", false)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer rt.done()
 			got, err := models.FindUser(testCtx, rt.tx, want.ID)
 			if err != nil {
 				t.Fatal(err)
@@ -1175,6 +1170,60 @@ func Test_requestTx_getPubKey(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("requestTx.getPubKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_requestTx_sendMail(t *testing.T) {
+	type args struct {
+		template string
+		data     mailData
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			"Succes",
+			args{"test",
+				mailData{
+					&models.User{
+						Name:  "Mickey Mouse",
+						Email: "admin@test.mailu.io",
+					},
+					"moapis/authenticator/cmd/server sendMail unit test",
+					"https://github.com/moapis/authenticator",
+				},
+			},
+			false,
+		},
+		{
+			"Template error",
+			args{"foobar",
+				mailData{
+					&models.User{
+						Name:  "Mickey Mouse",
+						Email: "admin@test.mailu.io",
+					},
+					"moapis/authenticator/cmd/server sendMail unit test",
+					"https://github.com/moapis/authenticator",
+				},
+			},
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, err := tas.newTx(testCtx, "testing", false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rt.done()
+
+			if err := rt.sendMail(tt.args.template, tt.args.data); (err != nil) != tt.wantErr {
+				t.Errorf("requestTx.sendMail() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

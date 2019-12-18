@@ -39,5 +39,14 @@
   "jwt": {
     "issuer": "localhost",
     "expiry": 86400000000000
+  },
+  "smtp": {
+    "Host": "test.mailu.io",
+    "Port": 587,
+    "Identity": "",
+    "Username": "admin@test.mailu.io",
+    "Password": "letmein",
+    "From": "admin@test.mailu.io",
+    "TemplateGlob": "templates/*.mail.html"
   }
 }

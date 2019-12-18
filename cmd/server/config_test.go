@@ -152,6 +152,9 @@ func TestServerConfig_newAuthServer(t *testing.T) {
 	ectx, cancel := context.WithTimeout(context.Background(), -1)
 	defer cancel()
 
+	cc := *testConfig
+	cc.Mail.TemplateGlob = "foo"
+
 	type args struct {
 		ctx context.Context
 		r   io.Reader
@@ -184,6 +187,12 @@ func TestServerConfig_newAuthServer(t *testing.T) {
 			"Expired context",
 			testConfig,
 			args{ectx, strings.NewReader(testKeyInput)},
+			true,
+		},
+		{
+			"Template error",
+			&cc,
+			args{testCtx, strings.NewReader(testKeyInput)},
 			true,
 		},
 	}

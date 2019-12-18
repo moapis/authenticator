@@ -166,7 +166,7 @@ func Test_authServer_RegisterPwUser(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		pu  *pb.UserData
+		rd  *pb.RegistrationData
 	}
 	tests := []struct {
 		name    string
@@ -185,7 +185,7 @@ func Test_authServer_RegisterPwUser(t *testing.T) {
 			"Empty user",
 			args{
 				testCtx,
-				&pb.UserData{},
+				&pb.RegistrationData{},
 			},
 			true,
 		},
@@ -193,9 +193,9 @@ func Test_authServer_RegisterPwUser(t *testing.T) {
 			"Valid user",
 			args{
 				testCtx,
-				&pb.UserData{
-					Email: "hello@world.com",
-					Name:  "hello",
+				&pb.RegistrationData{
+					Email: "admin@test.mailu.io",
+					Name:  "Mickey Mouse",
 				},
 			},
 			false,
@@ -203,7 +203,7 @@ func Test_authServer_RegisterPwUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tas.RegisterPwUser(tt.args.ctx, tt.args.pu)
+			got, err := tas.RegisterPwUser(tt.args.ctx, tt.args.rd)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("authServer.RegisterPwUser() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -600,6 +600,60 @@ func Test_authServer_GetPubKey(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("authServer.GetPubKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_callBackURL(t *testing.T) {
+	type args struct {
+		cb    *pb.CallBackUrl
+		token string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			"Only token",
+			args{
+				nil,
+				"foobar",
+			},
+			"token=foobar",
+		},
+		{
+			"Set token key and Base URL",
+			args{
+				&pb.CallBackUrl{
+					BaseUrl:  "http://example.com",
+					TokenKey: "key",
+				},
+				"foobar",
+			},
+			"http://example.com?key=foobar",
+		},
+		{
+			"Additional params",
+			args{
+				&pb.CallBackUrl{
+					BaseUrl:  "http://example.com",
+					TokenKey: "key",
+					Params: map[string]*pb.StringSlice{
+						"foo":   {Slice: []string{"bar"}},
+						"hello": {Slice: []string{"world", "mars"}},
+					},
+				},
+				"foobar",
+			},
+			"http://example.com?foo=bar&hello=world&hello=mars&key=foobar",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := callBackURL(tt.args.cb, tt.args.token); got != tt.want {
+				t.Errorf("callBackURL() = %v, want %v", got, tt.want)
 			}
 		})
 	}

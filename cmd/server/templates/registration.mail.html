@@ -1,0 +1,18 @@
+{{ define "registration" }}
+<html>
+    <body>
+        <h1>Hi, {{ .Name }}</h1>
+        <p>
+            An account for your e-mail address {{ .Email }} has been created.
+            We kindly request to confirm your e-mail and create a password by clicking
+            <a href="{{ .URL }}">this link</a>.
+        </p>
+        <p>
+            If the above link does not work,
+            please copy the following URL into your brower's address bar:<br>
+            <pre>{{ .URL }}</pre>
+        </p>
+    </body>
+</html>
+
+{{ end }}

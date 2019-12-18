@@ -11,14 +11,17 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"net"
+	"net/smtp"
 	"strings"
 	"time"
 
 	"github.com/moapis/authenticator/models"
 	pb "github.com/moapis/authenticator/pb"
+	"github.com/moapis/mailer"
 	"github.com/moapis/multidb"
 	pg "github.com/moapis/multidb/drivers/postgresql"
 	"github.com/sirupsen/logrus"
@@ -51,6 +54,17 @@ type BootstrapUser struct {
 	Audiences []string
 }
 
+// MailConfig for outgoing mail server
+type MailConfig struct {
+	Host         string
+	Port         uint16
+	Identity     string
+	Username     string
+	Password     string
+	From         string
+	TemplateGlob string
+}
+
 // ServerConfig is a collection on config
 type ServerConfig struct {
 	Addres      string          `json:"address"`     // gRPC listen Address
@@ -62,6 +76,7 @@ type ServerConfig struct {
 	SQLRoutines int             `json:"sqlroutines"` // Amount of Go-routines for non-master queries
 	Users       []BootstrapUser `json:"bootsrap"`    // Users which will be upserted at start
 	JWT         JWTConfig       `json:"jwt"`
+	Mail        MailConfig      `json:"smtp"`
 }
 
 func (c *ServerConfig) writeOut(filename string) error {
@@ -111,6 +126,15 @@ var Default = ServerConfig{
 	JWT: JWTConfig{
 		Issuer: "localhost",
 		Expiry: 24 * time.Hour,
+	},
+	Mail: MailConfig{
+		Host:         "test.mailu.io",
+		Port:         587,
+		Identity:     "",
+		Username:     "admin@test.mailu.io",
+		Password:     "letmein",
+		From:         "admin@test.mailu.io",
+		TemplateGlob: "templates/*.mail.html",
 	},
 }
 
@@ -258,6 +282,16 @@ func (c ServerConfig) newAuthServer(ctx context.Context, r io.Reader) (*authServ
 		return nil, err
 	}
 
+	tmpl, err := template.ParseGlob(c.Mail.TemplateGlob)
+	if err != nil {
+		return nil, err
+	}
+	s.mail = mailer.New(
+		tmpl,
+		fmt.Sprintf("%s:%d", c.Mail.Host, c.Mail.Port),
+		c.Mail.From,
+		smtp.PlainAuth(c.Mail.Identity, c.Mail.Username, c.Mail.Password, c.Mail.Host),
+	)
 	return s, nil
 }
 
