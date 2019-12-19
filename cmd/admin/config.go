@@ -65,7 +65,7 @@ func (acs AuthServerConfig) String() string {
 
 // ServerConfig is a collection on config
 type ServerConfig struct {
-	Addres      string           `json:"address"`     // HTTP listen Address
+	Address     string           `json:"address"`     // HTTP listen Address
 	Port        uint16           `json:"port"`        // HTTP listen Port
 	AdminLTE    string           `json:"adminlte"`    // Path to AdminLTE root
 	Templates   string           `json:"templates"`   // Path to template directory
@@ -87,7 +87,7 @@ func (c *ServerConfig) writeOut(filename string) error {
 
 // Default confing
 var Default = ServerConfig{
-	Addres:     "127.0.0.1",
+	Address:    "127.0.0.1",
 	Port:       1234,
 	AdminLTE:   "AdminLTE",
 	Templates:  "templates",
