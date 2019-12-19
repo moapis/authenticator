@@ -1,7 +1,7 @@
 {{ define "content" }}
 <div class="row">
   <div class="col">
-    <a href="/new/{{ .Resource }}" type="button" class="btn btn-primary float-right"><i class="fas fa-plus"></i></a>
+    <a href="/🍕/new/{{ .Resource }}" type="button" class="btn btn-primary float-right"><i class="fas fa-plus"></i></a>
   </div>
 </div>
 <div class="row">
@@ -44,7 +44,7 @@
                 <time class="timeago" datetime="{{ .Updated }}"></time>
             </div>
             <div class="col-12 col-xl-3 col-lg-4 col-sm-6">
-              <a href="{{ .ID }}"><button type="button" class="btn btn-primary">View</button></a>
+              <a href="{{ .ID }}/"><button type="button" class="btn btn-primary">View</button></a>
               {{ range .Actions }}
               <button type="button" class="btn btn-primary" onclick="actionAsk('{{ .URL }}', '{{ .Method }}')">{{ .Name }}</button>
               {{ end -}}

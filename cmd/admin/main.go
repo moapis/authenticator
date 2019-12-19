@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/moapis/authenticator/models"
 	pb "github.com/moapis/authenticator/pb"
+	"github.com/moapis/authenticator/verify"
 	"github.com/moapis/multidb"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/boil"
@@ -34,6 +35,7 @@ func tmplPaths(names ...string) []string {
 
 type tmplData struct {
 	Title       string
+	AuthPrefix  string
 	BreadCrumbs []breadCrumb
 	Panel       bool
 	Error       string
@@ -70,13 +72,15 @@ type listEntry struct {
 }
 
 const (
-	listDate = "_2 jan 06 15:04"
+	listDate      = "_2 jan 06 15:04"
+	authPrefix    = "/\U0001F355/"
+	indexRedirect = authPrefix + "users/"
 )
 
 func userActions(id int) []action {
 	return []action{
-		{"reset password", fmt.Sprintf("/users/reset/%d", id), http.MethodPut},
-		{"delete", fmt.Sprintf("/users/delete/%d", id), http.MethodDelete},
+		{"reset password", fmt.Sprintf("%susers/reset/%d", authPrefix, id), http.MethodPut},
+		{"delete", fmt.Sprintf("%susers/delete/%d", authPrefix, id), http.MethodDelete},
 	}
 }
 
@@ -113,7 +117,7 @@ func groupList(ctx context.Context, exec boil.ContextExecutor) (*listContents, e
 			Created: g.CreatedAt.Format(time.RFC3339),
 			Updated: g.CreatedAt.Format(time.RFC3339),
 			Actions: []action{
-				{"delete", fmt.Sprintf("/groups/delete/%d", g.ID), http.MethodDelete},
+				{"delete", fmt.Sprintf("%sgroups/delete/%d", authPrefix, g.ID), http.MethodDelete},
 			},
 		}
 	}
@@ -134,7 +138,7 @@ func audienceList(ctx context.Context, exec boil.ContextExecutor) (*listContents
 			Created: a.CreatedAt.Format(time.RFC3339),
 			Updated: a.CreatedAt.Format(time.RFC3339),
 			Actions: []action{
-				{"delete", fmt.Sprintf("/audiences/delete/%d", a.ID), http.MethodDelete},
+				{"delete", fmt.Sprintf("%saudiences/delete/%d", authPrefix, a.ID), http.MethodDelete},
 			},
 		}
 	}
@@ -291,7 +295,7 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 		Panel: true,
 		BreadCrumbs: []breadCrumb{
 			{"Home", "/"},
-			{"Users", "/users/"},
+			{"Users", "../"},
 			{strconv.Itoa(id), ""},
 		},
 		Content: userView{um, userActions(id)},
@@ -366,7 +370,7 @@ func newEntityFormHandler(w http.ResponseWriter, r *http.Request) {
 		Panel: true,
 		BreadCrumbs: []breadCrumb{
 			{"Home", "/"},
-			{plural, fmt.Sprintf("/%s/", vars["resource"])},
+			{plural, fmt.Sprintf("%s%s/", authPrefix, vars["resource"])},
 			{"New", ""},
 		},
 		Content: struct{ Name string }{single},
@@ -429,7 +433,7 @@ func newRelation(w http.ResponseWriter, r *http.Request, entry *logrus.Entry, re
 		return
 	}
 	entry.Info("New relation")
-	http.Redirect(w, r, fmt.Sprintf("/%s/%d", relation, id), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("%s%s/%d/", authPrefix, relation, id), http.StatusSeeOther)
 }
 
 func newGroupPostHandler(w http.ResponseWriter, r *http.Request) {
@@ -471,7 +475,7 @@ func newUserPostHandler(w http.ResponseWriter, r *http.Request) {
 	entry = entry.WithField("reply", *reply)
 
 	entry.Info("New user")
-	http.Redirect(w, r, fmt.Sprintf("/%s/%d", "users", reply.UserId), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("%s%s/%d/", authPrefix, "users", reply.UserId), http.StatusSeeOther)
 }
 
 const (
@@ -533,8 +537,8 @@ func listAvailableRelationsHandler(w http.ResponseWriter, r *http.Request) {
 		Panel: true,
 		BreadCrumbs: []breadCrumb{
 			{"Home", "/"},
-			{"Users", "/users/"},
-			{strconv.Itoa(iv["id"]), fmt.Sprintf("/users/%d", iv["id"])},
+			{"Users", "../../"},
+			{strconv.Itoa(iv["id"]), "../"},
 			{fmt.Sprintf("Available %s", plural), ""},
 		},
 		Content: content,
@@ -581,10 +585,40 @@ func setUserRelationHandler(w http.ResponseWriter, r *http.Request) {
 	entry.Debug("Served")
 }
 
+func tokenMW(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		redirect := fmt.Sprintf("/login?redirect=%s", r.RequestURI)
+		jwt := r.URL.Query().Get("jwt")
+		if jwt == "" {
+			c, err := r.Cookie("jwt")
+			if err != nil {
+				log.WithError(err).Warn("tokenMw")
+				http.Redirect(w, r, redirect, http.StatusSeeOther)
+				return
+			}
+			log.WithField("cookie", c).Debug("tokenMW")
+			jwt = c.Value
+		}
+		claims, err := verificator.Token(r.Context(), jwt)
+		if err != nil {
+			http.Redirect(w, r, redirect, http.StatusSeeOther)
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:    "jwt",
+			Value:   jwt,
+			Path:    "/",
+			Expires: claims.Expires.Time(),
+		})
+		next.ServeHTTP(w, r)
+	})
+}
+
 var (
-	conf       *ServerConfig
-	mdb        *multidb.MultiDB
-	authClient pb.AuthenticatorClient
+	conf        *ServerConfig
+	mdb         *multidb.MultiDB
+	authClient  pb.AuthenticatorClient
+	verificator verify.Verificator
 )
 
 func main() {
@@ -604,21 +638,6 @@ func main() {
 	r.PathPrefix("/plugins/").Handler(fs)
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
-	r.Handle("/", http.RedirectHandler("/users/", http.StatusMovedPermanently))
-	r.HandleFunc("/{resource}/", listHandler)
-
-	r.HandleFunc("/users/{id}", userHandler)
-	r.Path("/users/{id}/{relation}/").Methods(http.MethodGet).HandlerFunc(listAvailableRelationsHandler)
-	r.Path("/users/{id}/{relation}/{rid}").Methods(http.MethodPut).HandlerFunc(setUserRelationHandler)
-	r.Path("/users/{id}/remove/{relation}/{rid}").Methods(http.MethodPut).HandlerFunc(removeUserRelationHandler)
-
-	r.Path("/{resource}/delete/{id}").Methods(http.MethodDelete).HandlerFunc(deleteHandler)
-
-	r.Path("/new/{resource}").Methods(http.MethodGet).HandlerFunc(newEntityFormHandler)
-	r.Path("/new/audiences").Methods(http.MethodPost).HandlerFunc(newAudiencePostHandler)
-	r.Path("/new/groups").Methods(http.MethodPost).HandlerFunc(newGroupPostHandler)
-	r.Path("/new/users").Methods(http.MethodPost).HandlerFunc(newUserPostHandler)
-
 	r.Path("/login").Methods(http.MethodGet).HandlerFunc(loginFormHandler)
 	r.Path("/login").Methods(http.MethodPost).HandlerFunc(loginPostHandler)
 
@@ -630,7 +649,25 @@ func main() {
 	}
 	defer cc.Close()
 	authClient = pb.NewAuthenticatorClient(cc)
+	verificator = verify.Verificator{Client: authClient}
 	entry.Info("gRPC Dail done")
+
+	r.Handle("/", http.RedirectHandler(indexRedirect, http.StatusMovedPermanently))
+	auth := r.PathPrefix(authPrefix).Subrouter()
+	auth.Use(tokenMW)
+	auth.HandleFunc("/{resource}/", listHandler)
+
+	auth.HandleFunc("/users/{id}/", userHandler)
+	auth.Path("/users/{id}/{relation}/").Methods(http.MethodGet).HandlerFunc(listAvailableRelationsHandler)
+	auth.Path("/users/{id}/{relation}/{rid}").Methods(http.MethodPut).HandlerFunc(setUserRelationHandler)
+	auth.Path("/users/{id}/remove/{relation}/{rid}").Methods(http.MethodPut).HandlerFunc(removeUserRelationHandler)
+
+	auth.Path("/{resource}/delete/{id}").Methods(http.MethodDelete).HandlerFunc(deleteHandler)
+
+	auth.Path("/new/{resource}").Methods(http.MethodGet).HandlerFunc(newEntityFormHandler)
+	auth.Path("/new/audiences").Methods(http.MethodPost).HandlerFunc(newAudiencePostHandler)
+	auth.Path("/new/groups").Methods(http.MethodPost).HandlerFunc(newGroupPostHandler)
+	auth.Path("/new/users").Methods(http.MethodPost).HandlerFunc(newUserPostHandler)
 
 	srv := &http.Server{
 		Handler:      r,
