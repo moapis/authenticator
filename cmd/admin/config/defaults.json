@@ -1,0 +1,32 @@
+{
+  "address": "127.0.0.1",
+  "port": 1234,
+  "adminlte": "AdminLTE",
+  "templates": "templates",
+  "loglevel": "debug",
+  "tls": null,
+  "authserver": {
+    "Host": "127.0.0.1",
+    "Port": 8765
+  },
+  "multidb": {
+    "statslen": 100,
+    "maxfails": 10,
+    "reconnectwait": 10000000000
+  },
+  "pg": {
+    "nodes": [
+      {
+        "host": "localhost",
+        "port": 5432
+      }
+    ],
+    "params": {
+      "dbname": "authenticator",
+      "user": "postgres",
+      "sslmode": "disable",
+      "connect_timeout": 30
+    }
+  },
+  "sqlroutines": 3
+}
