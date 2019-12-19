@@ -67,6 +67,7 @@ func (acs AuthServerConfig) String() string {
 type ServerConfig struct {
 	Address     string           `json:"address"`     // HTTP listen Address
 	Port        uint16           `json:"port"`        // HTTP listen Port
+	Name        string           `json:"name"`        // Domain name for this server, used for callbacks
 	AdminLTE    string           `json:"adminlte"`    // Path to AdminLTE root
 	Templates   string           `json:"templates"`   // Path to template directory
 	LogLevel    LogLevel         `json:"loglevel"`    // LogLevel used for logrus
@@ -89,6 +90,7 @@ func (c *ServerConfig) writeOut(filename string) error {
 var Default = ServerConfig{
 	Address:    "127.0.0.1",
 	Port:       1234,
+	Name:       "http://localhost:1234",
 	AdminLTE:   "AdminLTE",
 	Templates:  "templates",
 	LogLevel:   DebugLevel,

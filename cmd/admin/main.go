@@ -459,7 +459,10 @@ func newUserPostHandler(w http.ResponseWriter, r *http.Request) {
 	reply, err := authClient.RegisterPwUser(r.Context(), &pb.RegistrationData{
 		Email: data["email"],
 		Name:  data["name"],
-		// Set the CallBackURL!!!!
+		Url: &pb.CallBackUrl{
+			BaseUrl:  fmt.Sprintf("%s/password", conf.Name),
+			TokenKey: "token",
+		},
 	})
 	switch status.Code(err) {
 	case codes.OK:
@@ -729,6 +732,9 @@ func main() {
 	r.Path("/login").Methods(http.MethodGet).HandlerFunc(loginFormHandler)
 	r.Path("/login").Methods(http.MethodPost).HandlerFunc(loginPostHandler)
 
+	r.Path("/password").Methods(http.MethodGet).HandlerFunc(passwordFormHandler)
+	r.Path("/password").Methods(http.MethodPost).HandlerFunc(passwordPostHandler)
+
 	entry := log.WithField("address", conf.AuthServer.String())
 	entry.Info("Start gRPC Dail")
 
@@ -746,6 +752,7 @@ func main() {
 	entry.Info("gRPC Dail done")
 
 	r.Handle("/", http.RedirectHandler(indexRedirect, http.StatusMovedPermanently))
+	r.Handle("/users/", http.RedirectHandler(indexRedirect, http.StatusMovedPermanently))
 	auth := r.PathPrefix(authPrefix).Subrouter()
 	auth.Use(cookieMW)
 	auth.HandleFunc("/{resource}/", listHandler)

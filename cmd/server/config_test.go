@@ -225,7 +225,7 @@ func TestServerConfig_listenAndServe(t *testing.T) {
 			"Healthy start",
 			fields{
 				"127.0.0.1",
-				1234,
+				9875,
 			},
 			tas,
 			false,

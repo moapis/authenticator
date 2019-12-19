@@ -22,6 +22,8 @@ import (
 	"github.com/moapis/multidb"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/boil"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type privateKey struct {
@@ -118,6 +120,10 @@ const (
 	registrationSubject = "Please verify your e-mail"
 )
 
+func (s *authServer) passwordAudience() string {
+	return fmt.Sprintf("passwords@%s", s.conf.JWT.Issuer)
+}
+
 func (s *authServer) RegisterPwUser(ctx context.Context, rd *pb.RegistrationData) (*pb.RegistrationReply, error) {
 	rt, err := s.newTx(ctx, "RegisterPwUser", false)
 	if err != nil {
@@ -129,7 +135,7 @@ func (s *authServer) RegisterPwUser(ctx context.Context, rd *pb.RegistrationData
 	if err != nil {
 		return nil, err
 	}
-	auth, err := rt.authReply(user.Email, time.Now(), nil, fmt.Sprintf("verify@%s", rt.s.conf.JWT.Issuer))
+	auth, err := rt.authReply(user.Name, time.Now(), nil, s.passwordAudience())
 	if err != nil {
 		return nil, err
 	}
@@ -163,6 +169,16 @@ func (s *authServer) AuthenticatePwUser(ctx context.Context, up *pb.UserPassword
 	return rt.userAuthReply(user, time.Now())
 }
 
+func (s *authServer) hasPasswordAudience(audiences []string) error {
+	b := s.passwordAudience()
+	for _, a := range audiences {
+		if a == b {
+			return nil
+		}
+	}
+	return status.Error(codes.Unauthenticated, "Not a passwords audience")
+}
+
 func (s *authServer) ChangeUserPw(ctx context.Context, up *pb.NewUserPassword) (*pb.ChangePwReply, error) {
 	rt, err := s.newTx(ctx, "ChangeUserPw", false)
 	if err != nil {
@@ -170,10 +186,26 @@ func (s *authServer) ChangeUserPw(ctx context.Context, up *pb.NewUserPassword) (
 	}
 	defer rt.done()
 
-	user, err := rt.authenticatePwUser(up.GetEmail(), up.GetName(), up.GetOldPassword())
-	if err != nil {
-		return nil, err
+	var user *models.User
+	if old := up.GetOldPassword(); old != "" {
+		if user, err = rt.authenticatePwUser(up.GetEmail(), up.GetName(), old); err != nil {
+			return nil, err
+		}
+	} else {
+		claims, err := rt.checkJWT(up.GetResetToken(), time.Now())
+		if err != nil {
+			return nil, err
+		}
+		if err = s.hasPasswordAudience(claims.Audiences); err != nil {
+			return nil, err
+		}
+
+		user, err = rt.findUserByEmailOrName("", claims.Subject)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	if err = rt.setUserPassword(user, up.GetNewPassword(), rand.Read); err != nil {
 		return nil, err
 	}

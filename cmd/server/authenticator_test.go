@@ -274,6 +274,63 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 	exCtx, cancel := context.WithTimeout(testCtx, -1)
 	defer cancel()
 
+	claims := &jwt.Claims{
+		KeyID: "10",
+		Registered: jwt.Registered{
+			Issuer:    "localhost",
+			Subject:   testUsers["oneGroup"].Name,
+			Audiences: []string{"passwords@localhost"},
+			Expires:   jwt.NewNumericTime(time.Now().Add(24 * time.Hour)),
+			Issued:    jwt.NewNumericTime(time.Now()),
+		},
+		Set: map[string]interface{}{
+			"user_id":   103,
+			"group_ids": []int{1, 2, 3},
+		},
+	}
+	jwtKnown, err := claims.EdDSASign([]byte(testPrivKey))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	claims = &jwt.Claims{
+		KeyID: "10",
+		Registered: jwt.Registered{
+			Issuer:    "localhost",
+			Subject:   "Nobody",
+			Audiences: []string{"passwords@localhost"},
+			Expires:   jwt.NewNumericTime(time.Now().Add(24 * time.Hour)),
+			Issued:    jwt.NewNumericTime(time.Now()),
+		},
+		Set: map[string]interface{}{
+			"user_id":   667,
+			"group_ids": []int{1, 2, 3},
+		},
+	}
+	jwtUnKnown, err := claims.EdDSASign([]byte(testPrivKey))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	claims = &jwt.Claims{
+		KeyID: "10",
+		Registered: jwt.Registered{
+			Issuer:    "localhost",
+			Subject:   testUsers["oneGroup"].Name,
+			Audiences: []string{"spanac"},
+			Expires:   jwt.NewNumericTime(time.Now().Add(24 * time.Hour)),
+			Issued:    jwt.NewNumericTime(time.Now()),
+		},
+		Set: map[string]interface{}{
+			"user_id":   103,
+			"group_ids": []int{1, 2, 3},
+		},
+	}
+	jwtWrongAud, err := claims.EdDSASign([]byte(testPrivKey))
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	type args struct {
 		ctx context.Context
 		up  *pb.NewUserPassword
@@ -316,6 +373,19 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 			false,
 		},
 		{
+			"Wrong passwd",
+			args{
+				testCtx,
+				&pb.NewUserPassword{
+					User:        &pb.NewUserPassword_Email{Email: "one@group.com"},
+					Credential:  &pb.NewUserPassword_OldPassword{OldPassword: "wrong"},
+					NewPassword: "oneGroup",
+				},
+			},
+			nil,
+			true,
+		},
+		{
 			"Empty new passwd",
 			args{
 				testCtx,
@@ -323,6 +393,45 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 					User:        &pb.NewUserPassword_Email{Email: "one@group.com"},
 					Credential:  &pb.NewUserPassword_OldPassword{OldPassword: "oneGroup"},
 					NewPassword: "",
+				},
+			},
+			nil,
+			true,
+		},
+		{
+			"Valid user and token",
+			args{
+				testCtx,
+				&pb.NewUserPassword{
+					User:        &pb.NewUserPassword_Email{Email: "one@group.com"},
+					Credential:  &pb.NewUserPassword_ResetToken{ResetToken: string(jwtKnown)},
+					NewPassword: "oneGroup",
+				},
+			},
+			&pb.ChangePwReply{Success: true},
+			false,
+		},
+		{
+			"Valid token and unknown user",
+			args{
+				testCtx,
+				&pb.NewUserPassword{
+					User:        &pb.NewUserPassword_Email{Email: "one@group.com"},
+					Credential:  &pb.NewUserPassword_ResetToken{ResetToken: string(jwtUnKnown)},
+					NewPassword: "oneGroup",
+				},
+			},
+			nil,
+			true,
+		},
+		{
+			"Valid token and wrong audience",
+			args{
+				testCtx,
+				&pb.NewUserPassword{
+					User:        &pb.NewUserPassword_Email{Email: "one@group.com"},
+					Credential:  &pb.NewUserPassword_ResetToken{ResetToken: string(jwtWrongAud)},
+					NewPassword: "oneGroup",
 				},
 			},
 			nil,

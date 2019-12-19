@@ -106,3 +106,73 @@ func loginPostHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, strings.Join([]string{redirect, "?jwt=", auth.GetJwt()}, ""), http.StatusSeeOther)
 	entry.Debug("Redirect done")
 }
+
+func passwordFormHandler(w http.ResponseWriter, r *http.Request) {
+	entry := r.Context().Value(logEntry).(*logrus.Entry).WithFields(logrus.Fields{"handler": "passwordFormHandler"})
+
+	jwt := r.URL.Query().Get("token")
+	if jwt == "" {
+		entry.Warn("Token not in URL")
+		http.Error(w, "Missing token", http.StatusUnauthorized)
+		return
+	}
+	claims, err := verificator.Token(r.Context(), jwt)
+	if err != nil {
+		entry.WithError(err).Warn("Invalid token")
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+	entry.WithField("claims", claims).Debug("Token verified")
+
+	tmpl, err := template.ParseFiles(tmplPaths("password.html", "base.html")...)
+	if isInternalError(entry, w, err) {
+		return
+	}
+	if err = tmpl.ExecuteTemplate(w, "base",
+		tmplData{
+			Title:   "Set new password",
+			Content: claims,
+		},
+	); err != nil {
+		entry.WithError(err).Error("ExecuteTemplate")
+	}
+	entry.Debug("Served")
+}
+
+func passwordPostHandler(w http.ResponseWriter, r *http.Request) {
+	entry := r.Context().Value(logEntry).(*logrus.Entry).WithFields(logrus.Fields{"handler": "passwordPostHandler"})
+
+	if err := r.ParseForm(); err != nil {
+		entry.WithError(err).Warn("Bad request")
+		http.Error(w, "Invalid post data", http.StatusBadRequest)
+	}
+	jwt, password := r.FormValue("token"), r.FormValue("password")
+	if jwt == "" || password == "" {
+		entry.WithFields(logrus.Fields{"token": jwt, "password": password}).Warn("Missing data")
+		http.Error(w, "Missing some data", http.StatusBadRequest)
+	}
+
+	reply, err := authClient.ChangeUserPw(r.Context(),
+		&pb.NewUserPassword{
+			NewPassword: password,
+			Credential:  &pb.NewUserPassword_ResetToken{ResetToken: jwt},
+		},
+	)
+	if err != nil {
+		entry = entry.WithError(err)
+		s, ok := status.FromError(err)
+		if !ok || s.Code() != codes.Unauthenticated {
+			entry.Error("gRPC call")
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		} else {
+			entry.Warn("gRPC call")
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+		}
+		return
+	}
+	entry.WithField("success", reply.GetSuccess()).Info("Password reset")
+	if _, err := w.Write([]byte("Password set successfully!\r\nYou can now close this window.")); err != nil {
+		entry.WithError(err).Error("Writing response")
+	}
+	entry.Debug("Served")
+}
