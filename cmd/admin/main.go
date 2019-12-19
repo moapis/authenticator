@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -165,7 +166,7 @@ func aToiMap(entry *logrus.Entry, vars map[string]string) map[string]int {
 
 func deleteHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	entry := log.WithFields(logrus.Fields{"handler": "deleteHandler", "vars": vars})
+	entry := r.Context().Value(logEntry).(*logrus.Entry).WithFields(logrus.Fields{"handler": "deleteHandler", "vars": vars})
 	id := aToiMap(entry, vars)["id"]
 
 	tx, err := mdb.MasterTx(r.Context(), nil)
@@ -212,7 +213,7 @@ type breadCrumb struct {
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	entry := log.WithFields(logrus.Fields{"handler": "listHandler", "vars": vars})
+	entry := r.Context().Value(logEntry).(*logrus.Entry).WithFields(logrus.Fields{"handler": "listHandler", "vars": vars})
 
 	tx, err := mdb.MultiTx(r.Context(), &sql.TxOptions{ReadOnly: true}, conf.SQLRoutines)
 	if isInternalError(entry, w, err) {
@@ -262,7 +263,7 @@ type userView struct {
 
 func userHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	entry := log.WithFields(logrus.Fields{"handler": "userHandler", "vars": vars})
+	entry := r.Context().Value(logEntry).(*logrus.Entry).WithFields(logrus.Fields{"handler": "userHandler", "vars": vars})
 	id := aToiMap(entry, vars)["id"]
 
 	tx, err := mdb.MultiTx(r.Context(), &sql.TxOptions{ReadOnly: true}, conf.SQLRoutines)
@@ -307,7 +308,7 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 
 func removeUserRelationHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	entry := log.WithFields(logrus.Fields{"handler": "removeUserRelationHandler", "vars": vars})
+	entry := r.Context().Value(logEntry).(*logrus.Entry).WithFields(logrus.Fields{"handler": "removeUserRelationHandler", "vars": vars})
 	iv := aToiMap(entry, vars)
 
 	tx, err := mdb.MasterTx(r.Context(), nil)
@@ -344,7 +345,7 @@ func removeUserRelationHandler(w http.ResponseWriter, r *http.Request) {
 
 func newEntityFormHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	entry := log.WithFields(logrus.Fields{"handler": "newEntityFormHandler", "vars": vars})
+	entry := r.Context().Value(logEntry).(*logrus.Entry).WithFields(logrus.Fields{"handler": "newEntityFormHandler", "vars": vars})
 
 	var (
 		tmpl *template.Template
@@ -437,17 +438,17 @@ func newRelation(w http.ResponseWriter, r *http.Request, entry *logrus.Entry, re
 }
 
 func newGroupPostHandler(w http.ResponseWriter, r *http.Request) {
-	entry := log.WithFields(logrus.Fields{"handler": "newGroupPostHandler"})
+	entry := r.Context().Value(logEntry).(*logrus.Entry).WithFields(logrus.Fields{"handler": "newGroupPostHandler"})
 	newRelation(w, r, entry, "groups")
 }
 
 func newAudiencePostHandler(w http.ResponseWriter, r *http.Request) {
-	entry := log.WithFields(logrus.Fields{"handler": "newAudiencePostHandler"})
+	entry := r.Context().Value(logEntry).(*logrus.Entry).WithFields(logrus.Fields{"handler": "newAudiencePostHandler"})
 	newRelation(w, r, entry, "audiences")
 }
 
 func newUserPostHandler(w http.ResponseWriter, r *http.Request) {
-	entry := log.WithFields(logrus.Fields{"handler": "newUserPostHandler"})
+	entry := r.Context().Value(logEntry).(*logrus.Entry).WithFields(logrus.Fields{"handler": "newUserPostHandler"})
 	data, err := parseForm(w, r, []string{"email", "name"})
 	if err != nil {
 		entry.WithError(err).Warn("parseForm")
@@ -499,7 +500,7 @@ const (
 
 func listAvailableRelationsHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	entry := log.WithFields(logrus.Fields{"handler": "listAvailableRelationsHandler", "vars": vars})
+	entry := r.Context().Value(logEntry).(*logrus.Entry).WithFields(logrus.Fields{"handler": "listAvailableRelationsHandler", "vars": vars})
 	iv := aToiMap(entry, vars)
 
 	tx, err := mdb.MultiTx(r.Context(), nil, conf.SQLRoutines)
@@ -550,7 +551,7 @@ func listAvailableRelationsHandler(w http.ResponseWriter, r *http.Request) {
 
 func setUserRelationHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	entry := log.WithFields(logrus.Fields{"handler": "setUserRelation", "vars": vars})
+	entry := r.Context().Value(logEntry).(*logrus.Entry).WithFields(logrus.Fields{"handler": "setUserRelation", "vars": vars})
 	iv := aToiMap(entry, vars)
 
 	tx, err := mdb.MasterTx(r.Context(), nil)
@@ -585,19 +586,41 @@ func setUserRelationHandler(w http.ResponseWriter, r *http.Request) {
 	entry.Debug("Served")
 }
 
+type logEntryType string
+
+var logEntry = logEntryType("entry")
+
+func contextMW(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+		defer cancel()
+
+		entry := log.WithFields(logrus.Fields{"url": r.RequestURI, "reqID": rand.Int63()})
+		entry.Info("Request start")
+		next.ServeHTTP(w, r.WithContext(context.WithValue(ctx, logEntry, entry)))
+
+		entry.WithField("duration", time.Now().Sub(start)).Info("Request finished")
+	})
+}
+
 const (
 	redirectBase = "/login?redirect=%s"
 )
 
 func tokenToCookieMW(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		entry := r.Context().Value(logEntry).(*logrus.Entry).WithField("handler", "tokenToCookieMW")
+
 		jwt := r.URL.Query().Get("jwt")
-		if jwt == "" { // Jwt not in URL, skip
+		if jwt == "" {
+			entry.Debug("Jwt not in URL, skipping")
 			next.ServeHTTP(w, r)
 			return
 		}
 		claims, err := verificator.Token(r.Context(), jwt)
 		if err != nil {
+			entry.WithError(err).Warn("Redirect to login")
 			http.Redirect(w, r, fmt.Sprintf(redirectBase, r.RequestURI), http.StatusSeeOther)
 			return
 		}
@@ -607,8 +630,10 @@ func tokenToCookieMW(next http.Handler) http.Handler {
 			Path:    "/",
 			Expires: claims.Expires.Time(),
 		}
+		entry.WithField("cookie", cookie).Debug("SetCookie")
 		http.SetCookie(w, cookie)
 		r.AddCookie(cookie)
+
 		next.ServeHTTP(w, r)
 	})
 }
@@ -633,18 +658,20 @@ func freshCookie(ctx context.Context, jwt string) (*http.Cookie, error) {
 
 func cookieMW(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		entry := r.Context().Value(logEntry).(*logrus.Entry).WithField("handler", "cookieMW")
+
 		redirect := fmt.Sprintf("/login?redirect=%s", r.RequestURI)
 		cookie, err := r.Cookie("jwt")
 		if err != nil {
-			log.WithError(err).Warn("cookieMW")
+			entry.WithError(err).Warn("Redirect to login")
 			http.Redirect(w, r, redirect, http.StatusSeeOther)
 			return
 		}
-		log.WithField("cookie", cookie).Debug("cookieMW")
+		entry.WithField("cookie", cookie).Debug("Found cookie")
 
 		claims, err := verificator.Token(r.Context(), cookie.Value)
 		if err != nil {
-			log.WithError(err).Warn("cookieMW")
+			entry.WithError(err).Warn("Redirect to login")
 			http.Redirect(w, r, redirect, http.StatusSeeOther)
 			return
 		}
@@ -653,9 +680,21 @@ func cookieMW(next http.Handler) http.Handler {
 			if isInternalError(logrus.NewEntry(log), w, err) {
 				return
 			}
-			log.Debug("Fresh cookie")
+			entry.WithField("cookie", cookie).Debug("Fresh cookie")
 			http.SetCookie(w, cookie)
 		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func catchMW(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if v := recover(); v != nil {
+				log.WithFields(logrus.Fields{"value": v, "url": r.RequestURI}).Error("Recovered from panic")
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+			}
+		}()
 		next.ServeHTTP(w, r)
 	})
 }
@@ -678,6 +717,8 @@ func main() {
 	}
 
 	r := mux.NewRouter()
+	r.Use(catchMW)
+	r.Use(contextMW)
 	r.Use(tokenToCookieMW)
 
 	fs := http.FileServer(http.Dir(conf.AdminLTE))

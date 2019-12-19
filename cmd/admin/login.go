@@ -59,7 +59,7 @@ func loginTemplate(entry *logrus.Entry, w http.ResponseWriter, redirect, errMsg 
 }
 
 func loginFormHandler(w http.ResponseWriter, r *http.Request) {
-	entry := log.WithFields(logrus.Fields{"handler": "loginFormHandler"})
+	entry := r.Context().Value(logEntry).(*logrus.Entry).WithFields(logrus.Fields{"handler": "loginFormHandler"})
 	redirect, err := loginParseForm(w, r)
 	if err != nil {
 		entry.WithError(err).Warn("Bad request")
@@ -70,7 +70,7 @@ func loginFormHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func loginPostHandler(w http.ResponseWriter, r *http.Request) {
-	entry := log.WithFields(logrus.Fields{"handler": "loginPostHandler"})
+	entry := r.Context().Value(logEntry).(*logrus.Entry).WithFields(logrus.Fields{"handler": "loginPostHandler"})
 	redirect, err := loginParseForm(w, r)
 	if err != nil {
 		entry.WithError(err).Warn("Bad request")
