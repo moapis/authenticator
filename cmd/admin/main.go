@@ -731,9 +731,14 @@ func main() {
 
 	entry := log.WithField("address", conf.AuthServer.String())
 	entry.Info("Start gRPC Dail")
-	cc, err := grpc.Dial(conf.AuthServer.String(), grpc.WithBlock(), grpc.WithInsecure())
-	if err != nil {
-		entry.WithError(err).Fatal("gRPC Dail")
+
+	var cc *grpc.ClientConn
+	for cc == nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		if cc, err = grpc.DialContext(ctx, conf.AuthServer.String(), grpc.WithBlock(), grpc.WithInsecure()); err != nil {
+			entry.WithError(err).Error("gRPC Dail")
+		}
+		cancel()
 	}
 	defer cc.Close()
 	authClient = pb.NewAuthenticatorClient(cc)
