@@ -22,9 +22,5 @@
       "connect_timeout": 30
     }
   },
-  "sqlroutines": 1,
-  "jwt": {
-    "issuer": "localhost",
-    "expiry": 3600000000000
-  }
+  "sqlroutines": 1
 }

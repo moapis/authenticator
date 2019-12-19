@@ -585,31 +585,77 @@ func setUserRelationHandler(w http.ResponseWriter, r *http.Request) {
 	entry.Debug("Served")
 }
 
-func tokenMW(next http.Handler) http.Handler {
+const (
+	redirectBase = "/login?redirect=%s"
+)
+
+func tokenToCookieMW(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		redirect := fmt.Sprintf("/login?redirect=%s", r.RequestURI)
 		jwt := r.URL.Query().Get("jwt")
-		if jwt == "" {
-			c, err := r.Cookie("jwt")
-			if err != nil {
-				log.WithError(err).Warn("tokenMw")
-				http.Redirect(w, r, redirect, http.StatusSeeOther)
-				return
-			}
-			log.WithField("cookie", c).Debug("tokenMW")
-			jwt = c.Value
+		if jwt == "" { // Jwt not in URL, skip
+			next.ServeHTTP(w, r)
+			return
 		}
 		claims, err := verificator.Token(r.Context(), jwt)
 		if err != nil {
-			http.Redirect(w, r, redirect, http.StatusSeeOther)
+			http.Redirect(w, r, fmt.Sprintf(redirectBase, r.RequestURI), http.StatusSeeOther)
 			return
 		}
-		http.SetCookie(w, &http.Cookie{
+		cookie := &http.Cookie{
 			Name:    "jwt",
 			Value:   jwt,
 			Path:    "/",
 			Expires: claims.Expires.Time(),
-		})
+		}
+		http.SetCookie(w, cookie)
+		r.AddCookie(cookie)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func freshCookie(ctx context.Context, jwt string) (*http.Cookie, error) {
+	auth, err := authClient.RefreshToken(ctx, &pb.AuthReply{Jwt: jwt})
+	if err != nil {
+		return nil, err
+	}
+	jwt = auth.GetJwt()
+	claims, err := verificator.Token(ctx, jwt)
+	if err != nil {
+		return nil, err
+	}
+	return &http.Cookie{
+		Name:    "jwt",
+		Value:   jwt,
+		Path:    "/",
+		Expires: claims.Expires.Time(),
+	}, nil
+}
+
+func cookieMW(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		redirect := fmt.Sprintf("/login?redirect=%s", r.RequestURI)
+		cookie, err := r.Cookie("jwt")
+		if err != nil {
+			log.WithError(err).Warn("cookieMW")
+			http.Redirect(w, r, redirect, http.StatusSeeOther)
+			return
+		}
+		log.WithField("cookie", cookie).Debug("cookieMW")
+
+		claims, err := verificator.Token(r.Context(), cookie.Value)
+		if err != nil {
+			log.WithError(err).Warn("cookieMW")
+			http.Redirect(w, r, redirect, http.StatusSeeOther)
+			return
+		}
+		if claims.Expires.Time().Before(time.Now().Add(12 * time.Hour)) {
+			cookie, err = freshCookie(r.Context(), cookie.Value)
+			if isInternalError(logrus.NewEntry(log), w, err) {
+				return
+			}
+			log.Debug("Fresh cookie")
+			http.SetCookie(w, cookie)
+		}
 		next.ServeHTTP(w, r)
 	})
 }
@@ -632,6 +678,7 @@ func main() {
 	}
 
 	r := mux.NewRouter()
+	r.Use(tokenToCookieMW)
 
 	fs := http.FileServer(http.Dir(conf.AdminLTE))
 	r.PathPrefix("/dist/").Handler(fs)
@@ -654,7 +701,7 @@ func main() {
 
 	r.Handle("/", http.RedirectHandler(indexRedirect, http.StatusMovedPermanently))
 	auth := r.PathPrefix(authPrefix).Subrouter()
-	auth.Use(tokenMW)
+	auth.Use(cookieMW)
 	auth.HandleFunc("/{resource}/", listHandler)
 
 	auth.HandleFunc("/users/{id}/", userHandler)
