@@ -24,14 +24,9 @@ A stand-alone gRPC based authentication API. Easily integrate authentication int
 
 ## Status
 
-This project is still under heavy development. We've recently deployed a version of the gRPC server and are solving the first flux of bugs. The gRPC service and `verify` library can be considere in Beta stage. The web interfaces for admin and login are still pretty primitive.
+This project is still under heavy development. We've recently deployed a **beta** version of the gRPC and admin server.
 
-### Todo
-
- - Write an authorization scheme which can be managed by the system admin to (dis)allow access to certain gRPC methods. This impplementation should be easily reusable on servers that rely on Authenticator;
- - Finish the admin interface;
-
- ## Future plans
+## Future plans
 
  - Two factor authentication
  - OAuth2 provider support
