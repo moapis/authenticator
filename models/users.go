@@ -56,11 +56,11 @@ var UserWhere = struct {
 	CreatedAt whereHelpertime_Time
 	UpdatedAt whereHelpertime_Time
 }{
-	ID:        whereHelperint{field: "\"users\".\"id\""},
-	Email:     whereHelperstring{field: "\"users\".\"email\""},
-	Name:      whereHelperstring{field: "\"users\".\"name\""},
-	CreatedAt: whereHelpertime_Time{field: "\"users\".\"created_at\""},
-	UpdatedAt: whereHelpertime_Time{field: "\"users\".\"updated_at\""},
+	ID:        whereHelperint{field: "\"auth\".\"users\".\"id\""},
+	Email:     whereHelperstring{field: "\"auth\".\"users\".\"email\""},
+	Name:      whereHelperstring{field: "\"auth\".\"users\".\"name\""},
+	CreatedAt: whereHelpertime_Time{field: "\"auth\".\"users\".\"created_at\""},
+	UpdatedAt: whereHelpertime_Time{field: "\"auth\".\"users\".\"updated_at\""},
 }
 
 // UserRels is where relationship names are stored.
@@ -380,7 +380,7 @@ func (o *User) Password(mods ...qm.QueryMod) passwordQuery {
 	queryMods = append(queryMods, mods...)
 
 	query := Passwords(queryMods...)
-	queries.SetFrom(query.Query, "\"passwords\"")
+	queries.SetFrom(query.Query, "\"auth\".\"passwords\"")
 
 	return query
 }
@@ -393,15 +393,15 @@ func (o *User) Audiences(mods ...qm.QueryMod) audienceQuery {
 	}
 
 	queryMods = append(queryMods,
-		qm.InnerJoin("\"user_audiences\" on \"audiences\".\"id\" = \"user_audiences\".\"audience_id\""),
-		qm.Where("\"user_audiences\".\"user_id\"=?", o.ID),
+		qm.InnerJoin("\"auth\".\"user_audiences\" on \"auth\".\"audiences\".\"id\" = \"auth\".\"user_audiences\".\"audience_id\""),
+		qm.Where("\"auth\".\"user_audiences\".\"user_id\"=?", o.ID),
 	)
 
 	query := Audiences(queryMods...)
-	queries.SetFrom(query.Query, "\"audiences\"")
+	queries.SetFrom(query.Query, "\"auth\".\"audiences\"")
 
 	if len(queries.GetSelect(query.Query)) == 0 {
-		queries.SetSelect(query.Query, []string{"\"audiences\".*"})
+		queries.SetSelect(query.Query, []string{"\"auth\".\"audiences\".*"})
 	}
 
 	return query
@@ -415,15 +415,15 @@ func (o *User) Groups(mods ...qm.QueryMod) groupQuery {
 	}
 
 	queryMods = append(queryMods,
-		qm.InnerJoin("\"user_groups\" on \"groups\".\"id\" = \"user_groups\".\"group_id\""),
-		qm.Where("\"user_groups\".\"user_id\"=?", o.ID),
+		qm.InnerJoin("\"auth\".\"user_groups\" on \"auth\".\"groups\".\"id\" = \"auth\".\"user_groups\".\"group_id\""),
+		qm.Where("\"auth\".\"user_groups\".\"user_id\"=?", o.ID),
 	)
 
 	query := Groups(queryMods...)
-	queries.SetFrom(query.Query, "\"groups\"")
+	queries.SetFrom(query.Query, "\"auth\".\"groups\"")
 
 	if len(queries.GetSelect(query.Query)) == 0 {
-		queries.SetSelect(query.Query, []string{"\"groups\".*"})
+		queries.SetSelect(query.Query, []string{"\"auth\".\"groups\".*"})
 	}
 
 	return query
@@ -468,7 +468,7 @@ func (userL) LoadPassword(ctx context.Context, e boil.ContextExecutor, singular 
 		return nil
 	}
 
-	query := NewQuery(qm.From(`passwords`), qm.WhereIn(`passwords.user_id in ?`, args...))
+	query := NewQuery(qm.From(`auth.passwords`), qm.WhereIn(`auth.passwords.user_id in ?`, args...))
 	if mods != nil {
 		mods.Apply(query)
 	}
@@ -567,9 +567,9 @@ func (userL) LoadAudiences(ctx context.Context, e boil.ContextExecutor, singular
 	}
 
 	query := NewQuery(
-		qm.Select("\"audiences\".*, \"a\".\"user_id\""),
-		qm.From("\"audiences\""),
-		qm.InnerJoin("\"user_audiences\" as \"a\" on \"audiences\".\"id\" = \"a\".\"audience_id\""),
+		qm.Select("\"auth\".\"audiences\".*, \"a\".\"user_id\""),
+		qm.From("\"auth\".\"audiences\""),
+		qm.InnerJoin("\"auth\".\"user_audiences\" as \"a\" on \"auth\".\"audiences\".\"id\" = \"a\".\"audience_id\""),
 		qm.WhereIn("\"a\".\"user_id\" in ?", args...),
 	)
 	if mods != nil {
@@ -682,9 +682,9 @@ func (userL) LoadGroups(ctx context.Context, e boil.ContextExecutor, singular bo
 	}
 
 	query := NewQuery(
-		qm.Select("\"groups\".*, \"a\".\"user_id\""),
-		qm.From("\"groups\""),
-		qm.InnerJoin("\"user_groups\" as \"a\" on \"groups\".\"id\" = \"a\".\"group_id\""),
+		qm.Select("\"auth\".\"groups\".*, \"a\".\"user_id\""),
+		qm.From("\"auth\".\"groups\""),
+		qm.InnerJoin("\"auth\".\"user_groups\" as \"a\" on \"auth\".\"groups\".\"id\" = \"a\".\"group_id\""),
 		qm.WhereIn("\"a\".\"user_id\" in ?", args...),
 	)
 	if mods != nil {
@@ -771,7 +771,7 @@ func (o *User) SetPassword(ctx context.Context, exec boil.ContextExecutor, inser
 		}
 	} else {
 		updateQuery := fmt.Sprintf(
-			"UPDATE \"passwords\" SET %s WHERE %s",
+			"UPDATE \"auth\".\"passwords\" SET %s WHERE %s",
 			strmangle.SetParamNames("\"", "\"", 1, []string{"user_id"}),
 			strmangle.WhereClause("\"", "\"", 2, passwordPrimaryKeyColumns),
 		)
@@ -823,7 +823,7 @@ func (o *User) AddAudiences(ctx context.Context, exec boil.ContextExecutor, inse
 	}
 
 	for _, rel := range related {
-		query := "insert into \"user_audiences\" (\"user_id\", \"audience_id\") values ($1, $2)"
+		query := "insert into \"auth\".\"user_audiences\" (\"user_id\", \"audience_id\") values ($1, $2)"
 		values := []interface{}{o.ID, rel.ID}
 
 		if boil.IsDebug(ctx) {
@@ -863,7 +863,7 @@ func (o *User) AddAudiences(ctx context.Context, exec boil.ContextExecutor, inse
 // Replaces o.R.Audiences with related.
 // Sets related.R.Users's Audiences accordingly.
 func (o *User) SetAudiences(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Audience) error {
-	query := "delete from \"user_audiences\" where \"user_id\" = $1"
+	query := "delete from \"auth\".\"user_audiences\" where \"user_id\" = $1"
 	values := []interface{}{o.ID}
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -888,7 +888,7 @@ func (o *User) SetAudiences(ctx context.Context, exec boil.ContextExecutor, inse
 func (o *User) RemoveAudiences(ctx context.Context, exec boil.ContextExecutor, related ...*Audience) error {
 	var err error
 	query := fmt.Sprintf(
-		"delete from \"user_audiences\" where \"user_id\" = $1 and \"audience_id\" in (%s)",
+		"delete from \"auth\".\"user_audiences\" where \"user_id\" = $1 and \"audience_id\" in (%s)",
 		strmangle.Placeholders(dialect.UseIndexPlaceholders, len(related), 2, 1),
 	)
 	values := []interface{}{o.ID}
@@ -963,7 +963,7 @@ func (o *User) AddGroups(ctx context.Context, exec boil.ContextExecutor, insert 
 	}
 
 	for _, rel := range related {
-		query := "insert into \"user_groups\" (\"user_id\", \"group_id\") values ($1, $2)"
+		query := "insert into \"auth\".\"user_groups\" (\"user_id\", \"group_id\") values ($1, $2)"
 		values := []interface{}{o.ID, rel.ID}
 
 		if boil.IsDebug(ctx) {
@@ -1003,7 +1003,7 @@ func (o *User) AddGroups(ctx context.Context, exec boil.ContextExecutor, insert 
 // Replaces o.R.Groups with related.
 // Sets related.R.Users's Groups accordingly.
 func (o *User) SetGroups(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Group) error {
-	query := "delete from \"user_groups\" where \"user_id\" = $1"
+	query := "delete from \"auth\".\"user_groups\" where \"user_id\" = $1"
 	values := []interface{}{o.ID}
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1028,7 +1028,7 @@ func (o *User) SetGroups(ctx context.Context, exec boil.ContextExecutor, insert 
 func (o *User) RemoveGroups(ctx context.Context, exec boil.ContextExecutor, related ...*Group) error {
 	var err error
 	query := fmt.Sprintf(
-		"delete from \"user_groups\" where \"user_id\" = $1 and \"group_id\" in (%s)",
+		"delete from \"auth\".\"user_groups\" where \"user_id\" = $1 and \"group_id\" in (%s)",
 		strmangle.Placeholders(dialect.UseIndexPlaceholders, len(related), 2, 1),
 	)
 	values := []interface{}{o.ID}
@@ -1090,7 +1090,7 @@ func removeGroupsFromUsersSlice(o *User, related []*Group) {
 
 // Users retrieves all the records using an executor.
 func Users(mods ...qm.QueryMod) userQuery {
-	mods = append(mods, qm.From("\"users\""))
+	mods = append(mods, qm.From("\"auth\".\"users\""))
 	return userQuery{NewQuery(mods...)}
 }
 
@@ -1104,7 +1104,7 @@ func FindUser(ctx context.Context, exec boil.ContextExecutor, iD int, selectCols
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"users\" where \"id\"=$1", sel,
+		"select %s from \"auth\".\"users\" where \"id\"=$1", sel,
 	)
 
 	q := queries.Raw(query, iD)
@@ -1167,9 +1167,9 @@ func (o *User) Insert(ctx context.Context, exec boil.ContextExecutor, columns bo
 			return err
 		}
 		if len(wl) != 0 {
-			cache.query = fmt.Sprintf("INSERT INTO \"users\" (\"%s\") %%sVALUES (%s)%%s", strings.Join(wl, "\",\""), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
+			cache.query = fmt.Sprintf("INSERT INTO \"auth\".\"users\" (\"%s\") %%sVALUES (%s)%%s", strings.Join(wl, "\",\""), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
 		} else {
-			cache.query = "INSERT INTO \"users\" %sDEFAULT VALUES%s"
+			cache.query = "INSERT INTO \"auth\".\"users\" %sDEFAULT VALUES%s"
 		}
 
 		var queryOutput, queryReturning string
@@ -1241,7 +1241,7 @@ func (o *User) Update(ctx context.Context, exec boil.ContextExecutor, columns bo
 			return 0, errors.New("models: unable to update users, could not build whitelist")
 		}
 
-		cache.query = fmt.Sprintf("UPDATE \"users\" SET %s WHERE %s",
+		cache.query = fmt.Sprintf("UPDATE \"auth\".\"users\" SET %s WHERE %s",
 			strmangle.SetParamNames("\"", "\"", 1, wl),
 			strmangle.WhereClause("\"", "\"", len(wl)+1, userPrimaryKeyColumns),
 		)
@@ -1322,7 +1322,7 @@ func (o UserSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor, col
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := fmt.Sprintf("UPDATE \"users\" SET %s WHERE %s",
+	sql := fmt.Sprintf("UPDATE \"auth\".\"users\" SET %s WHERE %s",
 		strmangle.SetParamNames("\"", "\"", 1, colNames),
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), len(colNames)+1, userPrimaryKeyColumns, len(o)))
 
@@ -1419,7 +1419,7 @@ func (o *User) Upsert(ctx context.Context, exec boil.ContextExecutor, updateOnCo
 			conflict = make([]string, len(userPrimaryKeyColumns))
 			copy(conflict, userPrimaryKeyColumns)
 		}
-		cache.query = buildUpsertQueryPostgres(dialect, "\"users\"", updateOnConflict, ret, update, conflict, insert)
+		cache.query = buildUpsertQueryPostgres(dialect, "\"auth\".\"users\"", updateOnConflict, ret, update, conflict, insert)
 
 		cache.valueMapping, err = queries.BindMapping(userType, userMapping, insert)
 		if err != nil {
@@ -1478,7 +1478,7 @@ func (o *User) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, er
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), userPrimaryKeyMapping)
-	sql := "DELETE FROM \"users\" WHERE \"id\"=$1"
+	sql := "DELETE FROM \"auth\".\"users\" WHERE \"id\"=$1"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1543,7 +1543,7 @@ func (o UserSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (in
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "DELETE FROM \"users\" WHERE " +
+	sql := "DELETE FROM \"auth\".\"users\" WHERE " +
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, userPrimaryKeyColumns, len(o))
 
 	if boil.IsDebug(ctx) {
@@ -1598,7 +1598,7 @@ func (o *UserSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) er
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "SELECT \"users\".* FROM \"users\" WHERE " +
+	sql := "SELECT \"auth\".\"users\".* FROM \"auth\".\"users\" WHERE " +
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, userPrimaryKeyColumns, len(*o))
 
 	q := queries.Raw(sql, args...)
@@ -1616,7 +1616,7 @@ func (o *UserSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) er
 // UserExists checks if the User row exists.
 func UserExists(ctx context.Context, exec boil.ContextExecutor, iD int) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"users\" where \"id\"=$1 limit 1)"
+	sql := "select exists(select 1 from \"auth\".\"users\" where \"id\"=$1 limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)

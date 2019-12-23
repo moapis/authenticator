@@ -526,11 +526,11 @@ func testAudienceToManyUsers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = tx.Exec("insert into \"user_audiences\" (\"audience_id\", \"user_id\") values ($1, $2)", a.ID, b.ID)
+	_, err = tx.Exec("insert into \"auth\".\"user_audiences\" (\"audience_id\", \"user_id\") values ($1, $2)", a.ID, b.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tx.Exec("insert into \"user_audiences\" (\"audience_id\", \"user_id\") values ($1, $2)", a.ID, c.ID)
+	_, err = tx.Exec("insert into \"auth\".\"user_audiences\" (\"audience_id\", \"user_id\") values ($1, $2)", a.ID, c.ID)
 	if err != nil {
 		t.Fatal(err)
 	}

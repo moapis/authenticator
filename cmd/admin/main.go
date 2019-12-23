@@ -485,18 +485,18 @@ func newUserPostHandler(w http.ResponseWriter, r *http.Request) {
 const (
 	availableGroupsQuery = `
 	select * 
-	from groups
+	from auth.groups
 	where id not in (
 		select group_id
-		from user_groups
+		from auth.user_groups
 		where user_id = $1
 	);`
 	availableAudiencesQuery = `
 	select * 
-	from audiences
+	from auth.audiences
 	where id not in (
 		select audience_id
-		from user_audiences
+		from auth.user_audiences
 		where user_id = $1
 	);`
 )

@@ -57,9 +57,9 @@ var JWTKeyWhere = struct {
 	PublicKey whereHelper__byte
 	CreatedAt whereHelpertime_Time
 }{
-	ID:        whereHelperint{field: "\"jwt_keys\".\"id\""},
-	PublicKey: whereHelper__byte{field: "\"jwt_keys\".\"public_key\""},
-	CreatedAt: whereHelpertime_Time{field: "\"jwt_keys\".\"created_at\""},
+	ID:        whereHelperint{field: "\"auth\".\"jwt_keys\".\"id\""},
+	PublicKey: whereHelper__byte{field: "\"auth\".\"jwt_keys\".\"public_key\""},
+	CreatedAt: whereHelpertime_Time{field: "\"auth\".\"jwt_keys\".\"created_at\""},
 }
 
 // JWTKeyRels is where relationship names are stored.
@@ -362,7 +362,7 @@ func (q jwtKeyQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (boo
 
 // JWTKeys retrieves all the records using an executor.
 func JWTKeys(mods ...qm.QueryMod) jwtKeyQuery {
-	mods = append(mods, qm.From("\"jwt_keys\""))
+	mods = append(mods, qm.From("\"auth\".\"jwt_keys\""))
 	return jwtKeyQuery{NewQuery(mods...)}
 }
 
@@ -376,7 +376,7 @@ func FindJWTKey(ctx context.Context, exec boil.ContextExecutor, iD int, selectCo
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"jwt_keys\" where \"id\"=$1", sel,
+		"select %s from \"auth\".\"jwt_keys\" where \"id\"=$1", sel,
 	)
 
 	q := queries.Raw(query, iD)
@@ -436,9 +436,9 @@ func (o *JWTKey) Insert(ctx context.Context, exec boil.ContextExecutor, columns 
 			return err
 		}
 		if len(wl) != 0 {
-			cache.query = fmt.Sprintf("INSERT INTO \"jwt_keys\" (\"%s\") %%sVALUES (%s)%%s", strings.Join(wl, "\",\""), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
+			cache.query = fmt.Sprintf("INSERT INTO \"auth\".\"jwt_keys\" (\"%s\") %%sVALUES (%s)%%s", strings.Join(wl, "\",\""), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
 		} else {
-			cache.query = "INSERT INTO \"jwt_keys\" %sDEFAULT VALUES%s"
+			cache.query = "INSERT INTO \"auth\".\"jwt_keys\" %sDEFAULT VALUES%s"
 		}
 
 		var queryOutput, queryReturning string
@@ -504,7 +504,7 @@ func (o *JWTKey) Update(ctx context.Context, exec boil.ContextExecutor, columns 
 			return 0, errors.New("models: unable to update jwt_keys, could not build whitelist")
 		}
 
-		cache.query = fmt.Sprintf("UPDATE \"jwt_keys\" SET %s WHERE %s",
+		cache.query = fmt.Sprintf("UPDATE \"auth\".\"jwt_keys\" SET %s WHERE %s",
 			strmangle.SetParamNames("\"", "\"", 1, wl),
 			strmangle.WhereClause("\"", "\"", len(wl)+1, jwtKeyPrimaryKeyColumns),
 		)
@@ -585,7 +585,7 @@ func (o JWTKeySlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor, c
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := fmt.Sprintf("UPDATE \"jwt_keys\" SET %s WHERE %s",
+	sql := fmt.Sprintf("UPDATE \"auth\".\"jwt_keys\" SET %s WHERE %s",
 		strmangle.SetParamNames("\"", "\"", 1, colNames),
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), len(colNames)+1, jwtKeyPrimaryKeyColumns, len(o)))
 
@@ -681,7 +681,7 @@ func (o *JWTKey) Upsert(ctx context.Context, exec boil.ContextExecutor, updateOn
 			conflict = make([]string, len(jwtKeyPrimaryKeyColumns))
 			copy(conflict, jwtKeyPrimaryKeyColumns)
 		}
-		cache.query = buildUpsertQueryPostgres(dialect, "\"jwt_keys\"", updateOnConflict, ret, update, conflict, insert)
+		cache.query = buildUpsertQueryPostgres(dialect, "\"auth\".\"jwt_keys\"", updateOnConflict, ret, update, conflict, insert)
 
 		cache.valueMapping, err = queries.BindMapping(jwtKeyType, jwtKeyMapping, insert)
 		if err != nil {
@@ -740,7 +740,7 @@ func (o *JWTKey) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, 
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), jwtKeyPrimaryKeyMapping)
-	sql := "DELETE FROM \"jwt_keys\" WHERE \"id\"=$1"
+	sql := "DELETE FROM \"auth\".\"jwt_keys\" WHERE \"id\"=$1"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -805,7 +805,7 @@ func (o JWTKeySlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "DELETE FROM \"jwt_keys\" WHERE " +
+	sql := "DELETE FROM \"auth\".\"jwt_keys\" WHERE " +
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, jwtKeyPrimaryKeyColumns, len(o))
 
 	if boil.IsDebug(ctx) {
@@ -860,7 +860,7 @@ func (o *JWTKeySlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) 
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "SELECT \"jwt_keys\".* FROM \"jwt_keys\" WHERE " +
+	sql := "SELECT \"auth\".\"jwt_keys\".* FROM \"auth\".\"jwt_keys\" WHERE " +
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, jwtKeyPrimaryKeyColumns, len(*o))
 
 	q := queries.Raw(sql, args...)
@@ -878,7 +878,7 @@ func (o *JWTKeySlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) 
 // JWTKeyExists checks if the JWTKey row exists.
 func JWTKeyExists(ctx context.Context, exec boil.ContextExecutor, iD int) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"jwt_keys\" where \"id\"=$1 limit 1)"
+	sql := "select exists(select 1 from \"auth\".\"jwt_keys\" where \"id\"=$1 limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)

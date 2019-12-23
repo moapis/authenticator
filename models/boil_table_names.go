@@ -7,7 +7,6 @@ var TableNames = struct {
 	Audiences     string
 	Groups        string
 	JWTKeys       string
-	Migrations    string
 	Passwords     string
 	UserAudiences string
 	UserGroups    string
@@ -16,7 +15,6 @@ var TableNames = struct {
 	Audiences:     "audiences",
 	Groups:        "groups",
 	JWTKeys:       "jwt_keys",
-	Migrations:    "migrations",
 	Passwords:     "passwords",
 	UserAudiences: "user_audiences",
 	UserGroups:    "user_groups",

@@ -60,12 +60,12 @@ var PasswordWhere = struct {
 	Salt      whereHelper__byte
 	Hash      whereHelper__byte
 }{
-	ID:        whereHelperint{field: "\"passwords\".\"id\""},
-	UserID:    whereHelperint{field: "\"passwords\".\"user_id\""},
-	CreatedAt: whereHelpertime_Time{field: "\"passwords\".\"created_at\""},
-	UpdatedAt: whereHelpertime_Time{field: "\"passwords\".\"updated_at\""},
-	Salt:      whereHelper__byte{field: "\"passwords\".\"salt\""},
-	Hash:      whereHelper__byte{field: "\"passwords\".\"hash\""},
+	ID:        whereHelperint{field: "\"auth\".\"passwords\".\"id\""},
+	UserID:    whereHelperint{field: "\"auth\".\"passwords\".\"user_id\""},
+	CreatedAt: whereHelpertime_Time{field: "\"auth\".\"passwords\".\"created_at\""},
+	UpdatedAt: whereHelpertime_Time{field: "\"auth\".\"passwords\".\"updated_at\""},
+	Salt:      whereHelper__byte{field: "\"auth\".\"passwords\".\"salt\""},
+	Hash:      whereHelper__byte{field: "\"auth\".\"passwords\".\"hash\""},
 }
 
 // PasswordRels is where relationship names are stored.
@@ -379,7 +379,7 @@ func (o *Password) User(mods ...qm.QueryMod) userQuery {
 	queryMods = append(queryMods, mods...)
 
 	query := Users(queryMods...)
-	queries.SetFrom(query.Query, "\"users\"")
+	queries.SetFrom(query.Query, "\"auth\".\"users\"")
 
 	return query
 }
@@ -425,7 +425,7 @@ func (passwordL) LoadUser(ctx context.Context, e boil.ContextExecutor, singular 
 		return nil
 	}
 
-	query := NewQuery(qm.From(`users`), qm.WhereIn(`users.id in ?`, args...))
+	query := NewQuery(qm.From(`auth.users`), qm.WhereIn(`auth.users.id in ?`, args...))
 	if mods != nil {
 		mods.Apply(query)
 	}
@@ -497,7 +497,7 @@ func (o *Password) SetUser(ctx context.Context, exec boil.ContextExecutor, inser
 	}
 
 	updateQuery := fmt.Sprintf(
-		"UPDATE \"passwords\" SET %s WHERE %s",
+		"UPDATE \"auth\".\"passwords\" SET %s WHERE %s",
 		strmangle.SetParamNames("\"", "\"", 1, []string{"user_id"}),
 		strmangle.WhereClause("\"", "\"", 2, passwordPrimaryKeyColumns),
 	)
@@ -534,7 +534,7 @@ func (o *Password) SetUser(ctx context.Context, exec boil.ContextExecutor, inser
 
 // Passwords retrieves all the records using an executor.
 func Passwords(mods ...qm.QueryMod) passwordQuery {
-	mods = append(mods, qm.From("\"passwords\""))
+	mods = append(mods, qm.From("\"auth\".\"passwords\""))
 	return passwordQuery{NewQuery(mods...)}
 }
 
@@ -548,7 +548,7 @@ func FindPassword(ctx context.Context, exec boil.ContextExecutor, iD int, select
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"passwords\" where \"id\"=$1", sel,
+		"select %s from \"auth\".\"passwords\" where \"id\"=$1", sel,
 	)
 
 	q := queries.Raw(query, iD)
@@ -611,9 +611,9 @@ func (o *Password) Insert(ctx context.Context, exec boil.ContextExecutor, column
 			return err
 		}
 		if len(wl) != 0 {
-			cache.query = fmt.Sprintf("INSERT INTO \"passwords\" (\"%s\") %%sVALUES (%s)%%s", strings.Join(wl, "\",\""), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
+			cache.query = fmt.Sprintf("INSERT INTO \"auth\".\"passwords\" (\"%s\") %%sVALUES (%s)%%s", strings.Join(wl, "\",\""), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
 		} else {
-			cache.query = "INSERT INTO \"passwords\" %sDEFAULT VALUES%s"
+			cache.query = "INSERT INTO \"auth\".\"passwords\" %sDEFAULT VALUES%s"
 		}
 
 		var queryOutput, queryReturning string
@@ -685,7 +685,7 @@ func (o *Password) Update(ctx context.Context, exec boil.ContextExecutor, column
 			return 0, errors.New("models: unable to update passwords, could not build whitelist")
 		}
 
-		cache.query = fmt.Sprintf("UPDATE \"passwords\" SET %s WHERE %s",
+		cache.query = fmt.Sprintf("UPDATE \"auth\".\"passwords\" SET %s WHERE %s",
 			strmangle.SetParamNames("\"", "\"", 1, wl),
 			strmangle.WhereClause("\"", "\"", len(wl)+1, passwordPrimaryKeyColumns),
 		)
@@ -766,7 +766,7 @@ func (o PasswordSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor,
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := fmt.Sprintf("UPDATE \"passwords\" SET %s WHERE %s",
+	sql := fmt.Sprintf("UPDATE \"auth\".\"passwords\" SET %s WHERE %s",
 		strmangle.SetParamNames("\"", "\"", 1, colNames),
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), len(colNames)+1, passwordPrimaryKeyColumns, len(o)))
 
@@ -863,7 +863,7 @@ func (o *Password) Upsert(ctx context.Context, exec boil.ContextExecutor, update
 			conflict = make([]string, len(passwordPrimaryKeyColumns))
 			copy(conflict, passwordPrimaryKeyColumns)
 		}
-		cache.query = buildUpsertQueryPostgres(dialect, "\"passwords\"", updateOnConflict, ret, update, conflict, insert)
+		cache.query = buildUpsertQueryPostgres(dialect, "\"auth\".\"passwords\"", updateOnConflict, ret, update, conflict, insert)
 
 		cache.valueMapping, err = queries.BindMapping(passwordType, passwordMapping, insert)
 		if err != nil {
@@ -922,7 +922,7 @@ func (o *Password) Delete(ctx context.Context, exec boil.ContextExecutor) (int64
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), passwordPrimaryKeyMapping)
-	sql := "DELETE FROM \"passwords\" WHERE \"id\"=$1"
+	sql := "DELETE FROM \"auth\".\"passwords\" WHERE \"id\"=$1"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -987,7 +987,7 @@ func (o PasswordSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor)
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "DELETE FROM \"passwords\" WHERE " +
+	sql := "DELETE FROM \"auth\".\"passwords\" WHERE " +
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, passwordPrimaryKeyColumns, len(o))
 
 	if boil.IsDebug(ctx) {
@@ -1042,7 +1042,7 @@ func (o *PasswordSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "SELECT \"passwords\".* FROM \"passwords\" WHERE " +
+	sql := "SELECT \"auth\".\"passwords\".* FROM \"auth\".\"passwords\" WHERE " +
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, passwordPrimaryKeyColumns, len(*o))
 
 	q := queries.Raw(sql, args...)
@@ -1060,7 +1060,7 @@ func (o *PasswordSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor
 // PasswordExists checks if the Password row exists.
 func PasswordExists(ctx context.Context, exec boil.ContextExecutor, iD int) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"passwords\" where \"id\"=$1 limit 1)"
+	sql := "select exists(select 1 from \"auth\".\"passwords\" where \"id\"=$1 limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)

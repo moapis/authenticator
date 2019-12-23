@@ -1,4 +1,4 @@
-\copy users (id, name, email, created_at, updated_at) from stdin;
+\copy auth.users (id, name, email, created_at, updated_at) from stdin;
 110	foorw	foorw@bar.com	2006-08-14	2006-08-14
 111	hello	hello@bar.com	2006-08-14	2006-08-14
 112	werr	werr@bar.com	2006-08-14	2006-08-14
@@ -10,7 +10,7 @@
 118	erfrwg	erfrwg@bar.com	2006-08-14	2006-08-14
 \.
 
-\copy groups (id, name, created_at,	updated_at, description) from stdin;
+\copy auth.groups (id, name, created_at,	updated_at, description) from stdin;
 124	adsssmi	2006-08-14	2006-08-14	Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna ali.
 123	whatsss	2006-08-14	2006-08-14	Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna ali.
 122	erfrwg	2006-08-14	2006-08-14	Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna ali.
@@ -20,7 +20,7 @@
 118	khkhkh	2006-08-14	2006-08-14	Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna ali.
 \.
 
-\copy audiences (id, name, created_at, updated_at, description) from stdin;
+\copy auth.audiences (id, name, created_at, updated_at, description) from stdin;
 124	adsssmi	2006-08-14	2006-08-14	Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna ali.
 123	whatsss	2006-08-14	2006-08-14	Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna ali.
 122	erfrwg	2006-08-14	2006-08-14	Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna ali.
@@ -30,7 +30,7 @@
 118	khkhkh	2006-08-14	2006-08-14	Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna ali.
 \.
 
-\copy user_groups (user_id, group_id) from stdin;
+\copy auth.user_groups (user_id, group_id) from stdin;
 110	124
 110	122
 110	120
@@ -59,7 +59,7 @@
 117	124
 \.
 
-\copy user_audiences (user_id, audience_id) from stdin;
+\copy auth.user_audiences (user_id, audience_id) from stdin;
 110	124
 110	122
 110	120
@@ -88,7 +88,7 @@
 117	124
 \.
 
-\copy passwords (user_id, salt, hash, created_at, updated_at) from stdin;
+\copy auth.passwords (user_id, salt, hash, created_at, updated_at) from stdin;
 110	sssssss	xxxxxxxx	2006-08-14	2006-08-14
 111	sssssss	xxxxxxxx	2006-08-14	2006-08-14
 112	sssssss	xxxxxxxx	2006-08-14	2006-08-14

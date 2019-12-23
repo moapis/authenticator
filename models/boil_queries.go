@@ -15,7 +15,7 @@ var dialect = drivers.Dialect{
 
 	UseIndexPlaceholders:    true,
 	UseLastInsertID:         false,
-	UseSchema:               false,
+	UseSchema:               true,
 	UseDefaultKeyword:       true,
 	UseAutoColumns:          false,
 	UseTopClause:            false,

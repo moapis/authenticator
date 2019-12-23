@@ -4,13 +4,15 @@
 
 -- +migrate Up
 
-create table jwt_keys (
+create schema auth;
+
+create table auth.jwt_keys (
 	id serial not null primary key,
 	public_key bytea not null,
 	created_at timestamp with time zone not null
 );
 
-create table users (
+create table auth.users (
 	id serial not null primary key,
 	email character varying(128) not null,
 	name character varying(24) not null,
@@ -20,7 +22,7 @@ create table users (
 	unique (name)
 );
 
-create table groups (
+create table auth.groups (
 	id serial not null primary key,
 	created_at timestamp with time zone not null,
 	updated_at timestamp with time zone not null,
@@ -29,15 +31,15 @@ create table groups (
 	unique(name)
 );
 
-create table user_groups (
-	user_id integer not null references users (id),
-	group_id integer not null references groups (id),
+create table auth.user_groups (
+	user_id integer not null references auth.users (id),
+	group_id integer not null references auth.groups (id),
 	primary key (user_id, group_id)
 );
 
-create table passwords (
+create table auth.passwords (
 	id serial not null primary key,
-	user_id integer not null references users(id),
+	user_id integer not null references auth.users(id),
 	created_at timestamp with time zone not null,
 	updated_at timestamp with time zone not null,
 	salt bytea not null,
@@ -45,7 +47,7 @@ create table passwords (
 	unique(user_id)
 );
 
-create table audiences (
+create table auth.audiences (
 	id serial not null primary key,
 	created_at timestamp with time zone not null,
 	updated_at timestamp with time zone not null,
@@ -54,19 +56,20 @@ create table audiences (
 	unique(name)
 );
 
-insert into audiences (id, created_at, updated_at, name, description) values (0, now(), now(), 'default', 'Default fallback group');
+insert into auth.audiences (id, created_at, updated_at, name, description) values (0, now(), now(), 'default', 'Default fallback group');
 
-create table user_audiences (
-	user_id integer not null references users (id),
-	audience_id integer not null references audiences (id),
+create table auth.user_audiences (
+	user_id integer not null references auth.users (id),
+	audience_id integer not null references auth.audiences (id),
 	primary key (user_id, audience_id)
 );
 
 -- +migrate Down
-drop table user_audiences;
-drop table audiences;
-drop table passwords;
-drop table user_groups;
-drop table groups;
-drop table users;
-drop table jwt_keys;
+drop table auth.user_audiences;
+drop table auth.audiences;
+drop table auth.passwords;
+drop table auth.user_groups;
+drop table auth.groups;
+drop table auth.users;
+drop table auth.jwt_keys;
+drop schema auth;

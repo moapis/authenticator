@@ -109,11 +109,11 @@ var AudienceWhere = struct {
 	Name        whereHelperstring
 	Description whereHelperstring
 }{
-	ID:          whereHelperint{field: "\"audiences\".\"id\""},
-	CreatedAt:   whereHelpertime_Time{field: "\"audiences\".\"created_at\""},
-	UpdatedAt:   whereHelpertime_Time{field: "\"audiences\".\"updated_at\""},
-	Name:        whereHelperstring{field: "\"audiences\".\"name\""},
-	Description: whereHelperstring{field: "\"audiences\".\"description\""},
+	ID:          whereHelperint{field: "\"auth\".\"audiences\".\"id\""},
+	CreatedAt:   whereHelpertime_Time{field: "\"auth\".\"audiences\".\"created_at\""},
+	UpdatedAt:   whereHelpertime_Time{field: "\"auth\".\"audiences\".\"updated_at\""},
+	Name:        whereHelperstring{field: "\"auth\".\"audiences\".\"name\""},
+	Description: whereHelperstring{field: "\"auth\".\"audiences\".\"description\""},
 }
 
 // AudienceRels is where relationship names are stored.
@@ -426,15 +426,15 @@ func (o *Audience) Users(mods ...qm.QueryMod) userQuery {
 	}
 
 	queryMods = append(queryMods,
-		qm.InnerJoin("\"user_audiences\" on \"users\".\"id\" = \"user_audiences\".\"user_id\""),
-		qm.Where("\"user_audiences\".\"audience_id\"=?", o.ID),
+		qm.InnerJoin("\"auth\".\"user_audiences\" on \"auth\".\"users\".\"id\" = \"auth\".\"user_audiences\".\"user_id\""),
+		qm.Where("\"auth\".\"user_audiences\".\"audience_id\"=?", o.ID),
 	)
 
 	query := Users(queryMods...)
-	queries.SetFrom(query.Query, "\"users\"")
+	queries.SetFrom(query.Query, "\"auth\".\"users\"")
 
 	if len(queries.GetSelect(query.Query)) == 0 {
-		queries.SetSelect(query.Query, []string{"\"users\".*"})
+		queries.SetSelect(query.Query, []string{"\"auth\".\"users\".*"})
 	}
 
 	return query
@@ -480,9 +480,9 @@ func (audienceL) LoadUsers(ctx context.Context, e boil.ContextExecutor, singular
 	}
 
 	query := NewQuery(
-		qm.Select("\"users\".*, \"a\".\"audience_id\""),
-		qm.From("\"users\""),
-		qm.InnerJoin("\"user_audiences\" as \"a\" on \"users\".\"id\" = \"a\".\"user_id\""),
+		qm.Select("\"auth\".\"users\".*, \"a\".\"audience_id\""),
+		qm.From("\"auth\".\"users\""),
+		qm.InnerJoin("\"auth\".\"user_audiences\" as \"a\" on \"auth\".\"users\".\"id\" = \"a\".\"user_id\""),
 		qm.WhereIn("\"a\".\"audience_id\" in ?", args...),
 	)
 	if mods != nil {
@@ -570,7 +570,7 @@ func (o *Audience) AddUsers(ctx context.Context, exec boil.ContextExecutor, inse
 	}
 
 	for _, rel := range related {
-		query := "insert into \"user_audiences\" (\"audience_id\", \"user_id\") values ($1, $2)"
+		query := "insert into \"auth\".\"user_audiences\" (\"audience_id\", \"user_id\") values ($1, $2)"
 		values := []interface{}{o.ID, rel.ID}
 
 		if boil.IsDebug(ctx) {
@@ -610,7 +610,7 @@ func (o *Audience) AddUsers(ctx context.Context, exec boil.ContextExecutor, inse
 // Replaces o.R.Users with related.
 // Sets related.R.Audiences's Users accordingly.
 func (o *Audience) SetUsers(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*User) error {
-	query := "delete from \"user_audiences\" where \"audience_id\" = $1"
+	query := "delete from \"auth\".\"user_audiences\" where \"audience_id\" = $1"
 	values := []interface{}{o.ID}
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -635,7 +635,7 @@ func (o *Audience) SetUsers(ctx context.Context, exec boil.ContextExecutor, inse
 func (o *Audience) RemoveUsers(ctx context.Context, exec boil.ContextExecutor, related ...*User) error {
 	var err error
 	query := fmt.Sprintf(
-		"delete from \"user_audiences\" where \"audience_id\" = $1 and \"user_id\" in (%s)",
+		"delete from \"auth\".\"user_audiences\" where \"audience_id\" = $1 and \"user_id\" in (%s)",
 		strmangle.Placeholders(dialect.UseIndexPlaceholders, len(related), 2, 1),
 	)
 	values := []interface{}{o.ID}
@@ -697,7 +697,7 @@ func removeUsersFromAudiencesSlice(o *Audience, related []*User) {
 
 // Audiences retrieves all the records using an executor.
 func Audiences(mods ...qm.QueryMod) audienceQuery {
-	mods = append(mods, qm.From("\"audiences\""))
+	mods = append(mods, qm.From("\"auth\".\"audiences\""))
 	return audienceQuery{NewQuery(mods...)}
 }
 
@@ -711,7 +711,7 @@ func FindAudience(ctx context.Context, exec boil.ContextExecutor, iD int, select
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"audiences\" where \"id\"=$1", sel,
+		"select %s from \"auth\".\"audiences\" where \"id\"=$1", sel,
 	)
 
 	q := queries.Raw(query, iD)
@@ -774,9 +774,9 @@ func (o *Audience) Insert(ctx context.Context, exec boil.ContextExecutor, column
 			return err
 		}
 		if len(wl) != 0 {
-			cache.query = fmt.Sprintf("INSERT INTO \"audiences\" (\"%s\") %%sVALUES (%s)%%s", strings.Join(wl, "\",\""), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
+			cache.query = fmt.Sprintf("INSERT INTO \"auth\".\"audiences\" (\"%s\") %%sVALUES (%s)%%s", strings.Join(wl, "\",\""), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
 		} else {
-			cache.query = "INSERT INTO \"audiences\" %sDEFAULT VALUES%s"
+			cache.query = "INSERT INTO \"auth\".\"audiences\" %sDEFAULT VALUES%s"
 		}
 
 		var queryOutput, queryReturning string
@@ -848,7 +848,7 @@ func (o *Audience) Update(ctx context.Context, exec boil.ContextExecutor, column
 			return 0, errors.New("models: unable to update audiences, could not build whitelist")
 		}
 
-		cache.query = fmt.Sprintf("UPDATE \"audiences\" SET %s WHERE %s",
+		cache.query = fmt.Sprintf("UPDATE \"auth\".\"audiences\" SET %s WHERE %s",
 			strmangle.SetParamNames("\"", "\"", 1, wl),
 			strmangle.WhereClause("\"", "\"", len(wl)+1, audiencePrimaryKeyColumns),
 		)
@@ -929,7 +929,7 @@ func (o AudienceSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor,
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := fmt.Sprintf("UPDATE \"audiences\" SET %s WHERE %s",
+	sql := fmt.Sprintf("UPDATE \"auth\".\"audiences\" SET %s WHERE %s",
 		strmangle.SetParamNames("\"", "\"", 1, colNames),
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), len(colNames)+1, audiencePrimaryKeyColumns, len(o)))
 
@@ -1026,7 +1026,7 @@ func (o *Audience) Upsert(ctx context.Context, exec boil.ContextExecutor, update
 			conflict = make([]string, len(audiencePrimaryKeyColumns))
 			copy(conflict, audiencePrimaryKeyColumns)
 		}
-		cache.query = buildUpsertQueryPostgres(dialect, "\"audiences\"", updateOnConflict, ret, update, conflict, insert)
+		cache.query = buildUpsertQueryPostgres(dialect, "\"auth\".\"audiences\"", updateOnConflict, ret, update, conflict, insert)
 
 		cache.valueMapping, err = queries.BindMapping(audienceType, audienceMapping, insert)
 		if err != nil {
@@ -1085,7 +1085,7 @@ func (o *Audience) Delete(ctx context.Context, exec boil.ContextExecutor) (int64
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), audiencePrimaryKeyMapping)
-	sql := "DELETE FROM \"audiences\" WHERE \"id\"=$1"
+	sql := "DELETE FROM \"auth\".\"audiences\" WHERE \"id\"=$1"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1150,7 +1150,7 @@ func (o AudienceSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor)
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "DELETE FROM \"audiences\" WHERE " +
+	sql := "DELETE FROM \"auth\".\"audiences\" WHERE " +
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, audiencePrimaryKeyColumns, len(o))
 
 	if boil.IsDebug(ctx) {
@@ -1205,7 +1205,7 @@ func (o *AudienceSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "SELECT \"audiences\".* FROM \"audiences\" WHERE " +
+	sql := "SELECT \"auth\".\"audiences\".* FROM \"auth\".\"audiences\" WHERE " +
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, audiencePrimaryKeyColumns, len(*o))
 
 	q := queries.Raw(sql, args...)
@@ -1223,7 +1223,7 @@ func (o *AudienceSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor
 // AudienceExists checks if the Audience row exists.
 func AudienceExists(ctx context.Context, exec boil.ContextExecutor, iD int) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"audiences\" where \"id\"=$1 limit 1)"
+	sql := "select exists(select 1 from \"auth\".\"audiences\" where \"id\"=$1 limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)

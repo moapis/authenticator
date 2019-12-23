@@ -3,4 +3,5 @@ psql:
   schema: public
   host: localhost
   user: postgres
+  schema: auth
   sslmode: disable

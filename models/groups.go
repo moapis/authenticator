@@ -56,11 +56,11 @@ var GroupWhere = struct {
 	Name        whereHelperstring
 	Description whereHelperstring
 }{
-	ID:          whereHelperint{field: "\"groups\".\"id\""},
-	CreatedAt:   whereHelpertime_Time{field: "\"groups\".\"created_at\""},
-	UpdatedAt:   whereHelpertime_Time{field: "\"groups\".\"updated_at\""},
-	Name:        whereHelperstring{field: "\"groups\".\"name\""},
-	Description: whereHelperstring{field: "\"groups\".\"description\""},
+	ID:          whereHelperint{field: "\"auth\".\"groups\".\"id\""},
+	CreatedAt:   whereHelpertime_Time{field: "\"auth\".\"groups\".\"created_at\""},
+	UpdatedAt:   whereHelpertime_Time{field: "\"auth\".\"groups\".\"updated_at\""},
+	Name:        whereHelperstring{field: "\"auth\".\"groups\".\"name\""},
+	Description: whereHelperstring{field: "\"auth\".\"groups\".\"description\""},
 }
 
 // GroupRels is where relationship names are stored.
@@ -373,15 +373,15 @@ func (o *Group) Users(mods ...qm.QueryMod) userQuery {
 	}
 
 	queryMods = append(queryMods,
-		qm.InnerJoin("\"user_groups\" on \"users\".\"id\" = \"user_groups\".\"user_id\""),
-		qm.Where("\"user_groups\".\"group_id\"=?", o.ID),
+		qm.InnerJoin("\"auth\".\"user_groups\" on \"auth\".\"users\".\"id\" = \"auth\".\"user_groups\".\"user_id\""),
+		qm.Where("\"auth\".\"user_groups\".\"group_id\"=?", o.ID),
 	)
 
 	query := Users(queryMods...)
-	queries.SetFrom(query.Query, "\"users\"")
+	queries.SetFrom(query.Query, "\"auth\".\"users\"")
 
 	if len(queries.GetSelect(query.Query)) == 0 {
-		queries.SetSelect(query.Query, []string{"\"users\".*"})
+		queries.SetSelect(query.Query, []string{"\"auth\".\"users\".*"})
 	}
 
 	return query
@@ -427,9 +427,9 @@ func (groupL) LoadUsers(ctx context.Context, e boil.ContextExecutor, singular bo
 	}
 
 	query := NewQuery(
-		qm.Select("\"users\".*, \"a\".\"group_id\""),
-		qm.From("\"users\""),
-		qm.InnerJoin("\"user_groups\" as \"a\" on \"users\".\"id\" = \"a\".\"user_id\""),
+		qm.Select("\"auth\".\"users\".*, \"a\".\"group_id\""),
+		qm.From("\"auth\".\"users\""),
+		qm.InnerJoin("\"auth\".\"user_groups\" as \"a\" on \"auth\".\"users\".\"id\" = \"a\".\"user_id\""),
 		qm.WhereIn("\"a\".\"group_id\" in ?", args...),
 	)
 	if mods != nil {
@@ -517,7 +517,7 @@ func (o *Group) AddUsers(ctx context.Context, exec boil.ContextExecutor, insert 
 	}
 
 	for _, rel := range related {
-		query := "insert into \"user_groups\" (\"group_id\", \"user_id\") values ($1, $2)"
+		query := "insert into \"auth\".\"user_groups\" (\"group_id\", \"user_id\") values ($1, $2)"
 		values := []interface{}{o.ID, rel.ID}
 
 		if boil.IsDebug(ctx) {
@@ -557,7 +557,7 @@ func (o *Group) AddUsers(ctx context.Context, exec boil.ContextExecutor, insert 
 // Replaces o.R.Users with related.
 // Sets related.R.Groups's Users accordingly.
 func (o *Group) SetUsers(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*User) error {
-	query := "delete from \"user_groups\" where \"group_id\" = $1"
+	query := "delete from \"auth\".\"user_groups\" where \"group_id\" = $1"
 	values := []interface{}{o.ID}
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -582,7 +582,7 @@ func (o *Group) SetUsers(ctx context.Context, exec boil.ContextExecutor, insert 
 func (o *Group) RemoveUsers(ctx context.Context, exec boil.ContextExecutor, related ...*User) error {
 	var err error
 	query := fmt.Sprintf(
-		"delete from \"user_groups\" where \"group_id\" = $1 and \"user_id\" in (%s)",
+		"delete from \"auth\".\"user_groups\" where \"group_id\" = $1 and \"user_id\" in (%s)",
 		strmangle.Placeholders(dialect.UseIndexPlaceholders, len(related), 2, 1),
 	)
 	values := []interface{}{o.ID}
@@ -644,7 +644,7 @@ func removeUsersFromGroupsSlice(o *Group, related []*User) {
 
 // Groups retrieves all the records using an executor.
 func Groups(mods ...qm.QueryMod) groupQuery {
-	mods = append(mods, qm.From("\"groups\""))
+	mods = append(mods, qm.From("\"auth\".\"groups\""))
 	return groupQuery{NewQuery(mods...)}
 }
 
@@ -658,7 +658,7 @@ func FindGroup(ctx context.Context, exec boil.ContextExecutor, iD int, selectCol
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"groups\" where \"id\"=$1", sel,
+		"select %s from \"auth\".\"groups\" where \"id\"=$1", sel,
 	)
 
 	q := queries.Raw(query, iD)
@@ -721,9 +721,9 @@ func (o *Group) Insert(ctx context.Context, exec boil.ContextExecutor, columns b
 			return err
 		}
 		if len(wl) != 0 {
-			cache.query = fmt.Sprintf("INSERT INTO \"groups\" (\"%s\") %%sVALUES (%s)%%s", strings.Join(wl, "\",\""), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
+			cache.query = fmt.Sprintf("INSERT INTO \"auth\".\"groups\" (\"%s\") %%sVALUES (%s)%%s", strings.Join(wl, "\",\""), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
 		} else {
-			cache.query = "INSERT INTO \"groups\" %sDEFAULT VALUES%s"
+			cache.query = "INSERT INTO \"auth\".\"groups\" %sDEFAULT VALUES%s"
 		}
 
 		var queryOutput, queryReturning string
@@ -795,7 +795,7 @@ func (o *Group) Update(ctx context.Context, exec boil.ContextExecutor, columns b
 			return 0, errors.New("models: unable to update groups, could not build whitelist")
 		}
 
-		cache.query = fmt.Sprintf("UPDATE \"groups\" SET %s WHERE %s",
+		cache.query = fmt.Sprintf("UPDATE \"auth\".\"groups\" SET %s WHERE %s",
 			strmangle.SetParamNames("\"", "\"", 1, wl),
 			strmangle.WhereClause("\"", "\"", len(wl)+1, groupPrimaryKeyColumns),
 		)
@@ -876,7 +876,7 @@ func (o GroupSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor, co
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := fmt.Sprintf("UPDATE \"groups\" SET %s WHERE %s",
+	sql := fmt.Sprintf("UPDATE \"auth\".\"groups\" SET %s WHERE %s",
 		strmangle.SetParamNames("\"", "\"", 1, colNames),
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), len(colNames)+1, groupPrimaryKeyColumns, len(o)))
 
@@ -973,7 +973,7 @@ func (o *Group) Upsert(ctx context.Context, exec boil.ContextExecutor, updateOnC
 			conflict = make([]string, len(groupPrimaryKeyColumns))
 			copy(conflict, groupPrimaryKeyColumns)
 		}
-		cache.query = buildUpsertQueryPostgres(dialect, "\"groups\"", updateOnConflict, ret, update, conflict, insert)
+		cache.query = buildUpsertQueryPostgres(dialect, "\"auth\".\"groups\"", updateOnConflict, ret, update, conflict, insert)
 
 		cache.valueMapping, err = queries.BindMapping(groupType, groupMapping, insert)
 		if err != nil {
@@ -1032,7 +1032,7 @@ func (o *Group) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, e
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), groupPrimaryKeyMapping)
-	sql := "DELETE FROM \"groups\" WHERE \"id\"=$1"
+	sql := "DELETE FROM \"auth\".\"groups\" WHERE \"id\"=$1"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1097,7 +1097,7 @@ func (o GroupSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (i
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "DELETE FROM \"groups\" WHERE " +
+	sql := "DELETE FROM \"auth\".\"groups\" WHERE " +
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, groupPrimaryKeyColumns, len(o))
 
 	if boil.IsDebug(ctx) {
@@ -1152,7 +1152,7 @@ func (o *GroupSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) e
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "SELECT \"groups\".* FROM \"groups\" WHERE " +
+	sql := "SELECT \"auth\".\"groups\".* FROM \"auth\".\"groups\" WHERE " +
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, groupPrimaryKeyColumns, len(*o))
 
 	q := queries.Raw(sql, args...)
@@ -1170,7 +1170,7 @@ func (o *GroupSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) e
 // GroupExists checks if the Group row exists.
 func GroupExists(ctx context.Context, exec boil.ContextExecutor, iD int) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"groups\" where \"id\"=$1 limit 1)"
+	sql := "select exists(select 1 from \"auth\".\"groups\" where \"id\"=$1 limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
