@@ -61,7 +61,7 @@ const (
 )
 
 func migrations() {
-	migrate.SetTable("migrations")
+	migrate.SetTable("auth_migrations")
 	m, err := mdb.Master(testCtx)
 	if err != nil {
 		log.WithError(err).Fatal("migrations()")
