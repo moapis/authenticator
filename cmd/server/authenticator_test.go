@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/moapis/authenticator/models"
-	pb "github.com/moapis/authenticator/pb"
+	auth "github.com/moapis/authenticator"
 	"github.com/moapis/multidb"
 	"github.com/pascaldekloe/jwt"
 )
@@ -166,7 +166,7 @@ func Test_authServer_RegisterPwUser(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		rd  *pb.RegistrationData
+		rd  *auth.RegistrationData
 	}
 	tests := []struct {
 		name    string
@@ -185,7 +185,7 @@ func Test_authServer_RegisterPwUser(t *testing.T) {
 			"Empty user",
 			args{
 				testCtx,
-				&pb.RegistrationData{},
+				&auth.RegistrationData{},
 			},
 			true,
 		},
@@ -193,7 +193,7 @@ func Test_authServer_RegisterPwUser(t *testing.T) {
 			"Valid user",
 			args{
 				testCtx,
-				&pb.RegistrationData{
+				&auth.RegistrationData{
 					Email: "admin@test.mailu.io",
 					Name:  "Mickey Mouse",
 				},
@@ -221,7 +221,7 @@ func Test_authServer_AuthenticatePwUser(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		up  *pb.UserPassword
+		up  *auth.UserPassword
 	}
 	tests := []struct {
 		name    string
@@ -240,7 +240,7 @@ func Test_authServer_AuthenticatePwUser(t *testing.T) {
 			"Empty user",
 			args{
 				testCtx,
-				&pb.UserPassword{},
+				&auth.UserPassword{},
 			},
 			true,
 		},
@@ -248,8 +248,8 @@ func Test_authServer_AuthenticatePwUser(t *testing.T) {
 			"Valid user and passwd",
 			args{
 				testCtx,
-				&pb.UserPassword{
-					User:     &pb.UserPassword_Email{Email: "one@group.com"},
+				&auth.UserPassword{
+					User:     &auth.UserPassword_Email{Email: "one@group.com"},
 					Password: "oneGroup",
 				},
 			},
@@ -333,12 +333,12 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		up  *pb.NewUserPassword
+		up  *auth.NewUserPassword
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    *pb.ChangePwReply
+		want    *auth.ChangePwReply
 		wantErr bool
 	}{
 		{
@@ -354,7 +354,7 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 			"Empty user",
 			args{
 				testCtx,
-				&pb.NewUserPassword{},
+				&auth.NewUserPassword{},
 			},
 			nil,
 			true,
@@ -363,22 +363,22 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 			"Valid user and passwd",
 			args{
 				testCtx,
-				&pb.NewUserPassword{
-					User:        &pb.NewUserPassword_Email{Email: "one@group.com"},
-					Credential:  &pb.NewUserPassword_OldPassword{OldPassword: "oneGroup"},
+				&auth.NewUserPassword{
+					User:        &auth.NewUserPassword_Email{Email: "one@group.com"},
+					Credential:  &auth.NewUserPassword_OldPassword{OldPassword: "oneGroup"},
 					NewPassword: "oneGroup",
 				},
 			},
-			&pb.ChangePwReply{Success: true},
+			&auth.ChangePwReply{Success: true},
 			false,
 		},
 		{
 			"Wrong passwd",
 			args{
 				testCtx,
-				&pb.NewUserPassword{
-					User:        &pb.NewUserPassword_Email{Email: "one@group.com"},
-					Credential:  &pb.NewUserPassword_OldPassword{OldPassword: "wrong"},
+				&auth.NewUserPassword{
+					User:        &auth.NewUserPassword_Email{Email: "one@group.com"},
+					Credential:  &auth.NewUserPassword_OldPassword{OldPassword: "wrong"},
 					NewPassword: "oneGroup",
 				},
 			},
@@ -389,9 +389,9 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 			"Empty new passwd",
 			args{
 				testCtx,
-				&pb.NewUserPassword{
-					User:        &pb.NewUserPassword_Email{Email: "one@group.com"},
-					Credential:  &pb.NewUserPassword_OldPassword{OldPassword: "oneGroup"},
+				&auth.NewUserPassword{
+					User:        &auth.NewUserPassword_Email{Email: "one@group.com"},
+					Credential:  &auth.NewUserPassword_OldPassword{OldPassword: "oneGroup"},
 					NewPassword: "",
 				},
 			},
@@ -402,22 +402,22 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 			"Valid user and token",
 			args{
 				testCtx,
-				&pb.NewUserPassword{
-					User:        &pb.NewUserPassword_Email{Email: "one@group.com"},
-					Credential:  &pb.NewUserPassword_ResetToken{ResetToken: string(jwtKnown)},
+				&auth.NewUserPassword{
+					User:        &auth.NewUserPassword_Email{Email: "one@group.com"},
+					Credential:  &auth.NewUserPassword_ResetToken{ResetToken: string(jwtKnown)},
 					NewPassword: "oneGroup",
 				},
 			},
-			&pb.ChangePwReply{Success: true},
+			&auth.ChangePwReply{Success: true},
 			false,
 		},
 		{
 			"Valid token and unknown user",
 			args{
 				testCtx,
-				&pb.NewUserPassword{
-					User:        &pb.NewUserPassword_Email{Email: "one@group.com"},
-					Credential:  &pb.NewUserPassword_ResetToken{ResetToken: string(jwtUnKnown)},
+				&auth.NewUserPassword{
+					User:        &auth.NewUserPassword_Email{Email: "one@group.com"},
+					Credential:  &auth.NewUserPassword_ResetToken{ResetToken: string(jwtUnKnown)},
 					NewPassword: "oneGroup",
 				},
 			},
@@ -428,9 +428,9 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 			"Valid token and wrong audience",
 			args{
 				testCtx,
-				&pb.NewUserPassword{
-					User:        &pb.NewUserPassword_Email{Email: "one@group.com"},
-					Credential:  &pb.NewUserPassword_ResetToken{ResetToken: string(jwtWrongAud)},
+				&auth.NewUserPassword{
+					User:        &auth.NewUserPassword_Email{Email: "one@group.com"},
+					Credential:  &auth.NewUserPassword_ResetToken{ResetToken: string(jwtWrongAud)},
 					NewPassword: "oneGroup",
 				},
 			},
@@ -458,12 +458,12 @@ func Test_authServer_CheckUserExists(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		ud  *pb.UserData
+		ud  *auth.UserData
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    *pb.Exists
+		want    *auth.Exists
 		wantErr bool
 	}{
 		{
@@ -479,7 +479,7 @@ func Test_authServer_CheckUserExists(t *testing.T) {
 			"Empty user",
 			args{
 				testCtx,
-				&pb.UserData{},
+				&auth.UserData{},
 			},
 			nil,
 			true,
@@ -488,9 +488,9 @@ func Test_authServer_CheckUserExists(t *testing.T) {
 			"Existing name",
 			args{
 				testCtx,
-				&pb.UserData{Name: "oneGroup"},
+				&auth.UserData{Name: "oneGroup"},
 			},
-			&pb.Exists{Name: true},
+			&auth.Exists{Name: true},
 			false,
 		},
 	}
@@ -552,7 +552,7 @@ func Test_authServer_RefreshToken(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		old *pb.AuthReply
+		old *auth.AuthReply
 	}
 	tests := []struct {
 		name    string
@@ -571,7 +571,7 @@ func Test_authServer_RefreshToken(t *testing.T) {
 			"Empty token",
 			args{
 				testCtx,
-				&pb.AuthReply{},
+				&auth.AuthReply{},
 			},
 			true,
 		},
@@ -579,7 +579,7 @@ func Test_authServer_RefreshToken(t *testing.T) {
 			"Known User",
 			args{
 				testCtx,
-				&pb.AuthReply{Jwt: string(jwtKnown)},
+				&auth.AuthReply{Jwt: string(jwtKnown)},
 			},
 			false,
 		},
@@ -587,7 +587,7 @@ func Test_authServer_RefreshToken(t *testing.T) {
 			"Unknown User",
 			args{
 				testCtx,
-				&pb.AuthReply{Jwt: string(jwtUnKnown)},
+				&auth.AuthReply{Jwt: string(jwtUnKnown)},
 			},
 			true,
 		},
@@ -612,7 +612,7 @@ func Test_authServer_PublicUserToken(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		pu  *pb.PublicUser
+		pu  *auth.PublicUser
 	}
 	tests := []struct {
 		name    string
@@ -631,7 +631,7 @@ func Test_authServer_PublicUserToken(t *testing.T) {
 			"Empty uuid",
 			args{
 				testCtx,
-				&pb.PublicUser{},
+				&auth.PublicUser{},
 			},
 			true,
 		},
@@ -639,7 +639,7 @@ func Test_authServer_PublicUserToken(t *testing.T) {
 			"Valid uuid",
 			args{
 				testCtx,
-				&pb.PublicUser{Uuid: "somethingRndm"},
+				&auth.PublicUser{Uuid: "somethingRndm"},
 			},
 			false,
 		},
@@ -664,12 +664,12 @@ func Test_authServer_GetPubKey(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		k   *pb.KeyID
+		k   *auth.KeyID
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    *pb.PublicKey
+		want    *auth.PublicKey
 		wantErr bool
 	}{
 		{
@@ -685,7 +685,7 @@ func Test_authServer_GetPubKey(t *testing.T) {
 			"Empty Kid",
 			args{
 				testCtx,
-				&pb.KeyID{},
+				&auth.KeyID{},
 			},
 			nil,
 			true,
@@ -694,9 +694,9 @@ func Test_authServer_GetPubKey(t *testing.T) {
 			"Known Kid",
 			args{
 				testCtx,
-				&pb.KeyID{Kid: 10},
+				&auth.KeyID{Kid: 10},
 			},
-			&pb.PublicKey{Key: []byte(testPubKey)},
+			&auth.PublicKey{Key: []byte(testPubKey)},
 			false,
 		},
 	}
@@ -716,7 +716,7 @@ func Test_authServer_GetPubKey(t *testing.T) {
 
 func Test_callBackURL(t *testing.T) {
 	type args struct {
-		cb    *pb.CallBackUrl
+		cb    *auth.CallBackUrl
 		token string
 	}
 	tests := []struct {
@@ -735,7 +735,7 @@ func Test_callBackURL(t *testing.T) {
 		{
 			"Set token key and Base URL",
 			args{
-				&pb.CallBackUrl{
+				&auth.CallBackUrl{
 					BaseUrl:  "http://example.com",
 					TokenKey: "key",
 				},
@@ -746,10 +746,10 @@ func Test_callBackURL(t *testing.T) {
 		{
 			"Additional params",
 			args{
-				&pb.CallBackUrl{
+				&auth.CallBackUrl{
 					BaseUrl:  "http://example.com",
 					TokenKey: "key",
-					Params: map[string]*pb.StringSlice{
+					Params: map[string]*auth.StringSlice{
 						"foo":   {Slice: []string{"bar"}},
 						"hello": {Slice: []string{"world", "mars"}},
 					},

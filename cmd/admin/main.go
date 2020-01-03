@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	auth "github.com/moapis/authenticator"
 	"github.com/moapis/authenticator/models"
-	pb "github.com/moapis/authenticator/pb"
 	"github.com/moapis/authenticator/verify"
 	"github.com/moapis/multidb"
 	"github.com/sirupsen/logrus"
@@ -456,10 +456,10 @@ func newUserPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	entry = entry.WithField("data", data)
 
-	reply, err := authClient.RegisterPwUser(r.Context(), &pb.RegistrationData{
+	reply, err := authClient.RegisterPwUser(r.Context(), &auth.RegistrationData{
 		Email: data["email"],
 		Name:  data["name"],
-		Url: &pb.CallBackUrl{
+		Url: &auth.CallBackUrl{
 			BaseUrl:  fmt.Sprintf("%s/password", conf.Name),
 			TokenKey: "token",
 		},
@@ -642,7 +642,7 @@ func tokenToCookieMW(next http.Handler) http.Handler {
 }
 
 func freshCookie(ctx context.Context, jwt string) (*http.Cookie, error) {
-	auth, err := authClient.RefreshToken(ctx, &pb.AuthReply{Jwt: jwt})
+	auth, err := authClient.RefreshToken(ctx, &auth.AuthReply{Jwt: jwt})
 	if err != nil {
 		return nil, err
 	}
@@ -705,7 +705,7 @@ func catchMW(next http.Handler) http.Handler {
 var (
 	conf        *ServerConfig
 	mdb         *multidb.MultiDB
-	authClient  pb.AuthenticatorClient
+	authClient  auth.AuthenticatorClient
 	verificator verify.Verificator
 )
 
@@ -747,7 +747,7 @@ func main() {
 		cancel()
 	}
 	defer cc.Close()
-	authClient = pb.NewAuthenticatorClient(cc)
+	authClient = auth.NewAuthenticatorClient(cc)
 	verificator = verify.Verificator{Client: authClient}
 	entry.Info("gRPC Dail done")
 

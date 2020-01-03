@@ -30,3 +30,13 @@ This project is still under heavy development. We've recently deployed a **beta*
 
  - Two factor authentication
  - OAuth2 provider support
+
+## Development
+
+### Protocol buffers
+
+The authenticator server uses gRPC through protocol buffers generation. To regenerate the gRPC definitions, run:
+
+````
+protoc --go_out=plugins=grpc:. authenticator.proto 
+````

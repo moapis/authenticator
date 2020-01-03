@@ -14,7 +14,7 @@ import (
 	"golang.org/x/crypto/argon2"
 
 	"github.com/moapis/authenticator/models"
-	pb "github.com/moapis/authenticator/pb"
+	auth "github.com/moapis/authenticator"
 	"github.com/moapis/authenticator/verify"
 	"github.com/moapis/mailer"
 	"github.com/pascaldekloe/jwt"
@@ -104,7 +104,7 @@ const (
 	jwtGroupIDs = "group_ids"
 )
 
-func (rt *requestTx) authReply(subject string, issued time.Time, set map[string]interface{}, audiences ...string) (*pb.AuthReply, error) {
+func (rt *requestTx) authReply(subject string, issued time.Time, set map[string]interface{}, audiences ...string) (*auth.AuthReply, error) {
 	prKey := rt.s.privateKey()
 	c := jwt.Claims{
 		KeyID: prKey.id,
@@ -133,10 +133,10 @@ func (rt *requestTx) authReply(subject string, issued time.Time, set map[string]
 			return nil, status.Error(codes.Internal, errDB)
 		}
 	}
-	return &pb.AuthReply{Jwt: st}, nil
+	return &auth.AuthReply{Jwt: st}, nil
 }
 
-func (rt *requestTx) userAuthReply(user *models.User, issued time.Time, audiences ...string) (*pb.AuthReply, error) {
+func (rt *requestTx) userAuthReply(user *models.User, issued time.Time, audiences ...string) (*auth.AuthReply, error) {
 	rt.log = rt.log.WithField("user", user)
 	groups, err := user.Groups(qm.Select(models.GroupColumns.ID)).All(rt.ctx, rt.tx)
 	if err != nil {
@@ -359,7 +359,7 @@ func (rt *requestTx) userExistsByValue(key, value string) (bool, error) {
 	}
 }
 
-func (rt *requestTx) checkUserExists(email, name string) (*pb.Exists, error) {
+func (rt *requestTx) checkUserExists(email, name string) (*auth.Exists, error) {
 	rt.log = rt.log.WithFields(logrus.Fields{"email": email, "name": name})
 	if email == "" && name == "" {
 		rt.log.Warn(errors.New(errMissingEmailOrName))
@@ -367,7 +367,7 @@ func (rt *requestTx) checkUserExists(email, name string) (*pb.Exists, error) {
 	}
 	rt.log.Debug("checkUserExists")
 
-	exists := new(pb.Exists)
+	exists := new(auth.Exists)
 	var err error
 
 	if email != "" {
@@ -385,7 +385,7 @@ func (rt *requestTx) checkUserExists(email, name string) (*pb.Exists, error) {
 	return exists, nil
 }
 
-func (rt *requestTx) publicUserToken(uuid string, issued time.Time) (*pb.AuthReply, error) {
+func (rt *requestTx) publicUserToken(uuid string, issued time.Time) (*auth.AuthReply, error) {
 	rt.log = rt.log.WithField("uuid", uuid)
 	if uuid == "" {
 		rt.log.WithError(errors.New(errMissingUUID)).Warn("publicUserToken")
@@ -395,12 +395,12 @@ func (rt *requestTx) publicUserToken(uuid string, issued time.Time) (*pb.AuthRep
 	return rt.authReply(fmt.Sprintf("public:%s", uuid), issued, nil)
 }
 
-func (rt *requestTx) getPubKey(kid int) (*pb.PublicKey, error) {
+func (rt *requestTx) getPubKey(kid int) (*auth.PublicKey, error) {
 	key, err := rt.findJWTKey(kid)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.PublicKey{Key: key}, nil
+	return &auth.PublicKey{Key: key}, nil
 }
 
 type mailData struct {

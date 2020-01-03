@@ -15,7 +15,7 @@ import (
 
 	"github.com/friendsofgo/errors"
 	"github.com/moapis/authenticator/models"
-	pb "github.com/moapis/authenticator/pb"
+	auth "github.com/moapis/authenticator"
 	"github.com/moapis/multidb"
 	"github.com/pascaldekloe/jwt"
 	"github.com/sirupsen/logrus"
@@ -187,7 +187,7 @@ func Test_requestTx_authReply(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *pb.AuthReply
+		want    *auth.AuthReply
 		wantErr bool
 	}{
 		{
@@ -198,7 +198,7 @@ func Test_requestTx_authReply(t *testing.T) {
 				set:       map[string]interface{}{"some": 1},
 				audiences: []string{"foo", "bar"},
 			},
-			&pb.AuthReply{
+			&auth.AuthReply{
 				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJhdWQiOlsiZm9vIiwiYmFyIl0sImV4cCI6ODY1MjMuMDAwMDAwNDU2LCJpYXQiOjEyMy4wMDAwMDA0NTYsImlzcyI6ImxvY2FsaG9zdCIsInNvbWUiOjEsInN1YiI6InRlc3R1c2VyIn0.Ox2PHwJ5Q7u4P2n5y1PZ630hm0J0N4yam14GA4-NSgn-Ak3L9Au2a8GHzN-AoQGbREJA1GDdIwGWIoGS3TthBQ",
 			},
 			false,
@@ -248,7 +248,7 @@ func Test_requestTx_userAuthReply(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *pb.AuthReply
+		want    *auth.AuthReply
 		wantErr bool
 	}{
 		{
@@ -258,7 +258,7 @@ func Test_requestTx_userAuthReply(t *testing.T) {
 				time.Unix(123, 456),
 				nil,
 			},
-			&pb.AuthReply{
+			&auth.AuthReply{
 				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiZ3JvdXBfaWRzIjpbXSwiaWF0IjoxMjMuMDAwMDAwNDU2LCJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJub0dyb3VwIiwidXNlcl9pZCI6MTAxfQ.cN5J_jiwdE25scA3p1X2BgAeMxYtLLYwORF7kOPgbDEnegspSyxPLnklOf46QG1-wsN3Ju8sWH134palAGTBAQ",
 			},
 			false,
@@ -270,7 +270,7 @@ func Test_requestTx_userAuthReply(t *testing.T) {
 				time.Unix(123, 456),
 				nil,
 			},
-			&pb.AuthReply{
+			&auth.AuthReply{
 				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiZ3JvdXBfaWRzIjpbMV0sImlhdCI6MTIzLjAwMDAwMDQ1NiwiaXNzIjoibG9jYWxob3N0Iiwic3ViIjoib25lR3JvdXAiLCJ1c2VyX2lkIjoxMDJ9.gbkjDYNFamC2AJEIU-HlMzh1mHLeYdm8dv8an60Z2nvHuhKXUY7RCzMARUtrXeEuYDAaiSWYwqXN4AyWDzoJAw",
 			},
 			false,
@@ -282,7 +282,7 @@ func Test_requestTx_userAuthReply(t *testing.T) {
 				time.Unix(123, 456),
 				[]string{"me", "and", "you"},
 			},
-			&pb.AuthReply{
+			&auth.AuthReply{
 				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJhdWQiOlsibWUiLCJhbmQiLCJ5b3UiXSwiZXhwIjo4NjUyMy4wMDAwMDA0NTYsImdyb3VwX2lkcyI6WzEsMiwzXSwiaWF0IjoxMjMuMDAwMDAwNDU2LCJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJhbGxHcm91cHMiLCJ1c2VyX2lkIjoxMDN9.j0hyUeEUu8ZKFl8n4s-8HFzC5eR4Y5KjT5vI2dHNCu-MRdz2iB0Dh2C2EqZ_sILggtkTTjtrScRxTOlcX8kgBA",
 			},
 			false,
@@ -968,7 +968,7 @@ func Test_requestTx_checkUserExists(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *pb.Exists
+		want    *auth.Exists
 		wantErr bool
 	}{
 		{
@@ -976,7 +976,7 @@ func Test_requestTx_checkUserExists(t *testing.T) {
 			args{
 				email: "one@group.com",
 			},
-			&pb.Exists{
+			&auth.Exists{
 				Email: true,
 				Name:  false,
 			},
@@ -987,7 +987,7 @@ func Test_requestTx_checkUserExists(t *testing.T) {
 			args{
 				name: "oneGroup",
 			},
-			&pb.Exists{
+			&auth.Exists{
 				Email: false,
 				Name:  true,
 			},
@@ -999,7 +999,7 @@ func Test_requestTx_checkUserExists(t *testing.T) {
 				email: "one@group.com",
 				name:  "noGroup",
 			},
-			&pb.Exists{
+			&auth.Exists{
 				Email: true,
 				Name:  true,
 			},
@@ -1011,7 +1011,7 @@ func Test_requestTx_checkUserExists(t *testing.T) {
 				email: "no@body.com",
 				name:  "noGroup",
 			},
-			&pb.Exists{
+			&auth.Exists{
 				Email: false,
 				Name:  true,
 			},
@@ -1023,7 +1023,7 @@ func Test_requestTx_checkUserExists(t *testing.T) {
 				email: "no@group.com",
 				name:  "noBody",
 			},
-			&pb.Exists{
+			&auth.Exists{
 				Email: true,
 				Name:  false,
 			},
@@ -1035,7 +1035,7 @@ func Test_requestTx_checkUserExists(t *testing.T) {
 				email: "no@body.com",
 				name:  "noBody",
 			},
-			&pb.Exists{
+			&auth.Exists{
 				Email: false,
 				Name:  false,
 			},
@@ -1092,7 +1092,7 @@ func Test_requestTx_publicUserToken(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *pb.AuthReply
+		want    *auth.AuthReply
 		wantErr bool
 	}{
 		{
@@ -1101,7 +1101,7 @@ func Test_requestTx_publicUserToken(t *testing.T) {
 				uuid:   "super-unique-uuid",
 				issued: time.Unix(123, 456),
 			},
-			&pb.AuthReply{
+			&auth.AuthReply{
 				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJwdWJsaWM6c3VwZXItdW5pcXVlLXV1aWQiLCJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiaWF0IjoxMjMuMDAwMDAwNDU2fQ.NzH0jqp71uXgbmILuhUK3sn2HYPESDlUlRzQJGrbZr85k7Gh8ZE0ckg8RUzFATvsKCjKOnZojuQ2txcYnFNfCQ",
 			},
 			false,
@@ -1139,13 +1139,13 @@ func Test_requestTx_getPubKey(t *testing.T) {
 	tests := []struct {
 		name    string
 		kid     int
-		want    *pb.PublicKey
+		want    *auth.PublicKey
 		wantErr bool
 	}{
 		{
 			"Existing key",
 			10,
-			&pb.PublicKey{Key: []byte(testPubKey)},
+			&auth.PublicKey{Key: []byte(testPubKey)},
 			false,
 		},
 		{

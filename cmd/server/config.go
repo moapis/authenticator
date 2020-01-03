@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/moapis/authenticator/models"
-	pb "github.com/moapis/authenticator/pb"
+	auth "github.com/moapis/authenticator"
 	"github.com/moapis/mailer"
 	"github.com/moapis/multidb"
 	pg "github.com/moapis/multidb/drivers/postgresql"
@@ -298,7 +298,7 @@ func (c ServerConfig) newAuthServer(ctx context.Context, r io.Reader) (*authServ
 func (c ServerConfig) listenAndServe(s *authServer, opts ...grpc.ServerOption) (*grpc.Server, <-chan error) {
 	gs := grpc.NewServer(opts...)
 	ec := make(chan error)
-	pb.RegisterAuthenticatorServer(gs, s)
+	auth.RegisterAuthenticatorServer(gs, s)
 
 	log := log.WithFields(logrus.Fields{"address": c.Addres, "port": c.Port})
 	log.WithField("grpc", gs.GetServiceInfo()).Debug("Registered services")

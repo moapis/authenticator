@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
+	auth "github.com/moapis/authenticator"
 	"github.com/moapis/authenticator/models"
-	pb "github.com/moapis/authenticator/pb"
 	"github.com/moapis/mailer"
 	"github.com/moapis/multidb"
 	"github.com/sirupsen/logrus"
@@ -32,7 +32,7 @@ type privateKey struct {
 }
 
 type authServer struct {
-	pb.UnimplementedAuthenticatorServer
+	auth.UnimplementedAuthenticatorServer
 
 	mdb     *multidb.MultiDB
 	privKey privateKey
@@ -97,7 +97,7 @@ const (
 	errMailer             = "Failed to send verification mail"
 )
 
-func callBackURL(cb *pb.CallBackUrl, token string) string {
+func callBackURL(cb *auth.CallBackUrl, token string) string {
 	buf := bytes.NewBufferString(cb.GetBaseUrl())
 	if buf.Len() > 0 {
 		buf.WriteByte('?')
@@ -124,7 +124,7 @@ func (s *authServer) passwordAudience() string {
 	return fmt.Sprintf("passwords@%s", s.conf.JWT.Issuer)
 }
 
-func (s *authServer) RegisterPwUser(ctx context.Context, rd *pb.RegistrationData) (*pb.RegistrationReply, error) {
+func (s *authServer) RegisterPwUser(ctx context.Context, rd *auth.RegistrationData) (*auth.RegistrationReply, error) {
 	rt, err := s.newTx(ctx, "RegisterPwUser", false)
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func (s *authServer) RegisterPwUser(ctx context.Context, rd *pb.RegistrationData
 	if err != nil {
 		return nil, err
 	}
-	auth, err := rt.authReply(user.Name, time.Now(), nil, s.passwordAudience())
+	reply, err := rt.authReply(user.Name, time.Now(), nil, s.passwordAudience())
 	if err != nil {
 		return nil, err
 	}
@@ -144,17 +144,17 @@ func (s *authServer) RegisterPwUser(ctx context.Context, rd *pb.RegistrationData
 			user, registrationSubject,
 			callBackURL(
 				rd.GetUrl(),
-				auth.GetJwt(),
+				reply.GetJwt(),
 			),
 		},
 	); err != nil {
 		return nil, err
 	}
 
-	return &pb.RegistrationReply{UserId: int32(user.ID)}, nil
+	return &auth.RegistrationReply{UserId: int32(user.ID)}, nil
 }
 
-func (s *authServer) AuthenticatePwUser(ctx context.Context, up *pb.UserPassword) (*pb.AuthReply, error) {
+func (s *authServer) AuthenticatePwUser(ctx context.Context, up *auth.UserPassword) (*auth.AuthReply, error) {
 	rt, err := s.newTx(ctx, "AuthenticatePwUser", true)
 	if err != nil {
 		return nil, err
@@ -179,7 +179,7 @@ func (s *authServer) hasPasswordAudience(audiences []string) error {
 	return status.Error(codes.Unauthenticated, "Not a passwords audience")
 }
 
-func (s *authServer) ChangeUserPw(ctx context.Context, up *pb.NewUserPassword) (*pb.ChangePwReply, error) {
+func (s *authServer) ChangeUserPw(ctx context.Context, up *auth.NewUserPassword) (*auth.ChangePwReply, error) {
 	rt, err := s.newTx(ctx, "ChangeUserPw", false)
 	if err != nil {
 		return nil, err
@@ -212,10 +212,10 @@ func (s *authServer) ChangeUserPw(ctx context.Context, up *pb.NewUserPassword) (
 	if err = rt.commit(); err != nil {
 		return nil, err
 	}
-	return &pb.ChangePwReply{Success: true}, nil
+	return &auth.ChangePwReply{Success: true}, nil
 }
 
-func (s *authServer) CheckUserExists(ctx context.Context, ud *pb.UserData) (*pb.Exists, error) {
+func (s *authServer) CheckUserExists(ctx context.Context, ud *auth.UserData) (*auth.Exists, error) {
 	rt, err := s.newTx(ctx, "CheckUserExistsUserPw", true)
 	if err != nil {
 		return nil, err
@@ -224,7 +224,7 @@ func (s *authServer) CheckUserExists(ctx context.Context, ud *pb.UserData) (*pb.
 	return rt.checkUserExists(ud.GetEmail(), ud.GetName())
 }
 
-func (s *authServer) RefreshToken(ctx context.Context, old *pb.AuthReply) (*pb.AuthReply, error) {
+func (s *authServer) RefreshToken(ctx context.Context, old *auth.AuthReply) (*auth.AuthReply, error) {
 	rt, err := s.newTx(ctx, "RefreshToken", true)
 	if err != nil {
 		return nil, err
@@ -241,7 +241,7 @@ func (s *authServer) RefreshToken(ctx context.Context, old *pb.AuthReply) (*pb.A
 	return rt.userAuthReply(user, time.Now())
 }
 
-func (s *authServer) PublicUserToken(ctx context.Context, pu *pb.PublicUser) (*pb.AuthReply, error) {
+func (s *authServer) PublicUserToken(ctx context.Context, pu *auth.PublicUser) (*auth.AuthReply, error) {
 	rt, err := s.newTx(ctx, "PublicUserToken", true)
 	if err != nil {
 		return nil, err
@@ -250,7 +250,7 @@ func (s *authServer) PublicUserToken(ctx context.Context, pu *pb.PublicUser) (*p
 	return rt.publicUserToken(pu.GetUuid(), time.Now())
 }
 
-func (s *authServer) GetPubKey(ctx context.Context, k *pb.KeyID) (*pb.PublicKey, error) {
+func (s *authServer) GetPubKey(ctx context.Context, k *auth.KeyID) (*auth.PublicKey, error) {
 	rt, err := s.newTx(ctx, "GetPubKey", true)
 	if err != nil {
 		return nil, err
