@@ -748,7 +748,10 @@ func main() {
 	}
 	defer cc.Close()
 	authClient = auth.NewAuthenticatorClient(cc)
-	verificator = verify.Verificator{Client: authClient}
+	verificator = verify.Verificator{
+		Client:    authClient,
+		Audiences: conf.Audiences,
+	}
 	entry.Info("gRPC Dail done")
 
 	r.Handle("/", http.RedirectHandler(indexRedirect, http.StatusMovedPermanently))
