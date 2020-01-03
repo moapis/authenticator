@@ -1,11 +1,5 @@
 name: Go1.13
-on:
-  push:
-    branches: 
-      - master
-  pull_request:
-    branches: 
-      - master
+on: [push, pull_request, release]
 
 jobs:
 
@@ -66,3 +60,10 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         # Path to coverage file to upload
         file: "*.txt"
+    
+    - name: Trigger Docker Hub build
+      if: github.repository == 'moapis/authenticator' && ( github.event_name == 'push' || github.event_name == 'release' )
+      run: |
+        curl -X POST ${{ secrets.MIGRATIONS_TRIGGER_URL }} > /dev/null && echo "Triggered migrations build"
+        curl -X POST ${{ secrets.SERVER_TRIGGER_URL }} > /dev/null && echo "Triggered server build"
+        curl -X POST ${{ secrets.ADMIN_TRIGGER_URL }} > /dev/null && echo "Triggered admin build"

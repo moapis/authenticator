@@ -2,19 +2,19 @@ version: '3.6'
 
 services:
     server:
-        image: moapis/authenticator-server:master
+        image: moapis/authenticator-server:${TAG:-master}
         build: 
             dockerfile: server.Dockerfile
             context: .
 
     admin:
-        image: moapis/authenticator-admin:master
+        image: moapis/authenticator-admin:${TAG:-master}
         build: 
             dockerfile: admin.Dockerfile
             context: .
     
     migrations:
-        image: moapis/authenticator-migrations:master
+        image: moapis/authenticator-migrations:${TAG:-master}
         build:
             dockerfile: Dockerfile
             context: migrations
