@@ -71,14 +71,6 @@ message RegistrationReply{
     int32 user_id = 1;
 }
 
-enum UserLevels {
-    PUBLIC = 0;
-    USER = 1;
-    EDITOR = 2;
-    MANAGER = 3;
-    ADMIN = 4;
-}
-
 message AuthReply {
     // JSON Web Token
     string jwt = 1;
