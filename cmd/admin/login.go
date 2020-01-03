@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	pb "github.com/moapis/authenticator/pb"
+	auth "github.com/moapis/authenticator"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -87,8 +87,8 @@ func loginPostHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 
-	auth, err := authClient.AuthenticatePwUser(ctx, &pb.UserPassword{
-		User:     &pb.UserPassword_Email{Email: email},
+	auth, err := authClient.AuthenticatePwUser(ctx, &auth.UserPassword{
+		User:     &auth.UserPassword_Email{Email: email},
 		Password: password,
 	})
 	if err != nil {
@@ -153,9 +153,9 @@ func passwordPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	reply, err := authClient.ChangeUserPw(r.Context(),
-		&pb.NewUserPassword{
+		&auth.NewUserPassword{
 			NewPassword: password,
-			Credential:  &pb.NewUserPassword_ResetToken{ResetToken: jwt},
+			Credential:  &auth.NewUserPassword_ResetToken{ResetToken: jwt},
 		},
 	)
 	if err != nil {

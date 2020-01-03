@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/moapis/authenticator/pb"
+	auth "github.com/moapis/authenticator"
 	"github.com/pascaldekloe/jwt"
 )
 
@@ -62,7 +62,7 @@ func ParseJWTHeader(token string) (int, error) {
 // Public keys that are not found in the local cache, are retrieved
 // through an gRPC call from an Authenticator server.
 type Verificator struct {
-	Client pb.AuthenticatorClient
+	Client auth.AuthenticatorClient
 	keys   map[int32][]byte
 	mtx    sync.RWMutex
 }
@@ -95,7 +95,7 @@ const errRetrieval = "Key retrieval"
 // Retrieve a key over gRPC Client.
 // After succesful retrieval, the key is Set to the cache
 func (v *Verificator) retrieve(ctx context.Context, kid int32) ([]byte, error) {
-	pkl, err := v.Client.GetPubKey(ctx, &pb.KeyID{Kid: kid})
+	pkl, err := v.Client.GetPubKey(ctx, &auth.KeyID{Kid: kid})
 	if err != nil {
 		return nil, &RetrieveError{VerificationErr{errRetrieval, err}}
 	}
