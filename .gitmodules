@@ -1,0 +1,3 @@
+[submodule "AdminLTE"]
+	path = cmd/admin/AdminLTE
+	url = git@github.com:ColorlibHQ/AdminLTE.git
