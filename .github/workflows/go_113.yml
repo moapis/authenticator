@@ -62,7 +62,7 @@ jobs:
         file: "*.txt"
     
     - name: Trigger Docker Hub build
-      if: github.repository == 'moapis/authenticator' && ( github.event_name == 'push' || github.event_name == 'release' )
+      if: github.repository == 'moapis/authenticator' && github.event_name == 'push'
       run: |
         curl -X POST ${{ secrets.MIGRATIONS_TRIGGER_URL }} > /dev/null && echo "Triggered migrations build"
         curl -X POST ${{ secrets.SERVER_TRIGGER_URL }} > /dev/null && echo "Triggered server build"
