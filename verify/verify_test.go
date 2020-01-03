@@ -275,40 +275,50 @@ func TestVerificator_getOrRetrieve(t *testing.T) {
 }
 
 func TestVerificator_Token(t *testing.T) {
-	claims := &jwt.Claims{KeyID: "123"}
+	claims := &jwt.Claims{
+		KeyID: "123",
+		Registered: jwt.Registered{
+			Expires:   jwt.NewNumericTime(time.Now().Add(time.Minute)),
+			Audiences: []string{"tester"},
+		},
+	}
 	unknownKid, err := claims.EdDSASign([]byte(testPrivKey))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	claims.KeyID = "10"
-	altered, err := claims.EdDSASign([]byte(testPrivKey))
+
+	valid, err := claims.EdDSASign([]byte(testPrivKey))
 	if err != nil {
 		t.Fatal(err)
 	}
-	a := bytes.Split(altered, []byte("."))
+
+	a := bytes.Split(valid, []byte("."))
 	u := bytes.Split(unknownKid, []byte("."))
 	a[2] = u[2]
-	altered = bytes.Join(a, []byte("."))
+	altered := bytes.Join(a, []byte("."))
 
-	claims = &jwt.Claims{
+	exClaims := &jwt.Claims{
 		KeyID: "10",
 		Registered: jwt.Registered{
-			Expires: jwt.NewNumericTime(time.Now().Add(-1)),
+			Expires:   jwt.NewNumericTime(time.Now().Add(-1)),
+			Audiences: []string{"tester"},
 		},
 	}
-	expired, err := claims.EdDSASign([]byte(testPrivKey))
+	expired, err := exClaims.EdDSASign([]byte(testPrivKey))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	validClaims := &jwt.Claims{
+	waClaims := &jwt.Claims{
 		KeyID: "10",
 		Registered: jwt.Registered{
-			Expires: jwt.NewNumericTime(time.Now().Add(time.Minute)),
+			Expires:   jwt.NewNumericTime(time.Now().Add(time.Minute)),
+			Audiences: []string{"foobar"},
 		},
 	}
-	valid, err := validClaims.EdDSASign([]byte(testPrivKey))
+	wrongAudience, err := waClaims.EdDSASign([]byte(testPrivKey))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -350,8 +360,14 @@ func TestVerificator_Token(t *testing.T) {
 		{
 			"Valid token",
 			args{context.Background(), string(valid)},
-			validClaims,
+			claims,
 			false,
+		},
+		{
+			"Wrong audience",
+			args{context.Background(), string(wrongAudience)},
+			nil,
+			true,
 		},
 	}
 	for _, tt := range tests {
@@ -426,6 +442,61 @@ func TestVerificationErr_Error(t *testing.T) {
 			}
 			if got := e.Error(); got != tt.want {
 				t.Errorf("VerificationErr.Error() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHasAnyEntry(t *testing.T) {
+	type args struct {
+		a []string
+		b []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			"Both nil",
+			args{},
+			true,
+		},
+		{
+			"b nil",
+			args{
+				a: []string{"foo", "bar"},
+			},
+			false,
+		},
+		{
+			"a nil",
+			args{
+				b: []string{"foo", "bar"},
+			},
+			false,
+		},
+		{
+			"No match",
+			args{
+				a: []string{"hello", "world"},
+				b: []string{"foo", "bar"},
+			},
+			false,
+		},
+		{
+			"Match",
+			args{
+				a: []string{"hello", "world", "foo"},
+				b: []string{"foo", "bar"},
+			},
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := HasAnyEntry(tt.args.a, tt.args.b); got != tt.want {
+				t.Errorf("HasAnyEntry() = %v, want %v", got, tt.want)
 			}
 		})
 	}

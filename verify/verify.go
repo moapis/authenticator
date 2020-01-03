@@ -63,8 +63,11 @@ func ParseJWTHeader(token string) (int, error) {
 // through an gRPC call from an Authenticator server.
 type Verificator struct {
 	Client auth.AuthenticatorClient
-	keys   map[int32][]byte
-	mtx    sync.RWMutex
+	// Audiences that are accepted.
+	// Nil accepts all.
+	Audiences []string
+	keys      map[int32][]byte
+	mtx       sync.RWMutex
 }
 
 // Get key from cache
@@ -133,40 +136,35 @@ func (v *Verificator) Token(ctx context.Context, token string) (*jwt.Claims, err
 	}
 	if !claims.Valid(time.Now()) {
 		return nil, &VerificationErr{"Token invalid", fmt.Errorf(
-			"Issued: %v; NotBefore %v, Expires %v",
+			"Issued: %v; NotBefore %v; Expires %v",
 			claims.Issued.Time(),
 			claims.NotBefore.Time(),
 			claims.Expires.Time(),
 		)}
 	}
+	if v.Audiences != nil && !HasAnyEntry(v.Audiences, claims.Audiences) {
+		return nil, &VerificationErr{"Required audience not found", fmt.Errorf(
+			"Accepted: %v; Claimed: %v",
+			v.Audiences,
+			claims.Audiences,
+		)}
+	}
 	return claims, nil
 }
 
-/*
-// Audiences matches the JWT claims' intended audiances and service name(s).
-// At least one of the Claim's audiences should match one of the names.
-func Audiences(claims *jwt.Claims, names []string) error {
-	for _, aud := range claims.Audiences {
-		for _, r := range names {
-			if r == aud {
-				return nil
+// HasAnyEntry is a utility function, which compares slice A and B.
+// It returns true if one or more entries is present in both A and B or when both are nil.
+func HasAnyEntry(a, b []string) bool {
+	if a == nil && b == nil {
+		return true
+	}
+
+	for _, av := range a {
+		for _, bv := range b {
+			if av == bv {
+				return true
 			}
 		}
 	}
-	return status.VerificationErr(codes.PermissionDenied, ErrAudience)
+	return false
 }
-
-// MethodGroups contains method names as first index and allowed user groups as second index.
-// The string can be used to pass Group names for logging and reporting purposses.
-type MethodGroups map[string]map[int]string
-
-// Groups are matched between method and `group_ids` field in the Claims.
-// The `group_ids` field should be contain []int representing this user's group roles.
-// At least one of the Claim's `group_ids` should match the method's groups.
-// If groups is nil, group matching is skipped and considered succesfull.
-// If a method has group ID 0 defined,
-// it is considered available for any request with a valid token. (for example all users)
-func Groups(method string, mg MethodGroups) {
-
-}
-*/
