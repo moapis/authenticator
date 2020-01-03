@@ -215,7 +215,7 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	entry := r.Context().Value(logEntry).(*logrus.Entry).WithFields(logrus.Fields{"handler": "listHandler", "vars": vars})
 
-	tx, err := mdb.MultiTx(r.Context(), &sql.TxOptions{ReadOnly: true}, conf.SQLRoutines)
+	tx, err := mdb.MultiTx(r.Context(), nil, conf.SQLRoutines)
 	if isInternalError(entry, w, err) {
 		return
 	}
@@ -266,7 +266,7 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 	entry := r.Context().Value(logEntry).(*logrus.Entry).WithFields(logrus.Fields{"handler": "userHandler", "vars": vars})
 	id := aToiMap(entry, vars)["id"]
 
-	tx, err := mdb.MultiTx(r.Context(), &sql.TxOptions{ReadOnly: true}, conf.SQLRoutines)
+	tx, err := mdb.MultiTx(r.Context(), nil, conf.SQLRoutines)
 	if isInternalError(entry, w, err) {
 		return
 	}
