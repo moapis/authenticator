@@ -1,5 +1,11 @@
 name: Go1.13
-on: [push, pull_request, release]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
 
@@ -61,9 +67,19 @@ jobs:
         # Path to coverage file to upload
         file: "*.txt"
     
-    - name: Trigger Docker Hub build
-      if: github.repository == 'moapis/authenticator' && github.event_name == 'push'
-      run: |
-        curl -X POST ${{ secrets.MIGRATIONS_TRIGGER_URL }} > /dev/null && echo "Triggered migrations build"
-        curl -X POST ${{ secrets.SERVER_TRIGGER_URL }} > /dev/null && echo "Triggered server build"
-        curl -X POST ${{ secrets.ADMIN_TRIGGER_URL }} > /dev/null && echo "Triggered admin build"
+  deploy:
+    name: Publish Docker images
+    runs-on: ubuntu-latest
+    if: github.repository == 'moapis/authenticator' && github.event_name == 'push'
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v1
+
+      - name: Build and push images
+        env:
+          TAG: $GITHUB_REF
+        run: |
+          docker-compose build
+          docker login --username ${{ secrets.DOCKER_USER }} --password ${{ secrets.DOCKER_PASSWD }}
+          docker-compose push
