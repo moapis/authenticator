@@ -1,6 +1,6 @@
 FROM golang:1.13 AS build
 
-RUN go get -v github.com/rubenv/sql-migrate/...
+RUN go get github.com/rubenv/sql-migrate/sql-migrate
 
 FROM debian:buster-slim
 

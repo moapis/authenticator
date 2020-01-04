@@ -2,7 +2,7 @@ FROM golang:1.13 AS build
 
 COPY . /go/src/github.com/moapis/authenticator
 WORKDIR /go/src/github.com/moapis/authenticator/cmd/server
-RUN go build -v
+RUN go build
 
 FROM debian:buster-slim
 

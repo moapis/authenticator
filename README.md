@@ -1,4 +1,4 @@
-[![](https://github.com/moapis/authenticator/workflows/Go1.13/badge.svg)](https://github.com/moapis/authenticator/actions?query=workflow%3A%22Go1.13%22)
+[![Build Status](https://travis-ci.org/moapis/authenticator.svg?branch=master)](https://travis-ci.org/moapis/authenticator)
 [![codecov](https://codecov.io/gh/moapis/authenticator/branch/master/graph/badge.svg)](https://codecov.io/gh/moapis/authenticator)
 [![GoDoc](https://godoc.org/github.com/moapis/authenticator?status.svg)](https://godoc.org/github.com/moapis/authenticator)
 [![Go Report Card](https://goreportcard.com/badge/github.com/moapis/authenticator)](https://goreportcard.com/report/github.com/moapis/authenticator)

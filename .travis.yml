@@ -1,0 +1,43 @@
+dist: bionic
+
+language: go
+go:
+  - "1.13"
+  - master
+
+services:
+  - postgresql
+  - docker
+
+install:
+  - go get -v ./...
+  - go get -v github.com/rubenv/sql-migrate/sql-migrate
+
+before_script:
+  - psql -c 'create database authenticator_test;' -U postgres
+  - ls /home/travis/gopath/bin
+  - (cd migrations && sql-migrate up -env="testing")
+
+script:
+  - go test -race ./models -test.config="../sqlboiler_test.yml"
+  - go test -race -coverprofile=server.txt -covermode=atomic ./cmd/server
+  - go test -race -coverprofile=verify.txt -covermode=atomic ./verify
+
+after_script:
+  - bash <(curl -s https://codecov.io/bash) -f *.txt
+
+before_deploy:
+  - docker login -u $DOCKER_USER -p $DOCKER_PASSWD
+
+deploy:
+  - provider: script
+    script: bash deploy.sh latest
+    on:
+      go: "1.13"
+      branch: master
+  - provider: script
+    script: bash deploy.sh
+    on:
+      go: "1.13"
+      tags: true
+      all_branches: true
