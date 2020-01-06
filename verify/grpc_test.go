@@ -61,8 +61,9 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 	testVerificator = &Verificator{
-		Client: auth.NewAuthenticatorClient(cc),
-		keys:   map[int32][]byte{10: []byte(testPubKey)},
+		Client:    auth.NewAuthenticatorClient(cc),
+		Audiences: []string{"tester"},
+		keys:      map[int32][]byte{10: []byte(testPubKey)},
 	}
 
 	c := m.Run()
