@@ -13,8 +13,8 @@ import (
 	"github.com/friendsofgo/errors"
 	"golang.org/x/crypto/argon2"
 
-	"github.com/moapis/authenticator/models"
 	auth "github.com/moapis/authenticator"
+	"github.com/moapis/authenticator/models"
 	"github.com/moapis/authenticator/verify"
 	"github.com/moapis/mailer"
 	"github.com/pascaldekloe/jwt"
@@ -100,8 +100,8 @@ const (
 	errToken       = "JWT error"
 	errCredentials = "Invalid credentials"
 
-	jwtUserID   = "user_id"
-	jwtGroupIDs = "group_ids"
+	jwtUserID = "user_id"
+	jwtGroups = "groups"
 )
 
 func (rt *requestTx) authReply(subject string, issued time.Time, set map[string]interface{}, audiences ...string) (*auth.AuthReply, error) {
@@ -136,27 +136,40 @@ func (rt *requestTx) authReply(subject string, issued time.Time, set map[string]
 	return &auth.AuthReply{Jwt: st}, nil
 }
 
-func (rt *requestTx) userAuthReply(user *models.User, issued time.Time, audiences ...string) (*auth.AuthReply, error) {
+func (rt *requestTx) userAuthReply(user *models.User, issued time.Time) (*auth.AuthReply, error) {
 	rt.log = rt.log.WithField("user", user)
-	groups, err := user.Groups(qm.Select(models.GroupColumns.ID)).All(rt.ctx, rt.tx)
+	audiences, err := user.Audiences(qm.Select(models.AudienceColumns.Name)).All(rt.ctx, rt.tx)
+	if err != nil {
+		rt.log.WithError(err).Error("userAuthReply")
+		return nil, status.Error(codes.Internal, errDB)
+	}
+	rt.log.WithField("audiences", audiences).Debug("userAuthReply")
+
+	groups, err := user.Groups(qm.Select(models.GroupColumns.Name)).All(rt.ctx, rt.tx)
 	if err != nil {
 		rt.log.WithError(err).Error("userAuthReply")
 		return nil, status.Error(codes.Internal, errDB)
 	}
 	rt.log.WithField("groups", groups).Debug("userAuthReply")
 
-	gIDs := make([]int, 0, len(groups))
-	for _, g := range groups {
-		gIDs = append(gIDs, g.ID)
+	gns := make([]string, len(groups))
+	for i, g := range groups {
+		gns[i] = g.Name
 	}
+
+	ans := make([]string, len(audiences))
+	for i, a := range audiences {
+		ans[i] = a.Name
+	}
+
 	return rt.authReply(
 		user.Name,
 		issued,
 		map[string]interface{}{
-			jwtUserID:   user.ID,
-			jwtGroupIDs: gIDs,
+			jwtUserID: user.ID,
+			jwtGroups: gns,
 		},
-		audiences...,
+		ans...,
 	)
 }
 

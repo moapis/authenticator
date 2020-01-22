@@ -29,7 +29,7 @@
       "Name": "admin",
       "Password": "admin",
       "Groups": [
-        "admin"
+        "primary"
       ],
       "Audiences": [
         "authenticator"

@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/moapis/authenticator/models"
 	auth "github.com/moapis/authenticator"
+	"github.com/moapis/authenticator/models"
 	"github.com/moapis/mailer"
 	"github.com/moapis/multidb"
 	pg "github.com/moapis/multidb/drivers/postgresql"
@@ -119,7 +119,7 @@ var Default = ServerConfig{
 			Name:      "admin",
 			Email:     "admin@localhost",
 			Password:  "admin",
-			Groups:    []string{"admin"},
+			Groups:    []string{"primary"},
 			Audiences: []string{"authenticator"},
 		},
 	},
@@ -239,7 +239,7 @@ func (c ServerConfig) bootStrapUsers(ctx context.Context, s *authServer) error {
 		for i, g := range u.Groups {
 			gms[i] = &models.Group{Name: g}
 		}
-		if err = um.SetGroups(ctx, tx, true); err != nil {
+		if err = um.SetGroups(ctx, tx, true, gms...); err != nil {
 			log.WithError(err).Error("bootstrap SetGroups")
 			return err
 		}
@@ -249,7 +249,7 @@ func (c ServerConfig) bootStrapUsers(ctx context.Context, s *authServer) error {
 		for i, a := range u.Audiences {
 			ams[i] = &models.Audience{Name: a}
 		}
-		if err = um.SetAudiences(ctx, tx, true); err != nil {
+		if err = um.SetAudiences(ctx, tx, true, ams...); err != nil {
 			log.WithError(err).Error("bootstrap SetAudiences")
 			return err
 		}

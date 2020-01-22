@@ -48,11 +48,20 @@ var (
 			Email: "all@groups.com",
 			Name:  "allGroups",
 		},
+		"allAudiences": {
+			ID:    104,
+			Email: "all@audiences.com",
+			Name:  "allAudiences",
+		},
 	}
 	testGroups = []*models.Group{
 		{Name: "public"},
 		{Name: "user"},
 		{Name: "admin"},
+	}
+	testAudiences = []*models.Audience{
+		{Name: "aud1"},
+		{Name: "aud2"},
 	}
 )
 
@@ -132,6 +141,9 @@ func userTestData() error {
 	}
 	if err = testUsers["allGroups"].AddGroups(testCtx, tx, false, testGroups...); err != nil {
 		log.WithError(err).Error("AddGroups all")
+	}
+	if err = testUsers["allAudiences"].AddAudiences(testCtx, tx, true, testAudiences...); err != nil {
+		log.WithError(err).Error("AddAudiences all")
 	}
 
 	if err = tx.Commit(); err != nil {

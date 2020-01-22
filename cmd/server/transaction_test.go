@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
-	"github.com/moapis/authenticator/models"
 	auth "github.com/moapis/authenticator"
+	"github.com/moapis/authenticator/models"
 	"github.com/moapis/multidb"
 	"github.com/pascaldekloe/jwt"
 	"github.com/sirupsen/logrus"
@@ -241,9 +241,8 @@ func Test_requestTx_authReply(t *testing.T) {
 
 func Test_requestTx_userAuthReply(t *testing.T) {
 	type args struct {
-		user      *models.User
-		issued    time.Time
-		audiences []string
+		user   *models.User
+		issued time.Time
 	}
 	tests := []struct {
 		name    string
@@ -256,10 +255,9 @@ func Test_requestTx_userAuthReply(t *testing.T) {
 			args{
 				testUsers["noGroup"],
 				time.Unix(123, 456),
-				nil,
 			},
 			&auth.AuthReply{
-				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiZ3JvdXBfaWRzIjpbXSwiaWF0IjoxMjMuMDAwMDAwNDU2LCJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJub0dyb3VwIiwidXNlcl9pZCI6MTAxfQ.cN5J_jiwdE25scA3p1X2BgAeMxYtLLYwORF7kOPgbDEnegspSyxPLnklOf46QG1-wsN3Ju8sWH134palAGTBAQ",
+				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiZ3JvdXBzIjpbXSwiaWF0IjoxMjMuMDAwMDAwNDU2LCJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJub0dyb3VwIiwidXNlcl9pZCI6MTAxfQ._i6WbC8-jTV-KTx955cCfJrrhabPB4XcXS5yr7x5a3-VXSyKuhO0HBMSd-pcPJqdCdZ0Y6gW51NEIvpi9h7sDw",
 			},
 			false,
 		},
@@ -268,10 +266,9 @@ func Test_requestTx_userAuthReply(t *testing.T) {
 			args{
 				testUsers["oneGroup"],
 				time.Unix(123, 456),
-				nil,
 			},
 			&auth.AuthReply{
-				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiZ3JvdXBfaWRzIjpbMV0sImlhdCI6MTIzLjAwMDAwMDQ1NiwiaXNzIjoibG9jYWxob3N0Iiwic3ViIjoib25lR3JvdXAiLCJ1c2VyX2lkIjoxMDJ9.gbkjDYNFamC2AJEIU-HlMzh1mHLeYdm8dv8an60Z2nvHuhKXUY7RCzMARUtrXeEuYDAaiSWYwqXN4AyWDzoJAw",
+				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiZ3JvdXBzIjpbInB1YmxpYyJdLCJpYXQiOjEyMy4wMDAwMDA0NTYsImlzcyI6ImxvY2FsaG9zdCIsInN1YiI6Im9uZUdyb3VwIiwidXNlcl9pZCI6MTAyfQ.yWorv_npPiULypIFyWXnfn3KCkuWLwutc1VNi0HW06_QVVH5P7yh2o-JjhSdKp77h1jeisFcjEoFGg4mLLCZBw",
 			},
 			false,
 		},
@@ -280,10 +277,20 @@ func Test_requestTx_userAuthReply(t *testing.T) {
 			args{
 				testUsers["allGroups"],
 				time.Unix(123, 456),
-				[]string{"me", "and", "you"},
 			},
 			&auth.AuthReply{
-				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJhdWQiOlsibWUiLCJhbmQiLCJ5b3UiXSwiZXhwIjo4NjUyMy4wMDAwMDA0NTYsImdyb3VwX2lkcyI6WzEsMiwzXSwiaWF0IjoxMjMuMDAwMDAwNDU2LCJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJhbGxHcm91cHMiLCJ1c2VyX2lkIjoxMDN9.j0hyUeEUu8ZKFl8n4s-8HFzC5eR4Y5KjT5vI2dHNCu-MRdz2iB0Dh2C2EqZ_sILggtkTTjtrScRxTOlcX8kgBA",
+				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiZ3JvdXBzIjpbInB1YmxpYyIsInVzZXIiLCJhZG1pbiJdLCJpYXQiOjEyMy4wMDAwMDA0NTYsImlzcyI6ImxvY2FsaG9zdCIsInN1YiI6ImFsbEdyb3VwcyIsInVzZXJfaWQiOjEwM30.yXfAtIcOOflLk0KQDLkzl6k5iIdgW5s-grTez6mHRYVU7241RjYlRzWvBCySf_mMXTfYRXviooxVVV5rCI1MBg",
+			},
+			false,
+		},
+		{
+			"All audiences",
+			args{
+				testUsers["allAudiences"],
+				time.Unix(123, 456),
+			},
+			&auth.AuthReply{
+				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJhdWQiOlsiYXVkMSIsImF1ZDIiXSwiZXhwIjo4NjUyMy4wMDAwMDA0NTYsImdyb3VwcyI6W10sImlhdCI6MTIzLjAwMDAwMDQ1NiwiaXNzIjoibG9jYWxob3N0Iiwic3ViIjoiYWxsQXVkaWVuY2VzIiwidXNlcl9pZCI6MTA0fQ.9qHsNg1uy-AfdAai8558pWpo8iVnwxzGUju_nNKs8Hgpdl6NYFUfma2cJsehtIihS8GVPgU-s-JwATO-bNtvCg",
 			},
 			false,
 		},
@@ -292,7 +299,6 @@ func Test_requestTx_userAuthReply(t *testing.T) {
 			args{
 				testUsers["allGroups"],
 				time.Unix(123, 456),
-				nil,
 			},
 			nil,
 			true,
@@ -308,7 +314,7 @@ func Test_requestTx_userAuthReply(t *testing.T) {
 			if tt.wantErr {
 				rt.done()
 			}
-			got, err := rt.userAuthReply(tt.args.user, tt.args.issued, tt.args.audiences...)
+			got, err := rt.userAuthReply(tt.args.user, tt.args.issued)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("requestTx.userAuthReply() error = %v, wantErr %v", err, tt.wantErr)
 				return
