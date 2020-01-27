@@ -6,9 +6,14 @@ RUN go build
 
 FROM debian:buster-slim
 
-COPY --from=build /go/src/github.com/moapis/authenticator/cmd/admin/AdminLTE/dist /AdminLTE/dist
-COPY --from=build /go/src/github.com/moapis/authenticator/cmd/admin/AdminLTE/plugins /AdminLTE/plugins
-COPY --from=build /go/src/github.com/moapis/authenticator/cmd/admin/static/ /static
-COPY --from=build /go/src/github.com/moapis/authenticator/cmd/admin/templates/ /templates
+COPY cmd/admin/AdminLTE/dist /AdminLTE/dist
+COPY cmd/admin/AdminLTE/plugins /AdminLTE/plugins
+COPY cmd/admin/static/ /static
+COPY cmd/admin/templates/ /templates
+COPY docker.json /docker.json
+
 COPY --from=build /go/src/github.com/moapis/authenticator/cmd/admin/admin /admin
+
 ENTRYPOINT [ "/admin" ]
+
+CMD [ "-config", "/docker.json" ]

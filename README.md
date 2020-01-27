@@ -33,6 +33,17 @@ This project is still under heavy development. We've recently deployed a **beta*
 
 ## Development
 
+When developing against Authenticator, there is a `docker-compose.yml` file which sets up a development infrastructure. It start a postgresql instance, runs the neccesary migrations and start the server instances. You can download the Compose file or run this from the root of the repository:
+
+````
+docker compose up
+````
+
+- The authenticator gRPC server will be served at port 8765.
+- The admin interface will be served at port 1234.
+
+The defaut user is "admin@localhost", password "admin", member of the group "primary" and audience "authenticator".
+
 ### Protocol buffers
 
 The authenticator server uses gRPC through protocol buffers generation. To regenerate the gRPC definitions, run:

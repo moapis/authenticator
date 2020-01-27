@@ -11,10 +11,10 @@ COPY --from=build /go/bin/sql-migrate /usr/local/bin/sql-migrate
 WORKDIR /migrations
 COPY . .
 
-ENV DB_HOST=postgres
+ENV DB_HOST=pg
 ENV DB_NAME=authenticator
-ENV DB_USER=postgres
-ENV DB_PASSWORD=foobar
-ENV DB_SSLMODE=require
+ENV DB_USER=authenticator
+ENV DB_PASSWORD=Simple
+ENV DB_SSLMODE=disable
 
 ENTRYPOINT [ "sql-migrate" ]

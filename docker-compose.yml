@@ -1,20 +1,26 @@
 version: '3.6'
 
 services:
-    server:
-        image: moapis/authenticator-server:${TAG:-development}
-        build: 
-            dockerfile: server.Dockerfile
-            context: .
+    pg:
+        image: postgres:12
+        restart: always
+        environment:
+          POSTGRES_PASSWORD: Simple
+          POSTGRES_USER: authenticator
+
+    auth:
+        image: moapis/authenticator-server:latest
+        restart: on-failure
+        ports:
+            - 127.0.0.1:8765:8765
 
     admin:
-        image: moapis/authenticator-admin:${TAG:-development}
-        build: 
-            dockerfile: admin.Dockerfile
-            context: .
+        image: moapis/authenticator-admin:latest
+        restart: on-failure
+        ports:
+            - 127.0.0.1:1234:1234
     
     migrations:
-        image: moapis/authenticator-migrations:${TAG:-development}
-        build:
-            dockerfile: Dockerfile
-            context: migrations
+        image: moapis/authenticator-migrations:latest
+        command: [ "up", "--env", "production"]
+        restart: on-failure

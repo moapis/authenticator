@@ -8,5 +8,10 @@ if [ -n "$TRAVIS_TAG" ]; then
 fi
 export TAG="${TAG}"
 
-docker-compose build
-docker-compose push
+docker build -t "moapis/authenticator-server:${TAG}" -f server.Dockerfile .
+docker build -t "moapis/authenticator-admin:${TAG}" -f admin.Dockerfile .
+docker build -t "moapis/authenticator-migrations:${TAG}" migrations
+
+docker push "moapis/authenticator-server:${TAG}"
+docker push "moapis/authenticator-admin:${TAG}"
+docker push "moapis/authenticator-migrations:${TAG}"

@@ -9,6 +9,11 @@ FROM debian:buster-slim
 RUN apt-get update && \
     apt-get install -y ca-certificates
 
-COPY --from=build /go/src/github.com/moapis/authenticator/cmd/server/templates/ /templates
+COPY cmd/server/templates/ /templates
+COPY docker.json /docker.json
+
 COPY --from=build /go/src/github.com/moapis/authenticator/cmd/server/server /server
+
 ENTRYPOINT [ "/server" ]
+
+CMD [ "-config", "/docker.json" ]
