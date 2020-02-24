@@ -10,7 +10,7 @@ require (
 	github.com/kat-co/vala v0.0.0-20170210184112-42e1d8b61f12
 	github.com/lib/pq v1.3.0
 	github.com/moapis/mailer v0.2.0
-	github.com/moapis/multidb v0.1.1
+	github.com/moapis/multidb v0.1.2
 	github.com/pascaldekloe/jwt v1.7.0
 	github.com/pelletier/go-toml v1.6.0 // indirect
 	github.com/rubenv/sql-migrate v0.0.0-20191213152630-06338513c237

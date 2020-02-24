@@ -118,8 +118,8 @@ github.com/mitchellh/mapstructure v1.1.2 h1:fmNYVwqnSfB9mZU6OS2O6GsXM+wcskZDuKQz
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
 github.com/moapis/mailer v0.2.0 h1:/gU463BlTj3UpMUcsA8hwTddCRFDCR1+coHha8W/BKM=
 github.com/moapis/mailer v0.2.0/go.mod h1:X+Cf9PfuWXmdefjXfUsxNjOL+rCQ6S0UQAoFWsuvMQk=
-github.com/moapis/multidb v0.1.1 h1:dHLMCTJCBkNbMq92jb22zJV/Se+vutUwE7qUqEv+syM=
-github.com/moapis/multidb v0.1.1/go.mod h1:mTxQ7/IWj/UCqCGSpSV5MXn1j4KBmtKjBlbyud0LSbA=
+github.com/moapis/multidb v0.1.2 h1:8HjYRnhsIPmQ+sjt/TPkNbij+Ln7zy0LWNHex47mKbU=
+github.com/moapis/multidb v0.1.2/go.mod h1:mTxQ7/IWj/UCqCGSpSV5MXn1j4KBmtKjBlbyud0LSbA=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
 github.com/olekukonko/tablewriter v0.0.1/go.mod h1:vsDQFd/mU46D+Z4whnwzcISnGGzXWMclvtLoiIKAKIo=
