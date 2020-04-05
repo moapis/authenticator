@@ -20,12 +20,12 @@ before_script:
 
 script:
   - go test -race ./models -test.config="../sqlboiler_test.yml"
-  - go test -race -coverprofile=server.txt -covermode=atomic ./cmd/server
-  - go test -race -coverprofile=verify.txt -covermode=atomic ./verify
-  - go test -race -coverprofile=middle.txt -covermode=atomic ./middleware
+  - go test -race -coverprofile=server.cov -covermode=atomic ./cmd/server
+  - go test -race -coverprofile=verify.cov -covermode=atomic ./verify
+  - go test -race -coverprofile=middle.cov -covermode=atomic ./middleware
 
 after_script:
-  - bash <(curl -s https://codecov.io/bash) -f *.txt
+  - bash <(curl -s https://codecov.io/bash) -f '*.cov'
 
 before_deploy:
   - docker login -u $DOCKER_USER -p $DOCKER_PASSWD
