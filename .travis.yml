@@ -22,6 +22,7 @@ script:
   - go test -race ./models -test.config="../sqlboiler_test.yml"
   - go test -race -coverprofile=server.txt -covermode=atomic ./cmd/server
   - go test -race -coverprofile=verify.txt -covermode=atomic ./verify
+  - go test -race -coverprofile=middle.txt -covermode=atomic ./middleware
 
 after_script:
   - bash <(curl -s https://codecov.io/bash) -f *.txt

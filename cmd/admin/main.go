@@ -14,6 +14,7 @@ import (
 
 	"github.com/gorilla/mux"
 	auth "github.com/moapis/authenticator"
+	"github.com/moapis/authenticator/middleware"
 	"github.com/moapis/authenticator/models"
 	"github.com/moapis/authenticator/verify"
 	"github.com/moapis/multidb"
@@ -607,89 +608,6 @@ func contextMW(next http.Handler) http.Handler {
 	})
 }
 
-const (
-	redirectBase = "/login?redirect=%s"
-)
-
-func tokenToCookieMW(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		entry := r.Context().Value(logEntry).(*logrus.Entry).WithField("handler", "tokenToCookieMW")
-
-		jwt := r.URL.Query().Get("jwt")
-		if jwt == "" {
-			entry.Debug("Jwt not in URL, skipping")
-			next.ServeHTTP(w, r)
-			return
-		}
-		claims, err := verificator.Token(r.Context(), jwt)
-		if err != nil {
-			entry.WithError(err).Warn("Redirect to login")
-			http.Redirect(w, r, fmt.Sprintf(redirectBase, r.RequestURI), http.StatusSeeOther)
-			return
-		}
-		cookie := &http.Cookie{
-			Name:    "jwt",
-			Value:   jwt,
-			Path:    "/",
-			Expires: claims.Expires.Time(),
-		}
-		entry.WithField("cookie", cookie).Debug("SetCookie")
-		http.SetCookie(w, cookie)
-		r.AddCookie(cookie)
-
-		next.ServeHTTP(w, r)
-	})
-}
-
-func freshCookie(ctx context.Context, jwt string) (*http.Cookie, error) {
-	auth, err := authClient.RefreshToken(ctx, &auth.AuthReply{Jwt: jwt})
-	if err != nil {
-		return nil, err
-	}
-	jwt = auth.GetJwt()
-	claims, err := verificator.Token(ctx, jwt)
-	if err != nil {
-		return nil, err
-	}
-	return &http.Cookie{
-		Name:    "jwt",
-		Value:   jwt,
-		Path:    "/",
-		Expires: claims.Expires.Time(),
-	}, nil
-}
-
-func cookieMW(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		entry := r.Context().Value(logEntry).(*logrus.Entry).WithField("handler", "cookieMW")
-
-		redirect := fmt.Sprintf("/login?redirect=%s", r.RequestURI)
-		cookie, err := r.Cookie("jwt")
-		if err != nil {
-			entry.WithError(err).Warn("Redirect to login")
-			http.Redirect(w, r, redirect, http.StatusSeeOther)
-			return
-		}
-		entry.WithField("cookie", cookie).Debug("Found cookie")
-
-		claims, err := verificator.Token(r.Context(), cookie.Value)
-		if err != nil {
-			entry.WithError(err).Warn("Redirect to login")
-			http.Redirect(w, r, redirect, http.StatusSeeOther)
-			return
-		}
-		if claims.Expires.Time().Before(time.Now().Add(12 * time.Hour)) {
-			cookie, err = freshCookie(r.Context(), cookie.Value)
-			if isInternalError(logrus.NewEntry(log), w, err) {
-				return
-			}
-			entry.WithField("cookie", cookie).Debug("Fresh cookie")
-			http.SetCookie(w, cookie)
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
 func catchMW(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
@@ -706,7 +624,7 @@ var (
 	conf        *ServerConfig
 	mdb         *multidb.MultiDB
 	authClient  auth.AuthenticatorClient
-	verificator verify.Verificator
+	verificator *verify.Verificator
 )
 
 func main() {
@@ -722,7 +640,8 @@ func main() {
 	r := mux.NewRouter()
 	r.Use(catchMW)
 	r.Use(contextMW)
-	r.Use(tokenToCookieMW)
+	r.Handle("/", http.RedirectHandler(indexRedirect, http.StatusMovedPermanently))
+	r.Handle("/users/", http.RedirectHandler(indexRedirect, http.StatusMovedPermanently))
 
 	fs := http.FileServer(http.Dir(conf.AdminLTE))
 	r.PathPrefix("/dist/").Handler(fs)
@@ -747,17 +666,21 @@ func main() {
 		cancel()
 	}
 	defer cc.Close()
+
 	authClient = auth.NewAuthenticatorClient(cc)
-	verificator = verify.Verificator{
+	verificator = &verify.Verificator{
 		Client:    authClient,
 		Audiences: conf.Audiences,
 	}
 	entry.Info("gRPC Dail done")
 
-	r.Handle("/", http.RedirectHandler(indexRedirect, http.StatusMovedPermanently))
-	r.Handle("/users/", http.RedirectHandler(indexRedirect, http.StatusMovedPermanently))
+	mwc := &middleware.Client{
+		Verificator:   verificator,
+		RefreshWithin: 12 * time.Hour,
+	}
+
 	auth := r.PathPrefix(authPrefix).Subrouter()
-	auth.Use(cookieMW)
+	auth.Use(mwc.Middleware)
 	auth.HandleFunc("/{resource}/", listHandler)
 
 	auth.HandleFunc("/users/{id}/", userHandler)
