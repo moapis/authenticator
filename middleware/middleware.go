@@ -80,6 +80,7 @@ func (c *Client) loginRedirect(ctx context.Context, w http.ResponseWriter, r *ht
 	q := url.Query()
 	q.Del("jwt")
 	url.RawQuery = q.Encode()
+	url.Host = r.Host
 
 	http.Redirect(w, r,
 		fmt.Sprintf("%s?%s=%s", lu, rk, url),
