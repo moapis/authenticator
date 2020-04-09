@@ -45,7 +45,7 @@ const defaultTmplOut = `<!DOCTYPE html>
 </body>
 </html>`
 
-func TestLogin_template(t *testing.T) {
+func TestForms_template(t *testing.T) {
 	data := &FormData{
 		SubmitURL: "/login?redirect=http://example.com/foo?hello=world",
 	}
@@ -73,7 +73,7 @@ func TestLogin_template(t *testing.T) {
 			}
 			var buf bytes.Buffer
 
-			if err := f.template().Execute(&buf, data); err != nil {
+			if err := f.template(LoginTmpl).Execute(&buf, data); err != nil {
 				t.Fatal(err)
 			}
 
@@ -118,7 +118,7 @@ var (
 	epErrTmpl = template.Must(template.New("error").Parse(`{{ define "error" }}{{ .Missing }}{{ end }}`))
 )
 
-func TestLogin_renderForm(t *testing.T) {
+func TestForms_renderForm(t *testing.T) {
 	type fields struct {
 		Tmpl *template.Template
 		Data interface{}
@@ -186,7 +186,7 @@ func TestLogin_renderForm(t *testing.T) {
 			req := httptest.NewRequest("GET", "/login?redirect=http://example.com/foo?hello=world", nil)
 			w := httptest.NewRecorder()
 
-			f.renderForm(w, req, tt.args.flash, tt.args.status)
+			f.renderForm(w, req, LoginTmpl, tt.args.flash, tt.args.status)
 
 			resp := w.Result()
 			body, _ := ioutil.ReadAll(resp.Body)
@@ -209,12 +209,12 @@ func (errorWriter) Header() http.Header       { return nil }
 func (errorWriter) Write([]byte) (int, error) { return 0, io.ErrClosedPipe }
 func (errorWriter) WriteHeader(int)           {}
 
-func TestLogin_renderForm_writeErr(t *testing.T) {
+func TestForms_renderForm_writeErr(t *testing.T) {
 	h := &Forms{}
 	w := errorWriter{}
 	r := httptest.NewRequest("GET", "/login?redirect=http://example.com/foo?hello=world", nil)
 
-	h.renderForm(w, r, nil)
+	h.renderForm(w, r, LoginTmpl, nil)
 }
 
 const badRequestOut = `<!DOCTYPE html>
@@ -229,7 +229,7 @@ const badRequestOut = `<!DOCTYPE html>
 </body>
 </html>`
 
-func TestLogin_getRedirect(t *testing.T) {
+func TestForms_getRedirect(t *testing.T) {
 	wantU, err := url.Parse("http://example.com/foo?hello=world")
 	if err != nil {
 		t.Fatal(err)

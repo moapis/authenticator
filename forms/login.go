@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"net/url"
 	"strings"
@@ -39,8 +38,6 @@ const DefaultLoginTmpl = `{{ define "login" -}}
 {{- end -}}
 `
 
-var loginTmpl = template.Must(template.New("login").Parse(DefaultLoginTmpl))
-
 const (
 	redirectMissing = "Missing redirect in URL"
 	redirectInvalid = "Invalid redirect URL"
@@ -61,7 +58,7 @@ func (f *Forms) loginGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f.renderForm(w, r, nil)
+	f.renderForm(w, r, LoginTmpl, nil)
 }
 
 func (*Forms) doRedirect(w http.ResponseWriter, r *http.Request, u *url.URL, tkn string) {
@@ -84,7 +81,7 @@ func (f *Forms) loginPost(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		clog.Warn(ctx, "Parseform", "err", err)
 		fl := &Flash{ErrFlashLvl, "Malformed form data"}
-		f.renderForm(w, r, fl, http.StatusBadRequest)
+		f.renderForm(w, r, LoginTmpl, fl, http.StatusBadRequest)
 		return
 	}
 
@@ -109,7 +106,7 @@ func (f *Forms) loginPost(w http.ResponseWriter, r *http.Request) {
 	if len(missing) > 0 {
 		clog.Warn(ctx, "Missing form data", "missing", missing)
 		fl := &Flash{ErrFlashLvl, fmt.Sprintf("Missing form data: %s", strings.Join(missing, " and "))}
-		f.renderForm(w, r, fl, http.StatusBadRequest)
+		f.renderForm(w, r, LoginTmpl, fl, http.StatusBadRequest)
 		return
 	}
 
@@ -136,7 +133,7 @@ func (f *Forms) loginPost(w http.ResponseWriter, r *http.Request) {
 		flash, sc = &Flash{ErrFlashLvl, "Wrong email or password"}, http.StatusUnauthorized
 	}
 
-	f.renderForm(w, r, flash, sc)
+	f.renderForm(w, r, LoginTmpl, flash, sc)
 }
 
 // LoginHander returns the handler taking care of login GET and POST requests.

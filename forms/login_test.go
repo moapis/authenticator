@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func TestLogin_loginGet(t *testing.T) {
+func TestForms_loginGet(t *testing.T) {
 	tests := []struct {
 		name     string
 		r        *http.Request
@@ -58,7 +58,7 @@ func TestLogin_loginGet(t *testing.T) {
 	}
 }
 
-func TestLogin_doRedirect(t *testing.T) {
+func TestForms_doRedirect(t *testing.T) {
 	f := &Forms{}
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("POST", "/login?redirect=http://example.com/foo?hello=world", nil)
@@ -83,7 +83,7 @@ func TestLogin_doRedirect(t *testing.T) {
 	}
 }
 
-func TestLogin_loginPost(t *testing.T) {
+func TestForms_loginPost(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

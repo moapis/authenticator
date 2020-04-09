@@ -52,7 +52,22 @@ func (b *bufferPool) Put(buf *bytes.Buffer) {
 	b.p.Put(buf)
 }
 
+// resPool recycles buffers for template execution output
 var resPool bufferPool
+
+// TemplateName is used to predefine template naming requirements.
+type TemplateName string
+
+// Predefined Template Names.
+const (
+	LoginTmpl TemplateName = "login"
+	// ResetTmpl TemplateName = "reset"
+	// SetTmpl   TemplateName = "set"
+)
+
+var defaultTmpl = map[TemplateName]*template.Template{
+	LoginTmpl: template.Must(template.New("login").Parse(DefaultLoginTmpl)),
+}
 
 // Forms implements http.Forms.
 // A GET request serves the login form.
@@ -68,15 +83,17 @@ type Forms struct {
 	Data interface{}
 }
 
-func (f *Forms) template() *template.Template {
+func (f *Forms) template(tn TemplateName) *template.Template {
 	if f.Tmpl != nil {
-		return f.Tmpl
+		if tmpl := f.Tmpl.Lookup(string(tn)); tmpl != nil {
+			return tmpl
+		}
 	}
 
-	return loginTmpl
+	return defaultTmpl[tn]
 }
 
-func (f *Forms) renderForm(w http.ResponseWriter, r *http.Request, flash *Flash, status ...int) {
+func (f *Forms) renderForm(w http.ResponseWriter, r *http.Request, tn TemplateName, flash *Flash, status ...int) {
 	buf := resPool.Get()
 	defer resPool.Put(buf)
 
@@ -88,7 +105,7 @@ func (f *Forms) renderForm(w http.ResponseWriter, r *http.Request, flash *Flash,
 
 	ctx := clog.AddArgs(r.Context(), "method", "renderForm", "data", data)
 
-	if err := f.template().Execute(buf, data); err != nil {
+	if err := f.template(tn).Execute(buf, data); err != nil {
 		clog.Error(ctx, "Template execution", "err", err)
 		if err := f.EP.Render(w, r, http.StatusInternalServerError, "Template execution error", f.Data); err != nil {
 			clog.Error(ctx, "During handling error", "err", err)
