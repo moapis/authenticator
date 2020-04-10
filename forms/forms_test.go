@@ -29,22 +29,6 @@ func Test_bufferPool(t *testing.T) {
 	}
 }
 
-const defaultTmplOut = `<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="utf-8">
-	<title>Please login</title>
-</head>
-<body>
-	<h1>Please login</h1>
-	<form method="post" action="/login?redirect=http://example.com/foo?hello=world">
-		<input type="email" placeholder="Email" name="email" required>
-		<input type="password" placeholder="Password" name="password" required>
-		<button type="submit">Sign In</button>
-	</form>
-</body>
-</html>`
-
 func TestForms_template(t *testing.T) {
 	data := &FormData{
 		SubmitURL: "/login?redirect=http://example.com/foo?hello=world",
@@ -58,7 +42,7 @@ func TestForms_template(t *testing.T) {
 		{
 			"Default template",
 			nil,
-			defaultTmplOut,
+			defaultLoginTmplOut,
 		},
 		{
 			"Custom template",
@@ -78,7 +62,7 @@ func TestForms_template(t *testing.T) {
 			}
 
 			if got := buf.String(); got != tt.want {
-				t.Errorf("Login.template() = \n%v\nwant\n%v", got, tt.want)
+				t.Errorf("Forms.template() = \n%v\nwant\n%v", got, tt.want)
 			}
 		})
 	}
@@ -140,7 +124,7 @@ func TestForms_renderForm(t *testing.T) {
 			fields{},
 			args{},
 			http.StatusOK,
-			defaultTmplOut,
+			defaultLoginTmplOut,
 		},
 		{
 			"Template execution error",
@@ -192,12 +176,12 @@ func TestForms_renderForm(t *testing.T) {
 			body, _ := ioutil.ReadAll(resp.Body)
 
 			if resp.StatusCode != tt.wantCode {
-				t.Errorf("Login.Render() status = %v, want: %v", resp.StatusCode, tt.wantCode)
+				t.Errorf("Forms.renderForm() status = %v, want: %v", resp.StatusCode, tt.wantCode)
 			}
 
 			got := string(body)
 			if got != tt.want {
-				t.Errorf("Login.Render() = \n%v\nwant\n%v", got, tt.want)
+				t.Errorf("Forms.renderForm() = \n%v\nwant\n%v", got, tt.want)
 			}
 		})
 	}
@@ -216,18 +200,6 @@ func TestForms_renderForm_writeErr(t *testing.T) {
 
 	h.renderForm(w, r, LoginTmpl, nil)
 }
-
-const badRequestOut = `<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="utf-8">
-	<title>400 Bad Request: Missing redirect in URL</title>
-</head>
-<body>
-	<h1>400 Bad Request</h1>
-	<p>Missing redirect in URL</p>
-</body>
-</html>`
 
 func TestForms_getRedirect(t *testing.T) {
 	wantU, err := url.Parse("http://example.com/foo?hello=world")
@@ -260,11 +232,11 @@ func TestForms_getRedirect(t *testing.T) {
 
 			gotU, err := f.getRedirect(tt.r)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Login.getRedirect() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Forms.getRedirect() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(gotU, tt.wantU) {
-				t.Errorf("Login.getRedirect() URL = %v, want %v", gotU, tt.wantU)
+				t.Errorf("Forms.getRedirect() URL = %v, want %v", gotU, tt.wantU)
 			}
 
 		})

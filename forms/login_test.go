@@ -15,6 +15,34 @@ import (
 	"google.golang.org/grpc"
 )
 
+const defaultLoginTmplOut = `<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Please login</title>
+</head>
+<body>
+	<h1>Please login</h1>
+	<form method="post" action="/login?redirect=http://example.com/foo?hello=world">
+		<input type="email" placeholder="Email" name="email" required>
+		<input type="password" placeholder="Password" name="password" required>
+		<button type="submit">Sign In</button>
+	</form>
+</body>
+</html>`
+
+const loginBadRequestOut = `<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>400 Bad Request: Missing redirect in URL</title>
+</head>
+<body>
+	<h1>400 Bad Request</h1>
+	<p>Missing redirect in URL</p>
+</body>
+</html>`
+
 func TestForms_loginGet(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -26,13 +54,13 @@ func TestForms_loginGet(t *testing.T) {
 			"Missing redirect",
 			httptest.NewRequest("GET", "/login", nil),
 			http.StatusBadRequest,
-			badRequestOut,
+			loginBadRequestOut,
 		},
 		{
 			"Success",
 			httptest.NewRequest("GET", "/login?redirect=http://example.com/foo?hello=world", nil),
 			http.StatusOK,
-			defaultTmplOut,
+			defaultLoginTmplOut,
 		},
 	}
 	for _, tt := range tests {
@@ -47,18 +75,18 @@ func TestForms_loginGet(t *testing.T) {
 			body, _ := ioutil.ReadAll(resp.Body)
 
 			if resp.StatusCode != tt.wantCode {
-				t.Errorf("Login.formHandler() status = %v, want: %v", resp.StatusCode, tt.wantCode)
+				t.Errorf("Forms.formHandler() status = %v, want: %v", resp.StatusCode, tt.wantCode)
 			}
 
 			got := string(body)
 			if got != tt.want {
-				t.Errorf("Login.formHandler() = \n%v\nwant\n%v", got, tt.want)
+				t.Errorf("Forms.formHandler() = \n%v\nwant\n%v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestForms_doRedirect(t *testing.T) {
+func TestForms_loginRedirect(t *testing.T) {
 	f := &Forms{}
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("POST", "/login?redirect=http://example.com/foo?hello=world", nil)
@@ -69,17 +97,17 @@ func TestForms_doRedirect(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	f.doRedirect(w, r, u, "spanac")
+	f.loginRedirect(w, r, u, "spanac")
 
 	resp := w.Result()
 
 	if resp.StatusCode != http.StatusSeeOther {
-		t.Errorf("Login.formHandler() status = %v, want: %v", resp.StatusCode, http.StatusSeeOther)
+		t.Errorf("Forms.formHandler() status = %v, want: %v", resp.StatusCode, http.StatusSeeOther)
 	}
 
 	want := "http://example.com/foo?hello=world&jwt=spanac"
 	if got := resp.Header.Get("Location"); got != want {
-		t.Errorf("Login.formHandler() Location = %v, want: %v", got, want)
+		t.Errorf("Forms.formHandler() Location = %v, want: %v", got, want)
 	}
 }
 
@@ -117,7 +145,7 @@ func TestForms_loginPost(t *testing.T) {
 			httptest.NewRequest("POST", "/login", strings.NewReader("email=admin%40localhost&password=admin")),
 			ctx,
 			http.StatusBadRequest,
-			badRequestOut,
+			loginBadRequestOut,
 			"",
 		},
 		{
@@ -169,15 +197,15 @@ func TestForms_loginPost(t *testing.T) {
 			body, _ := ioutil.ReadAll(resp.Body)
 
 			if resp.StatusCode != tt.wantCode {
-				t.Errorf("Login.postHandler() status = %v, want: %v", resp.StatusCode, tt.wantCode)
+				t.Errorf("Forms.postHandler() status = %v, want: %v", resp.StatusCode, tt.wantCode)
 			}
 
 			if got := string(body); got != tt.wantBody {
-				t.Errorf("Login.postHandler() = \n%v\nwant\n%v", got, tt.wantBody)
+				t.Errorf("Forms.postHandler() = \n%v\nwant\n%v", got, tt.wantBody)
 			}
 
 			if got := resp.Header.Get("Location"); !strings.HasPrefix(got, tt.wantLoc) {
-				t.Errorf("Login.postHandler() Location = %v, want: %v", got, tt.wantLoc)
+				t.Errorf("Forms.postHandler() Location = %v, want: %v", got, tt.wantLoc)
 			}
 		})
 	}
@@ -204,11 +232,11 @@ func Test_loginHandler_ServeHTTP(t *testing.T) {
 	body, _ := ioutil.ReadAll(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Login.ServeHTTP() GET status = %v, want: %v", resp.StatusCode, http.StatusOK)
+		t.Errorf("Forms.ServeHTTP() GET status = %v, want: %v", resp.StatusCode, http.StatusOK)
 	}
 
-	if got := string(body); got != defaultTmplOut {
-		t.Errorf("Login.ServeHTTP() GET = \n%v\nwant\n%v", got, defaultTmplOut)
+	if got := string(body); got != defaultLoginTmplOut {
+		t.Errorf("Forms.ServeHTTP() GET = \n%v\nwant\n%v", got, defaultLoginTmplOut)
 	}
 
 	w = httptest.NewRecorder()
@@ -219,12 +247,12 @@ func Test_loginHandler_ServeHTTP(t *testing.T) {
 
 	resp = w.Result()
 	if resp.StatusCode != http.StatusSeeOther {
-		t.Errorf("Login.ServeHTTP() POST status = %v, want: %v", resp.StatusCode, http.StatusSeeOther)
+		t.Errorf("Forms.ServeHTTP() POST status = %v, want: %v", resp.StatusCode, http.StatusSeeOther)
 	}
 
 	want := "http://example.com/foo?hello=world&jwt="
 	if got := resp.Header.Get("Location"); !strings.HasPrefix(got, want) {
-		t.Errorf("Login.ServeHTTP() Location = %v, want: %v", got, want)
+		t.Errorf("Forms.ServeHTTP() Location = %v, want: %v", got, want)
 	}
 
 	w = httptest.NewRecorder()
@@ -234,11 +262,11 @@ func Test_loginHandler_ServeHTTP(t *testing.T) {
 
 	resp = w.Result()
 	if resp.StatusCode != http.StatusMethodNotAllowed {
-		t.Errorf("Login.ServeHTTP() POP status = %v, want: %v", resp.StatusCode, http.StatusMethodNotAllowed)
+		t.Errorf("Forms.ServeHTTP() POP status = %v, want: %v", resp.StatusCode, http.StatusMethodNotAllowed)
 	}
 
 	want = "GET POST"
 	if got := resp.Header.Get("Allow"); !strings.HasPrefix(got, want) {
-		t.Errorf("Login.ServeHTTP() Allow = %v, want: %v", got, want)
+		t.Errorf("Forms.ServeHTTP() Allow = %v, want: %v", got, want)
 	}
 }

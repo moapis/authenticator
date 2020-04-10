@@ -61,15 +61,13 @@ func (f *Forms) loginGet(w http.ResponseWriter, r *http.Request) {
 	f.renderForm(w, r, LoginTmpl, nil)
 }
 
-func (*Forms) doRedirect(w http.ResponseWriter, r *http.Request, u *url.URL, tkn string) {
+func (*Forms) loginRedirect(w http.ResponseWriter, r *http.Request, u *url.URL, tkn string) {
 	q := u.Query()
 	q.Set("jwt", tkn)
 
 	u.RawQuery = q.Encode()
 
-	us := u.String()
-
-	http.Redirect(w, r, us, http.StatusSeeOther)
+	http.Redirect(w, r, u.String(), http.StatusSeeOther)
 }
 
 func (f *Forms) loginPost(w http.ResponseWriter, r *http.Request) {
@@ -115,7 +113,7 @@ func (f *Forms) loginPost(w http.ResponseWriter, r *http.Request) {
 		Password: password,
 	})
 	if err == nil {
-		f.doRedirect(w, r, rURL, reply.GetJwt())
+		f.loginRedirect(w, r, rURL, reply.GetJwt())
 		return
 	}
 
@@ -156,11 +154,7 @@ func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		h.loginPost(w, r)
 	default:
-		w.Header().Add("Allow",
-			strings.Join([]string{
-				http.MethodGet,
-				http.MethodPost,
-			}, " "))
+		w.Header().Add("Allow", AllowedMethods)
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }

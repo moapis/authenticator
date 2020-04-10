@@ -12,6 +12,11 @@ import (
 	clog "github.com/usrpro/clog15"
 )
 
+const (
+	// AllowedMethods for the handlers of this package
+	AllowedMethods = http.MethodGet + " " + http.MethodPost
+)
+
 // Flash message targets the user with info, warning or error message
 type Flash struct {
 	Lvl FlashLvl
@@ -62,11 +67,12 @@ type TemplateName string
 const (
 	LoginTmpl TemplateName = "login"
 	// ResetTmpl TemplateName = "reset"
-	// SetTmpl   TemplateName = "set"
+	SetPWTmpl TemplateName = "setpw"
 )
 
 var defaultTmpl = map[TemplateName]*template.Template{
-	LoginTmpl: template.Must(template.New("login").Parse(DefaultLoginTmpl)),
+	LoginTmpl: template.Must(template.New(string(LoginTmpl)).Parse(DefaultLoginTmpl)),
+	SetPWTmpl: template.Must(template.New(string(SetPWTmpl)).Parse(DefaultSetPWTmpl)),
 }
 
 // Forms implements http.Forms.
@@ -123,7 +129,7 @@ func (f *Forms) renderForm(w http.ResponseWriter, r *http.Request, tn TemplateNa
 }
 
 // RedirectKey for redirect URL in request Query.
-// Upon successfull authentication, the client is redirected to the URI under this key.
+// Upon successfull authentication, the client is redirected to the URL under this key.
 // Login request: https://example.com/login?redirect=https://secured.com/admin?key=value
 // Will redirect to: https://secured.com/admin?key=value&jwt=xxxxxxxxxxx
 var RedirectKey = "redirect"
