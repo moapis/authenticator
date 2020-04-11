@@ -13,8 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/moapis/authenticator/models"
+	"github.com/golang/protobuf/ptypes/empty"
 	auth "github.com/moapis/authenticator"
+	"github.com/moapis/authenticator/models"
 	"github.com/moapis/multidb"
 	"github.com/pascaldekloe/jwt"
 )
@@ -763,6 +764,85 @@ func Test_callBackURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := callBackURL(tt.args.cb, tt.args.token); got != tt.want {
 				t.Errorf("callBackURL() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_authServer_ResetUserPW(t *testing.T) {
+	ectx, cancel := context.WithCancel(testCtx)
+	cancel()
+
+	type args struct {
+		ctx context.Context
+		ue  *auth.UserEmail
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *empty.Empty
+		wantErr bool
+	}{
+		{
+			"Context error",
+			args{
+				ectx,
+				nil,
+			},
+			nil,
+			true,
+		},
+		{
+			"Mssing e-mail",
+			args{
+				testCtx,
+				&auth.UserEmail{
+					Email: "",
+				},
+			},
+			nil,
+			true,
+		},
+		{
+			"Non-existent e-mail",
+			args{
+				testCtx,
+				&auth.UserEmail{
+					Email: "does-not@exist.com",
+					Url: &auth.CallBackUrl{
+						BaseUrl:  "http://localhost:1234/setpw",
+						TokenKey: "jwt",
+					},
+				},
+			},
+			nil,
+			true,
+		},
+		{
+			"Success",
+			args{
+				testCtx,
+				&auth.UserEmail{
+					Email: "all@audiences.com",
+					Url: &auth.CallBackUrl{
+						BaseUrl:  "http://localhost:1234/setpw",
+						TokenKey: "jwt",
+					},
+				},
+			},
+			&empty.Empty{},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tas.ResetUserPW(tt.args.ctx, tt.args.ue)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("authServer.ResetUserPW() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("authServer.ResetUserPW() = %v, want %v", got, tt.want)
 			}
 		})
 	}

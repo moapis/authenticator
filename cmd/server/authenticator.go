@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	auth "github.com/moapis/authenticator"
 	"github.com/moapis/authenticator/models"
 	"github.com/moapis/mailer"
@@ -85,6 +86,7 @@ func (s *authServer) privateKey() privateKey {
 }
 
 const (
+	errMissingEmail       = "Missing email"
 	errMissingEmailOrName = "Missing email or name"
 	errMissingPW          = "Missing password"
 	errMissingToken       = "JWT token missing"
@@ -257,4 +259,44 @@ func (s *authServer) GetPubKey(ctx context.Context, k *auth.KeyID) (*auth.Public
 	}
 	defer rt.done()
 	return rt.getPubKey(int(k.GetKid()))
+}
+
+const (
+	pwResetSubject = "Password reset link"
+)
+
+func (s *authServer) ResetUserPW(ctx context.Context, ue *auth.UserEmail) (*empty.Empty, error) {
+	rt, err := s.newTx(ctx, "ResetUserPW", false)
+	if err != nil {
+		return nil, err
+	}
+	defer rt.done()
+
+	email := ue.GetEmail()
+	if email == "" {
+		rt.log.Warn(errMissingEmail)
+		return nil, status.Error(codes.InvalidArgument, errMissingEmail)
+	}
+
+	user, err := rt.findUserByValue("email", ue.GetEmail())
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "User not found")
+	}
+	reply, err := rt.authReply(user.Name, time.Now(), nil, s.passwordAudience())
+	if err != nil {
+		return nil, err
+	}
+	if err := rt.sendMail(
+		"reset", mailData{
+			user, pwResetSubject,
+			callBackURL(
+				ue.GetUrl(),
+				reply.GetJwt(),
+			),
+		},
+	); err != nil {
+		return nil, err
+	}
+
+	return &empty.Empty{}, nil
 }

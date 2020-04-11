@@ -6,6 +6,8 @@ syntax = "proto3";
 
 package authenticator;
 
+import "google/protobuf/empty.proto";
+
 service Authenticator {
     // RegisterPwUser registers a new user which can authenticate using a PW.
     // Server implementation should grant the user only a public role untill verification is complete.
@@ -38,9 +40,14 @@ service Authenticator {
     // Authorization: Internal
     rpc PublicUserToken (PublicUser) returns (AuthReply) {}
 
-    // GetPubKeys retrieves registered public keys from the database, identified by KeyIDs.
+    // GetPubKey retrieves registered public keys from the database, identified by KeyIDs.
     // Authorization: Internal
     rpc GetPubKey(KeyID) returns (PublicKey) {}
+
+    // ResetUserPW sends a password reset e-mail to a registered user.
+    // The e-mail will contain an URL, as per passed CallBackURL.
+    // The URL will contain a token which (only) can be used for setting a new password.
+    rpc ResetUserPW(UserEmail) returns (google.protobuf.Empty) {}
 }
 
 message UserData {
@@ -116,4 +123,9 @@ message KeyID {
 
 message PublicKey {
     bytes key = 1;
+}
+
+message UserEmail {
+    string email = 1;
+    CallBackUrl url = 2;
 }
