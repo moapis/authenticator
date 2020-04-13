@@ -2,6 +2,7 @@ package forms
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -65,14 +66,15 @@ type TemplateName string
 
 // Predefined Template Names.
 const (
-	LoginTmpl TemplateName = "login"
-	// ResetTmpl TemplateName = "reset"
-	SetPWTmpl TemplateName = "setpw"
+	LoginTmpl   TemplateName = "login"
+	ResetPWTmpl TemplateName = "reset"
+	SetPWTmpl   TemplateName = "setpw"
 )
 
 var defaultTmpl = map[TemplateName]*template.Template{
-	LoginTmpl: template.Must(template.New(string(LoginTmpl)).Parse(DefaultLoginTmpl)),
-	SetPWTmpl: template.Must(template.New(string(SetPWTmpl)).Parse(DefaultSetPWTmpl)),
+	LoginTmpl:   template.Must(template.New(string(LoginTmpl)).Parse(DefaultLoginTmpl)),
+	ResetPWTmpl: template.Must(template.New(string(ResetPWTmpl)).Parse(DefaultResetPWTmpl)),
+	SetPWTmpl:   template.Must(template.New(string(SetPWTmpl)).Parse(DefaultSetPWTmpl)),
 }
 
 // Forms implements http.Forms.
@@ -81,12 +83,13 @@ var defaultTmpl = map[TemplateName]*template.Template{
 type Forms struct {
 	// Tmpl holds the login form template.
 	// If nil a simple placholder is used.
-	Tmpl   *template.Template
-	EP     ehtml.Pages
-	Client auth.AuthenticatorClient
-
-	// Data can be set and will be available in all templates.
+	Tmpl *template.Template
+	EP   ehtml.Pages
+	// Data will be available in all templates.
 	Data interface{}
+
+	Client auth.AuthenticatorClient
+	Paths  *Paths
 }
 
 func (f *Forms) template(tn TemplateName) *template.Template {
@@ -128,17 +131,13 @@ func (f *Forms) renderForm(w http.ResponseWriter, r *http.Request, tn TemplateNa
 	}
 }
 
-// RedirectKey for redirect URL in request Query.
-// Upon successfull authentication, the client is redirected to the URL under this key.
-// Login request: https://example.com/login?redirect=https://secured.com/admin?key=value
-// Will redirect to: https://secured.com/admin?key=value&jwt=xxxxxxxxxxx
-var RedirectKey = "redirect"
+var ()
 
 func (f *Forms) getRedirect(r *http.Request) (u *url.URL, err error) {
 	values := r.URL.Query()
 	ctx := clog.AddArgs(r.Context(), "method", "getRedirect", "url_values", values)
 
-	if red := values.Get(RedirectKey); red != "" {
+	if red := values.Get(f.Paths.redirectKey()); red != "" {
 		if u, err = url.Parse(red); err == nil {
 			return u, nil
 		}
@@ -150,4 +149,90 @@ func (f *Forms) getRedirect(r *http.Request) (u *url.URL, err error) {
 	}
 
 	return
+}
+
+// Paths are used for generating Redirect responses,
+// e-mailed links and route generation.
+// All paths must be absolute, with leading slash.
+type Paths struct {
+	// Public address of the server.
+	ServerAddress string
+	SetPW         string
+	ResetPW       string
+	Login         string
+	// RedirectKey for redirect URL in request Query.
+	// Upon successfull authentication, the client is redirected to the URL under this key.
+	// Login request: https://example.com/login?redirect=https://secured.com/admin?key=value
+	// Will redirect to: https://secured.com/admin?key=value&jwt=xxxxxxxxxxx
+	RedirectKey string
+	// TokenKey is under which key the JSON web token will be embedded in the URL query,
+	// when executing the redirect.
+	TokenKey string
+}
+
+// Defaults when Forms.Paths is nil, or field is empty.
+const (
+	DefaultServerAddress = "http://localhost:1234"
+	DefaultSetPWPath     = "/set-password"
+	DefaultResetPWPath   = "/reset-password"
+	DefaultLoginPath     = "/login"
+	DefaultRedirectKey   = "redirect"
+	DefaultTokenKey      = "jwt"
+)
+
+func (p *Paths) server() string {
+	if p == nil || p.ServerAddress == "" {
+		return DefaultServerAddress
+	}
+	return p.ServerAddress
+}
+
+func (p *Paths) setPW() string {
+	if p == nil || p.SetPW == "" {
+		return DefaultSetPWPath
+	}
+	return p.SetPW
+}
+
+func (p *Paths) resetPW() string {
+	if p == nil || p.ResetPW == "" {
+		return DefaultResetPWPath
+	}
+	return p.ResetPW
+}
+
+func (p *Paths) login() string {
+	if p == nil || p.Login == "" {
+		return DefaultLoginPath
+	}
+	return p.Login
+}
+
+func (p *Paths) redirectKey() string {
+	if p == nil || p.RedirectKey == "" {
+		return DefaultRedirectKey
+	}
+	return p.RedirectKey
+}
+
+func (p *Paths) tokenKey() string {
+	if p == nil || p.TokenKey == "" {
+		return DefaultTokenKey
+	}
+	return p.TokenKey
+}
+
+// callbackURL is generated from the incomming request Query and the new desired path.
+func (p *Paths) callbackURL(values url.Values, path string) *auth.CallBackUrl {
+	params := make(map[string]*auth.StringSlice, len(values))
+
+	for k, v := range values {
+		params[k] = &auth.StringSlice{Slice: v}
+	}
+
+	return &auth.CallBackUrl{
+		BaseUrl:  fmt.Sprint(p.server(), path),
+		TokenKey: p.tokenKey(),
+		Params:   params,
+	}
 }

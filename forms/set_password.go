@@ -48,10 +48,6 @@ func (f *Forms) setPWGet(w http.ResponseWriter, r *http.Request) {
 	f.renderForm(w, r, SetPWTmpl, nil)
 }
 
-// LoginPath is where the login form is served.
-// This has to match with the actual route in the calling package.
-var LoginPath = "/login"
-
 func (f *Forms) setPWRedirect(w http.ResponseWriter, r *http.Request) {
 	ctx := clog.AddArgs(r.Context(), "method", "setPWRedirect")
 
@@ -67,7 +63,7 @@ func (f *Forms) setPWRedirect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r,
-		fmt.Sprintf("%s?%s=%s", LoginPath, RedirectKey, rURL),
+		fmt.Sprintf("%s?%s=%s", f.Paths.login(), f.Paths.redirectKey(), rURL),
 		http.StatusSeeOther)
 }
 
@@ -89,6 +85,7 @@ func (f *Forms) setPWPost(w http.ResponseWriter, r *http.Request) {
 		if err := f.EP.Render(w, r, http.StatusBadRequest, "Missing token in URL", f.Data); err != nil {
 			clog.Error(ctx, "During handling error", "err", err)
 		}
+		return
 	}
 
 	npw := r.PostForm.Get("password")
@@ -109,22 +106,19 @@ func (f *Forms) setPWPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var (
-		flash *Flash
-		sc    int
-	)
-
 	s, ok := status.FromError(err)
 	if !ok || s.Code() != codes.Unauthenticated {
 		clog.Error(ctx, "ChangeUserPw gRPC call", "err", err)
-		flash, sc = &Flash{ErrFlashLvl, "Internal server error"}, http.StatusInternalServerError
+		f.renderForm(w, r, SetPWTmpl,
+			&Flash{ErrFlashLvl, "Internal server error"},
+			http.StatusInternalServerError,
+		)
 	} else {
 		clog.Info(ctx, "ChangeUserPw gRPC call", "err", err)
-		// TODO: serve password reset request form
-		flash, sc = &Flash{ErrFlashLvl, "Token verification failed"}, http.StatusUnauthorized
+		if err := f.EP.Render(w, r, http.StatusUnauthorized, "Token verification failed, please request a new one.", f.Data); err != nil {
+			clog.Error(ctx, "During handling error", "err", err)
+		}
 	}
-
-	f.renderForm(w, r, LoginTmpl, flash, sc)
 }
 
 // SetPWHandler returns the handler taking care

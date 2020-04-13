@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"testing"
 
+	auth "github.com/moapis/authenticator"
 	"github.com/moapis/ehtml"
 )
 
@@ -80,23 +81,6 @@ const errPageOut = `<!DOCTYPE html>
 </body>
 </html>`
 
-const defaultTmplFlash = `<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="utf-8">
-	<title>Please login</title>
-</head>
-<body>
-	<h1>Please login</h1>
-	<form method="post" action="/login?redirect=http://example.com/foo?hello=world">
-		<input type="email" placeholder="Email" name="email" required>
-		<input type="password" placeholder="Password" name="password" required>
-		<button type="submit">Sign In</button>
-	</form>
-	<p>%s</p>
-</body>
-</html>`
-
 var (
 	errTmpl   = template.Must(template.New("login").Parse(`{{ define "login" }}{{ .Missing }}{{ end }}`))
 	epErrTmpl = template.Must(template.New("error").Parse(`{{ define "error" }}{{ .Missing }}{{ end }}`))
@@ -156,7 +140,7 @@ func TestForms_renderForm(t *testing.T) {
 				http.StatusBadRequest,
 			},
 			http.StatusBadRequest,
-			fmt.Sprintf(defaultTmplFlash, "error: missing password"),
+			fmt.Sprintf(loginFlashOut, "error: missing password"),
 		},
 	}
 	for _, tt := range tests {
@@ -239,6 +223,240 @@ func TestForms_getRedirect(t *testing.T) {
 				t.Errorf("Forms.getRedirect() URL = %v, want %v", gotU, tt.wantU)
 			}
 
+		})
+	}
+}
+
+func TestPaths_callbackURL(t *testing.T) {
+	type args struct {
+		r    *http.Request
+		path string
+	}
+	tests := []struct {
+		name string
+		args args
+		want *auth.CallBackUrl
+	}{
+		{
+			"No query",
+			args{
+				httptest.NewRequest("POST", "https://example.com/reset", nil),
+				"/setpw",
+			},
+			&auth.CallBackUrl{
+				BaseUrl:  "http://localhost:1234/setpw",
+				TokenKey: DefaultTokenKey,
+				Params:   map[string]*auth.StringSlice{},
+			},
+		},
+		{
+			"with query",
+			args{
+				httptest.NewRequest("POST", "https://example.com/reset?foo=bar&hello=world", nil),
+				"/setpw",
+			},
+			&auth.CallBackUrl{
+				BaseUrl:  "http://localhost:1234/setpw",
+				TokenKey: DefaultTokenKey,
+				Params: map[string]*auth.StringSlice{
+					"foo":   {Slice: []string{"bar"}},
+					"hello": {Slice: []string{"world"}},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		var p *Paths
+		t.Run(tt.name, func(t *testing.T) {
+			if got := p.callbackURL(tt.args.r.URL.Query(), tt.args.path); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CallbackURL() =\n%v\nwant\n%v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPaths_server(t *testing.T) {
+	tests := []struct {
+		name string
+		p    *Paths
+		want string
+	}{
+		{
+			"nil",
+			nil,
+			DefaultServerAddress,
+		},
+		{
+			"empty",
+			&Paths{},
+			DefaultServerAddress,
+		},
+		{
+			"Set",
+			&Paths{ServerAddress: "http://foobar.com"},
+			"http://foobar.com",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.p.server(); got != tt.want {
+				t.Errorf("Paths.server() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPaths_setpw(t *testing.T) {
+	tests := []struct {
+		name string
+		p    *Paths
+		want string
+	}{
+		{
+			"nil",
+			nil,
+			DefaultSetPWPath,
+		},
+		{
+			"empty",
+			&Paths{},
+			DefaultSetPWPath,
+		},
+		{
+			"Set",
+			&Paths{SetPW: "/foobar"},
+			"/foobar",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.p.setPW(); got != tt.want {
+				t.Errorf("Paths.server() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPaths_resetpw(t *testing.T) {
+	tests := []struct {
+		name string
+		p    *Paths
+		want string
+	}{
+		{
+			"nil",
+			nil,
+			DefaultResetPWPath,
+		},
+		{
+			"empty",
+			&Paths{},
+			DefaultResetPWPath,
+		},
+		{
+			"Set",
+			&Paths{ResetPW: "/foobar"},
+			"/foobar",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.p.resetPW(); got != tt.want {
+				t.Errorf("Paths.server() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPaths_login(t *testing.T) {
+	tests := []struct {
+		name string
+		p    *Paths
+		want string
+	}{
+		{
+			"nil",
+			nil,
+			DefaultLoginPath,
+		},
+		{
+			"empty",
+			&Paths{},
+			DefaultLoginPath,
+		},
+		{
+			"Set",
+			&Paths{Login: "/foobar"},
+			"/foobar",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.p.login(); got != tt.want {
+				t.Errorf("Paths.server() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPaths_redirectKey(t *testing.T) {
+	tests := []struct {
+		name string
+		p    *Paths
+		want string
+	}{
+		{
+			"nil",
+			nil,
+			DefaultRedirectKey,
+		},
+		{
+			"empty",
+			&Paths{},
+			DefaultRedirectKey,
+		},
+		{
+			"Set",
+			&Paths{RedirectKey: "foo"},
+			"foo",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.p.redirectKey(); got != tt.want {
+				t.Errorf("Paths.server() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPaths_tokenKey(t *testing.T) {
+	tests := []struct {
+		name string
+		p    *Paths
+		want string
+	}{
+		{
+			"nil",
+			nil,
+			DefaultTokenKey,
+		},
+		{
+			"empty",
+			&Paths{},
+			DefaultTokenKey,
+		},
+		{
+			"Set",
+			&Paths{TokenKey: "foo"},
+			"foo",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.p.tokenKey(); got != tt.want {
+				t.Errorf("Paths.server() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

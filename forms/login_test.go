@@ -111,6 +111,23 @@ func TestForms_loginRedirect(t *testing.T) {
 	}
 }
 
+const loginFlashOut = `<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Please login</title>
+</head>
+<body>
+	<h1>Please login</h1>
+	<form method="post" action="/login?redirect=http://example.com/foo?hello=world">
+		<input type="email" placeholder="Email" name="email" required>
+		<input type="password" placeholder="Password" name="password" required>
+		<button type="submit">Sign In</button>
+	</form>
+	<p>%s</p>
+</body>
+</html>`
+
 func TestForms_loginPost(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -137,7 +154,7 @@ func TestForms_loginPost(t *testing.T) {
 			httptest.NewRequest("POST", "/login?redirect=http://example.com/foo?hello=world", strings.NewReader("%sssssssss")),
 			ctx,
 			http.StatusBadRequest,
-			fmt.Sprintf(defaultTmplFlash, "error: Malformed form data"),
+			fmt.Sprintf(loginFlashOut, "error: Malformed form data"),
 			"",
 		},
 		{
@@ -153,7 +170,7 @@ func TestForms_loginPost(t *testing.T) {
 			httptest.NewRequest("POST", "/login?redirect=http://example.com/foo?hello=world", nil),
 			ctx,
 			http.StatusBadRequest,
-			fmt.Sprintf(defaultTmplFlash, "error: Missing form data: Email and Password"),
+			fmt.Sprintf(loginFlashOut, "error: Missing form data: Email and Password"),
 			"",
 		},
 		{
@@ -169,7 +186,7 @@ func TestForms_loginPost(t *testing.T) {
 			httptest.NewRequest("POST", "/login?redirect=http://example.com/foo?hello=world", strings.NewReader("email=admin%40localhost&password=admin")),
 			ectx,
 			http.StatusInternalServerError,
-			fmt.Sprintf(defaultTmplFlash, "error: Internal server error"),
+			fmt.Sprintf(loginFlashOut, "error: Internal server error"),
 			"",
 		},
 		{
@@ -177,7 +194,7 @@ func TestForms_loginPost(t *testing.T) {
 			httptest.NewRequest("POST", "/login?redirect=http://example.com/foo?hello=world", strings.NewReader("email=admin%40localhost&password=wrong")),
 			ctx,
 			http.StatusUnauthorized,
-			fmt.Sprintf(defaultTmplFlash, "error: Wrong email or password"),
+			fmt.Sprintf(loginFlashOut, "error: Wrong email or password"),
 			"",
 		},
 	}
@@ -232,11 +249,11 @@ func Test_loginHandler_ServeHTTP(t *testing.T) {
 	body, _ := ioutil.ReadAll(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Forms.ServeHTTP() GET status = %v, want: %v", resp.StatusCode, http.StatusOK)
+		t.Errorf("loginHandler.ServeHTTP() GET status = %v, want: %v", resp.StatusCode, http.StatusOK)
 	}
 
 	if got := string(body); got != defaultLoginTmplOut {
-		t.Errorf("Forms.ServeHTTP() GET = \n%v\nwant\n%v", got, defaultLoginTmplOut)
+		t.Errorf("loginHandler.ServeHTTP() GET = \n%v\nwant\n%v", got, defaultLoginTmplOut)
 	}
 
 	w = httptest.NewRecorder()
@@ -247,12 +264,12 @@ func Test_loginHandler_ServeHTTP(t *testing.T) {
 
 	resp = w.Result()
 	if resp.StatusCode != http.StatusSeeOther {
-		t.Errorf("Forms.ServeHTTP() POST status = %v, want: %v", resp.StatusCode, http.StatusSeeOther)
+		t.Errorf("loginHandler.ServeHTTP() POST status = %v, want: %v", resp.StatusCode, http.StatusSeeOther)
 	}
 
 	want := "http://example.com/foo?hello=world&jwt="
 	if got := resp.Header.Get("Location"); !strings.HasPrefix(got, want) {
-		t.Errorf("Forms.ServeHTTP() Location = %v, want: %v", got, want)
+		t.Errorf("loginHandler.ServeHTTP() Location = %v, want: %v", got, want)
 	}
 
 	w = httptest.NewRecorder()
@@ -262,11 +279,11 @@ func Test_loginHandler_ServeHTTP(t *testing.T) {
 
 	resp = w.Result()
 	if resp.StatusCode != http.StatusMethodNotAllowed {
-		t.Errorf("Forms.ServeHTTP() POP status = %v, want: %v", resp.StatusCode, http.StatusMethodNotAllowed)
+		t.Errorf("loginHandler.ServeHTTP() POP status = %v, want: %v", resp.StatusCode, http.StatusMethodNotAllowed)
 	}
 
 	want = "GET POST"
 	if got := resp.Header.Get("Allow"); !strings.HasPrefix(got, want) {
-		t.Errorf("Forms.ServeHTTP() Allow = %v, want: %v", got, want)
+		t.Errorf("loginHandler.ServeHTTP() Allow = %v, want: %v", got, want)
 	}
 }
