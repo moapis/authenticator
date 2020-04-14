@@ -29,4 +29,5 @@ require (
 	google.golang.org/genproto v0.0.0-20200403120447-c50568487044 // indirect
 	google.golang.org/grpc v1.28.1
 	gopkg.in/ini.v1 v1.55.0 // indirect
+	github.com/inconshreveable/log15 v0.0.0-20200109203555-b30bc20e4fd1
 )

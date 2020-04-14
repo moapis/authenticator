@@ -156,18 +156,18 @@ func (f *Forms) getRedirect(r *http.Request) (u *url.URL, err error) {
 // All paths must be absolute, with leading slash.
 type Paths struct {
 	// Public address of the server.
-	ServerAddress string
-	SetPW         string
-	ResetPW       string
-	Login         string
+	ServerAddress string `json:"server_address,omitempty"`
+	SetPW         string `json:"set_pw,omitempty"`
+	ResetPW       string `json:"reset_pw,omitempty"`
+	Login         string `json:"login,omitempty"`
 	// RedirectKey for redirect URL in request Query.
 	// Upon successfull authentication, the client is redirected to the URL under this key.
 	// Login request: https://example.com/login?redirect=https://secured.com/admin?key=value
 	// Will redirect to: https://secured.com/admin?key=value&jwt=xxxxxxxxxxx
-	RedirectKey string
+	RedirectKey string `json:"redirect_key,omitempty"`
 	// TokenKey is under which key the JSON web token will be embedded in the URL query,
 	// when executing the redirect.
-	TokenKey string
+	TokenKey string `json:"token_key,omitempty"`
 }
 
 // Defaults when Forms.Paths is nil, or field is empty.

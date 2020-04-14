@@ -28,6 +28,7 @@ script:
   - (cd cmd/server && go build && server -config config/development.json &)
   - go test -race -coverprofile=middle.cov -covermode=atomic ./middleware
   - go test -race -coverprofile=forms.cov -covermode=atomic ./forms
+  - go test -race -coverprofile=httpauth.cov -covermode=atomic ./cmd/httpauth
 
 after_script:
   - bash <(curl -s https://codecov.io/bash) -f '*.cov'
