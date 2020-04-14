@@ -1,13 +1,13 @@
 {
   "address": "127.0.0.1",
-  "port": 5555,
-  "timeout": 0,
-  "server_address": "http://localhost:5555",
-  "static": "./static",
+  "port": 1235,
+  "timeout": 10000000000,
+  "server_address": "http://localhost:1235",
+  "static": "static",
+  "template_glob": "templates/*.html",
   "data": {
     "SiteName": "Authenticator"
   },
-  "templates": "templates/*.html",
   "tls": null,
   "authserver": {
     "Host": "127.0.0.1",

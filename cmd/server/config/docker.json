@@ -1,0 +1,19 @@
+{
+  "address": "",
+  "pg": {
+    "nodes": [
+      {
+        "host": "pg",
+        "port": 5432
+      }
+    ],
+    "params": {
+      "dbname": "authenticator",
+      "user": "authenticator",
+      "password": "Simple",
+      "sslmode": "disable",
+      "connect_timeout": 30
+    }
+  },
+  "sqlroutines": 1
+}

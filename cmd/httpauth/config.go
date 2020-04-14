@@ -59,8 +59,8 @@ type ServerConfig struct {
 	Timeout       time.Duration          `json:"timeout"`        // HTTP read and write timeouts
 	ServerAddress string                 `json:"server_address"` // Public address of this server
 	Static        string                 `json:"static"`         // Path to static assets
+	TemplateGlob  string                 `json:"template_glob"`  // Globbing pattern for templates
 	Data          map[string]interface{} `json:"data"`           // Static data passed to the templates
-	TemplateGlob  string                 `json:"templates"`      // Globbing pattern for templates
 	TLS           *TLSConfig             `json:"tls"`            // TLS will be disabled when nil
 	AuthServer    AuthServerConfig       `json:"authserver"`     // Config for the gRPC client connection
 }
@@ -76,8 +76,9 @@ func (c *ServerConfig) writeOut(filename string) error {
 // Default confing
 var Default = ServerConfig{
 	Address:       "127.0.0.1",
-	Port:          5555,
-	ServerAddress: "http://localhost:5555",
+	Port:          1235,
+	Timeout:       10 * time.Second,
+	ServerAddress: "http://localhost:1235",
 	Data: map[string]interface{}{
 		"SiteName": "Authenticator",
 	},

@@ -60,7 +60,11 @@ type Client struct {
 	// This allows for a login hander (like cmd/admin) to send the client back to
 	// the original URI upon succesfull login.
 	// Defaults to "redirect".
-	RedirectKey   string
+	RedirectKey string
+
+	// Scheme, hostname and optionaly port number of this host.
+	// It is used for redirecting back to this server after login.
+	ServerName    string
 	RefreshWithin time.Duration
 }
 
@@ -79,11 +83,15 @@ func (c *Client) loginRedirect(ctx context.Context, w http.ResponseWriter, r *ht
 	url := r.URL
 	q := url.Query()
 	q.Del("jwt")
-	url.RawQuery = q.Encode()
-	url.Host = r.Host
+
+	var qs string
+	if len(q) > 0 {
+		qs = fmt.Sprint("?", q.Encode())
+	}
 
 	http.Redirect(w, r,
-		fmt.Sprintf("%s?%s=%s", lu, rk, url),
+		// http://serv.com/login?redirect=http://here.com/path?foo=bar
+		fmt.Sprintf("%s?%s=%s%s%s", lu, rk, c.ServerName, url.Path, qs),
 		http.StatusSeeOther,
 	)
 }

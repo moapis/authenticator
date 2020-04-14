@@ -10,6 +10,7 @@
     "Host": "127.0.0.1",
     "Port": 8765
   },
+  "login_path": "http://localhost:1235/login",
   "audiences": null,
   "multidb": {
     "statslen": 100,

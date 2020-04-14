@@ -4,6 +4,7 @@
     "Host": "auth",
     "Port": 8765
   },
+  "login_path": "http://localhost:1235/login",
   "pg": {
     "nodes": [
       {

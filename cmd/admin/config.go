@@ -73,6 +73,7 @@ type ServerConfig struct {
 	LogLevel    LogLevel         `json:"loglevel"`    // LogLevel used for logrus
 	TLS         *TLSConfig       `json:"tls"`         // TLS will be disabled when nil
 	AuthServer  AuthServerConfig `json:"authserver"`  // Config for the gRPC client connection
+	LoginURL    string           `json:"login_path"`  // Path to login form
 	Audiences   []string         `json:"audiences"`   // Accepted audiences from JWT
 	MultiDB     multidb.Config   `json:"multidb"`     // Imported from multidb
 	PG          *pg.Config       `json:"pg"`          // PG is later embedded in multidb
@@ -97,6 +98,7 @@ var Default = ServerConfig{
 	LogLevel:   DebugLevel,
 	TLS:        nil,
 	AuthServer: AuthServerConfig{"127.0.0.1", 8765},
+	LoginURL:   "http://localhost:1235/login",
 	MultiDB: multidb.Config{
 		StatsLen:      100,
 		MaxFails:      10,
