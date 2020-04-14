@@ -133,12 +133,21 @@ var (
 
 func init() {
 	var cc *grpc.ClientConn
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
 	for cc == nil {
-		var err error
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		err := ctx.Err()
+		if err != nil {
+			log.Fatalf("%v; giving up", err)
+		}
+
+		log.Println("(re-)trying gRPC dial")
+
+		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 
 		if cc, err = grpc.DialContext(ctx, "127.0.0.1:8765", grpc.WithBlock(), grpc.WithInsecure()); err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 
 		cancel()
@@ -151,9 +160,6 @@ func init() {
 		},
 		ServerName: "http://example.com",
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
 	ar, err := testClient.Verificator.Client.AuthenticatePwUser(
 		ctx, &authenticator.UserPassword{

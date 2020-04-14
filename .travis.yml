@@ -3,7 +3,6 @@ dist: bionic
 language: go
 go:
   - "1.14"
-  - "1.13"
   - master
 
 services:
@@ -11,7 +10,7 @@ services:
   - docker
 
 install:
-  - go get -v ./...
+  - go mod vendor
   - go get -v github.com/rubenv/sql-migrate/sql-migrate
 
 before_script:
@@ -25,7 +24,7 @@ script:
   - go test -race ./models -test.config="../sqlboiler_test.yml"
   - go test -race -coverprofile=server.cov -covermode=atomic ./cmd/server
   - go test -race -coverprofile=verify.cov -covermode=atomic ./verify
-  - (cd cmd/server && go build && server -config config/development.json &)
+  - (cd cmd/server && go build && ./server -config config/development.json &)
   - go test -race -coverprofile=middle.cov -covermode=atomic ./middleware
   - go test -race -coverprofile=forms.cov -covermode=atomic ./forms
   - go test -race -coverprofile=httpauth.cov -covermode=atomic ./cmd/httpauth
@@ -38,13 +37,15 @@ before_deploy:
 
 deploy:
   - provider: script
+    skip_cleanup: true
     script: bash deploy.sh latest
     on:
-      go: "1.13"
+      go: "1.14"
       branch: master
   - provider: script
+    skip_cleanup: true
     script: bash deploy.sh
     on:
-      go: "1.13"
+      go: "1.14"
       tags: true
       all_branches: true

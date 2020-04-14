@@ -12,3 +12,4 @@
 *.out
 cmd/server/server
 cmd/httpauth/httpauth
+vendor/*
