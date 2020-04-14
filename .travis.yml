@@ -35,11 +35,13 @@ before_deploy:
 
 deploy:
   - provider: script
+    skip_cleanup: true
     script: bash deploy.sh latest
     on:
       go: "1.14"
       branch: master
   - provider: script
+    skip_cleanup: true
     script: bash deploy.sh
     on:
       go: "1.14"
