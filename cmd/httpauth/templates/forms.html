@@ -1,0 +1,38 @@
+{{ define "flash" -}}
+<p>{{ .Lvl }}: {{ .Msg }}</p>
+{{- end }}
+
+
+{{ define "login" -}}
+{{ template "header" . }}
+<h3>{{ .Data.SiteName }}</h3>
+<form method="post" action="{{ .SubmitURL }}">
+    <input type="email" placeholder="Email" name="email" required>
+    <input type="password" placeholder="Password" name="password" required>
+    <button type="submit">Sign In</button>
+</form>
+{{- if .Flash }}{{ template "flash" .Flash }}{{ end }}
+{{ template "footer" . }}
+{{- end }}
+
+{{ define "setpw" -}}
+{{ template "header" . }}
+<h3>{{ .Data.SiteName }}</h3>
+<form method="post" action="{{ .SubmitURL }}">
+    <input type="password" placeholder="Password" name="password" required>
+    <button type="submit">Set password</button>
+</form>
+{{- if .Flash }}{{ template "flash" .Flash }}{{ end }}
+{{ template "footer" . }}
+{{- end }}
+
+{{ define "reset" -}}
+{{ template "header" . }}
+<h3>{{ .Data.SiteName }}</h3>
+<form method="post" action="{{ .SubmitURL }}">
+    <input type="email" placeholder="Email" name="email" required>
+    <button type="submit">Submit</button>
+</form>
+{{- if .Flash }}{{ template "flash" .Flash }}{{ end }}
+{{ template "footer" . }}
+{{- end }}

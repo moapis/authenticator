@@ -9,6 +9,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"html/template"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,6 +19,7 @@ import (
 	"github.com/inconshreveable/log15"
 	auth "github.com/moapis/authenticator"
 	"github.com/moapis/authenticator/forms"
+	"github.com/moapis/ehtml"
 )
 
 func (c *ServerConfig) listen(sc chan os.Signal, h http.Handler) error {
@@ -72,6 +74,11 @@ func run(dc *ServerConfig) int {
 		return fatalRun(err)
 	}
 
+	tmpl, err := template.ParseGlob(conf.TemplateGlob)
+	if err != nil {
+		return fatalRun(err)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
@@ -82,7 +89,9 @@ func run(dc *ServerConfig) int {
 	defer cc.Close()
 
 	f := &forms.Forms{
-		Tmpl:   nil,
+		Tmpl:   tmpl,
+		EP:     ehtml.Pages{Tmpl: tmpl},
+		Data:   conf.Data,
 		Client: auth.NewAuthenticatorClient(cc),
 		Paths:  dc.Paths,
 	}

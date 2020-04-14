@@ -7,9 +7,10 @@ require (
 	github.com/gofrs/uuid v3.2.0+incompatible // indirect
 	github.com/golang/protobuf v1.3.5
 	github.com/gorilla/mux v1.7.4
+	github.com/inconshreveable/log15 v0.0.0-20200109203555-b30bc20e4fd1
 	github.com/kat-co/vala v0.0.0-20170210184112-42e1d8b61f12
 	github.com/lib/pq v1.3.0
-	github.com/moapis/ehtml v0.1.0
+	github.com/moapis/ehtml v0.1.1-0.20200414155135-1ab4a15a37c6
 	github.com/moapis/mailer v0.2.1
 	github.com/moapis/multidb v0.1.2
 	github.com/pascaldekloe/jwt v1.8.0
@@ -29,5 +30,4 @@ require (
 	google.golang.org/genproto v0.0.0-20200403120447-c50568487044 // indirect
 	google.golang.org/grpc v1.28.1
 	gopkg.in/ini.v1 v1.55.0 // indirect
-	github.com/inconshreveable/log15 v0.0.0-20200109203555-b30bc20e4fd1
 )

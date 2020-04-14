@@ -227,6 +227,8 @@ github.com/mitchellh/mapstructure v1.1.2 h1:fmNYVwqnSfB9mZU6OS2O6GsXM+wcskZDuKQz
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
 github.com/moapis/ehtml v0.1.0 h1:1UHBQTfoKCpKrI7f7SpAPBFUd3UchYZvIXC0T/nHkfE=
 github.com/moapis/ehtml v0.1.0/go.mod h1:33gImFeo6ZtcwpUuVFz1qx8TJ3FR03jFH31SCFkIeWs=
+github.com/moapis/ehtml v0.1.1-0.20200414155135-1ab4a15a37c6 h1:JqGf0RlML8Zy3JUsj/JTJzDu8qctbtiPZz8eNx/M3DM=
+github.com/moapis/ehtml v0.1.1-0.20200414155135-1ab4a15a37c6/go.mod h1:33gImFeo6ZtcwpUuVFz1qx8TJ3FR03jFH31SCFkIeWs=
 github.com/moapis/mailer v0.2.1 h1:W1GFJyTt1vG/3XYu7nVEOg6Y4sTPzYLRm4/i5xIekDw=
 github.com/moapis/mailer v0.2.1/go.mod h1:X+Cf9PfuWXmdefjXfUsxNjOL+rCQ6S0UQAoFWsuvMQk=
 github.com/moapis/multidb v0.1.2 h1:8HjYRnhsIPmQ+sjt/TPkNbij+Ln7zy0LWNHex47mKbU=

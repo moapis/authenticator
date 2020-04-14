@@ -55,13 +55,14 @@ func (c *AuthServerConfig) dial(ctx context.Context) (cc *grpc.ClientConn, err e
 
 // ServerConfig is a collection on config
 type ServerConfig struct {
-	Address    string           `json:"address"`    // HTTP listen Address
-	Port       uint16           `json:"port"`       // HTTP listen Port
-	Timeout    time.Duration    `json:"timeout"`    // HTTP read and write timeouts
-	Paths      *forms.Paths     `json:"paths"`      // See form package for details
-	Templates  string           `json:"templates"`  // Path to template directory
-	TLS        *TLSConfig       `json:"tls"`        // TLS will be disabled when nil
-	AuthServer AuthServerConfig `json:"authserver"` // Config for the gRPC client connection
+	Address      string                 `json:"address"`    // HTTP listen Address
+	Port         uint16                 `json:"port"`       // HTTP listen Port
+	Timeout      time.Duration          `json:"timeout"`    // HTTP read and write timeouts
+	Paths        *forms.Paths           `json:"paths"`      // See form package for details
+	Data         map[string]interface{} `json:"data"`       // Static data passed to the templates
+	TemplateGlob string                 `json:"templates"`  // Globbing pattern for templates
+	TLS          *TLSConfig             `json:"tls"`        // TLS will be disabled when nil
+	AuthServer   AuthServerConfig       `json:"authserver"` // Config for the gRPC client connection
 }
 
 func (c *ServerConfig) writeOut(filename string) error {
@@ -84,9 +85,12 @@ var Default = ServerConfig{
 		RedirectKey:   forms.DefaultRedirectKey,
 		TokenKey:      forms.DefaultTokenKey,
 	},
-	Templates:  "templates",
-	TLS:        nil,
-	AuthServer: AuthServerConfig{"127.0.0.1", 8765},
+	Data: map[string]interface{}{
+		"SiteName": "Authenticator",
+	},
+	TemplateGlob: "templates/*.html",
+	TLS:          nil,
+	AuthServer:   AuthServerConfig{"127.0.0.1", 8765},
 }
 
 func configure(c *ServerConfig, files ...string) (*ServerConfig, error) {

@@ -106,6 +106,9 @@ func Test_run(t *testing.T) {
 	eConf := Default
 	eConf.Port = 80
 
+	tmplEConf := Default
+	tmplEConf.TemplateGlob = "foo"
+
 	tests := []struct {
 		name  string
 		files string
@@ -125,7 +128,13 @@ func Test_run(t *testing.T) {
 			1,
 		},
 		{
-			"Dial error",
+			"Template error",
+			"",
+			&tmplEConf,
+			1,
+		},
+		{
+			"Listen error",
 			"",
 			&eConf,
 			1,
@@ -138,7 +147,7 @@ func Test_run(t *testing.T) {
 			if tt.want == 0 {
 				go func() {
 					p, _ := os.FindProcess(os.Getpid())
-					<-time.After(10 * time.Millisecond)
+					<-time.After(100 * time.Millisecond)
 					p.Signal(os.Interrupt)
 				}()
 			}

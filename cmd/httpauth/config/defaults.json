@@ -10,7 +10,10 @@
     "redirect_key": "redirect",
     "token_key": "jwt"
   },
-  "templates": "templates",
+  "data": {
+    "SiteName": "Authenticator"
+  },
+  "templates": "templates/*.html",
   "tls": null,
   "authserver": {
     "Host": "127.0.0.1",
