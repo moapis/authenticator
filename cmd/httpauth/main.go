@@ -93,13 +93,16 @@ func run(dc *ServerConfig) int {
 		EP:     ehtml.Pages{Tmpl: tmpl},
 		Data:   conf.Data,
 		Client: auth.NewAuthenticatorClient(cc),
-		Paths:  dc.Paths,
+		Paths: &forms.Paths{
+			ServerAddress: conf.ServerAddress,
+		},
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle(conf.Paths.SetPW, f.SetPWHandler())
-	mux.Handle(conf.Paths.ResetPW, f.ResetPWHandler())
-	mux.Handle(conf.Paths.Login, f.LoginHander())
+	mux.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir(conf.Static))))
+	mux.Handle(forms.DefaultSetPWPath, f.SetPWHandler())
+	mux.Handle(forms.DefaultResetPWPath, f.ResetPWHandler())
+	mux.Handle(forms.DefaultLoginPath, f.LoginHander())
 
 	if err = conf.listen(make(chan os.Signal, 1), mux); !errors.Is(err, http.ErrServerClosed) {
 		return fatalRun(err)

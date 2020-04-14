@@ -2,14 +2,8 @@
   "address": "127.0.0.1",
   "port": 5555,
   "timeout": 0,
-  "paths": {
-    "server_address": "http://localhost:5555",
-    "set_pw": "/set-password",
-    "reset_pw": "/reset-password",
-    "login": "/login",
-    "redirect_key": "redirect",
-    "token_key": "jwt"
-  },
+  "server_address": "http://localhost:5555",
+  "static": "./static",
   "data": {
     "SiteName": "Authenticator"
   },

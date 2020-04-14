@@ -12,7 +12,6 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/moapis/authenticator/forms"
 	clog "github.com/usrpro/clog15"
 	"google.golang.org/grpc"
 )
@@ -55,14 +54,15 @@ func (c *AuthServerConfig) dial(ctx context.Context) (cc *grpc.ClientConn, err e
 
 // ServerConfig is a collection on config
 type ServerConfig struct {
-	Address      string                 `json:"address"`    // HTTP listen Address
-	Port         uint16                 `json:"port"`       // HTTP listen Port
-	Timeout      time.Duration          `json:"timeout"`    // HTTP read and write timeouts
-	Paths        *forms.Paths           `json:"paths"`      // See form package for details
-	Data         map[string]interface{} `json:"data"`       // Static data passed to the templates
-	TemplateGlob string                 `json:"templates"`  // Globbing pattern for templates
-	TLS          *TLSConfig             `json:"tls"`        // TLS will be disabled when nil
-	AuthServer   AuthServerConfig       `json:"authserver"` // Config for the gRPC client connection
+	Address       string                 `json:"address"`        // HTTP listen Address
+	Port          uint16                 `json:"port"`           // HTTP listen Port
+	Timeout       time.Duration          `json:"timeout"`        // HTTP read and write timeouts
+	ServerAddress string                 `json:"server_address"` // Public address of this server
+	Static        string                 `json:"static"`         // Path to static assets
+	Data          map[string]interface{} `json:"data"`           // Static data passed to the templates
+	TemplateGlob  string                 `json:"templates"`      // Globbing pattern for templates
+	TLS           *TLSConfig             `json:"tls"`            // TLS will be disabled when nil
+	AuthServer    AuthServerConfig       `json:"authserver"`     // Config for the gRPC client connection
 }
 
 func (c *ServerConfig) writeOut(filename string) error {
@@ -75,19 +75,13 @@ func (c *ServerConfig) writeOut(filename string) error {
 
 // Default confing
 var Default = ServerConfig{
-	Address: "127.0.0.1",
-	Port:    5555,
-	Paths: &forms.Paths{
-		ServerAddress: "http://localhost:5555",
-		SetPW:         forms.DefaultSetPWPath,
-		ResetPW:       forms.DefaultResetPWPath,
-		Login:         forms.DefaultLoginPath,
-		RedirectKey:   forms.DefaultRedirectKey,
-		TokenKey:      forms.DefaultTokenKey,
-	},
+	Address:       "127.0.0.1",
+	Port:          5555,
+	ServerAddress: "http://localhost:5555",
 	Data: map[string]interface{}{
 		"SiteName": "Authenticator",
 	},
+	Static:       "static",
 	TemplateGlob: "templates/*.html",
 	TLS:          nil,
 	AuthServer:   AuthServerConfig{"127.0.0.1", 8765},

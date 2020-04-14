@@ -1,0 +1,17 @@
+{{ define "header" -}}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <link rel="stylesheet" href="/static/css/adminlte.min.css">
+    <script defer src="/static/js/all.min.js"></script>
+
+    <title>{{ .Data.SiteName}} | {{ .Title }}</title>
+  </head>
+{{ end -}}
+
+{{ define "footer" }}
+</html>
+{{- end -}}
