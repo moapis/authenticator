@@ -3,7 +3,6 @@ dist: bionic
 language: go
 go:
   - "1.14"
-  - "1.13"
   - master
 
 services:
@@ -11,7 +10,7 @@ services:
   - docker
 
 install:
-  - go get -v ./...
+  - go mod vendor
   - go get -v github.com/rubenv/sql-migrate/sql-migrate
 
 before_script:
@@ -38,11 +37,11 @@ deploy:
   - provider: script
     script: bash deploy.sh latest
     on:
-      go: "1.13"
+      go: "1.14"
       branch: master
   - provider: script
     script: bash deploy.sh
     on:
-      go: "1.13"
+      go: "1.14"
       tags: true
       all_branches: true
