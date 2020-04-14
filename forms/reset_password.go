@@ -34,7 +34,7 @@ const DefaultResetPWTmpl = `{{ define "reset" -}}
 `
 
 func (f *Forms) resetPWGet(w http.ResponseWriter, r *http.Request) {
-	f.renderForm(w, r, ResetPWTmpl, nil)
+	f.renderForm(w, r, ResetPWTmpl, ResetPWTitle, nil)
 }
 
 func (f *Forms) resetPWPost(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +46,7 @@ func (f *Forms) resetPWPost(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		clog.Warn(ctx, "Parseform", "err", err)
 		fl := &Flash{ErrFlashLvl, "Malformed form data"}
-		f.renderForm(w, r, ResetPWTmpl, fl, http.StatusBadRequest)
+		f.renderForm(w, r, ResetPWTmpl, ResetPWTitle, fl, http.StatusBadRequest)
 		return
 	}
 
@@ -54,7 +54,7 @@ func (f *Forms) resetPWPost(w http.ResponseWriter, r *http.Request) {
 	if email == "" {
 		clog.Warn(ctx, "Missing email in form")
 		fl := &Flash{ErrFlashLvl, "Missing form data: email"}
-		f.renderForm(w, r, ResetPWTmpl, fl, http.StatusBadRequest)
+		f.renderForm(w, r, ResetPWTmpl, ResetPWTitle, fl, http.StatusBadRequest)
 		return
 	}
 
@@ -81,7 +81,7 @@ func (f *Forms) resetPWPost(w http.ResponseWriter, r *http.Request) {
 		flash, sc = &Flash{ErrFlashLvl, "email not found"}, http.StatusUnauthorized
 	}
 
-	f.renderForm(w, r, ResetPWTmpl, flash, sc)
+	f.renderForm(w, r, ResetPWTmpl, ResetPWTitle, flash, sc)
 }
 
 // ResetPWHandler returns the handler taking care

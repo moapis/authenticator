@@ -45,7 +45,7 @@ func (f *Forms) setPWGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f.renderForm(w, r, SetPWTmpl, nil)
+	f.renderForm(w, r, SetPWTmpl, SetPWTitle, nil)
 }
 
 func (f *Forms) setPWRedirect(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +76,7 @@ func (f *Forms) setPWPost(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		clog.Warn(ctx, "Parseform", "err", err)
 		fl := &Flash{ErrFlashLvl, "Malformed form data"}
-		f.renderForm(w, r, SetPWTmpl, fl, http.StatusBadRequest)
+		f.renderForm(w, r, SetPWTmpl, SetPWTitle, fl, http.StatusBadRequest)
 		return
 	}
 
@@ -92,7 +92,7 @@ func (f *Forms) setPWPost(w http.ResponseWriter, r *http.Request) {
 	if npw == "" {
 		clog.Warn(ctx, "Missing password in form")
 		fl := &Flash{ErrFlashLvl, "Missing form data: password"}
-		f.renderForm(w, r, SetPWTmpl, fl, http.StatusBadRequest)
+		f.renderForm(w, r, SetPWTmpl, SetPWTitle, fl, http.StatusBadRequest)
 		return
 	}
 
@@ -109,7 +109,7 @@ func (f *Forms) setPWPost(w http.ResponseWriter, r *http.Request) {
 	s, ok := status.FromError(err)
 	if !ok || s.Code() != codes.Unauthenticated {
 		clog.Error(ctx, "ChangeUserPw gRPC call", "err", err)
-		f.renderForm(w, r, SetPWTmpl,
+		f.renderForm(w, r, SetPWTmpl, SetPWTitle,
 			&Flash{ErrFlashLvl, "Internal server error"},
 			http.StatusInternalServerError,
 		)

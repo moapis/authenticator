@@ -32,6 +32,7 @@ func Test_bufferPool(t *testing.T) {
 
 func TestForms_template(t *testing.T) {
 	data := &FormData{
+		Title:     LoginTitle,
 		SubmitURL: "/login?redirect=http://example.com/foo?hello=world",
 	}
 
@@ -154,7 +155,7 @@ func TestForms_renderForm(t *testing.T) {
 			req := httptest.NewRequest("GET", "/login?redirect=http://example.com/foo?hello=world", nil)
 			w := httptest.NewRecorder()
 
-			f.renderForm(w, req, LoginTmpl, tt.args.flash, tt.args.status)
+			f.renderForm(w, req, LoginTmpl, LoginTitle, tt.args.flash, tt.args.status)
 
 			resp := w.Result()
 			body, _ := ioutil.ReadAll(resp.Body)
@@ -182,7 +183,7 @@ func TestForms_renderForm_writeErr(t *testing.T) {
 	w := errorWriter{}
 	r := httptest.NewRequest("GET", "/login?redirect=http://example.com/foo?hello=world", nil)
 
-	h.renderForm(w, r, LoginTmpl, nil)
+	h.renderForm(w, r, LoginTmpl, LoginTitle, nil)
 }
 
 func TestForms_getRedirect(t *testing.T) {

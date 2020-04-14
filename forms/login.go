@@ -21,10 +21,10 @@ const DefaultLoginTmpl = `{{ define "login" -}}
 <html lang="en">
 <head>
 	<meta charset="utf-8">
-	<title>Please login</title>
+	<title>{{ .Title }}</title>
 </head>
 <body>
-	<h1>Please login</h1>
+	<h1>{{ .Title }}</h1>
 	<form method="post" action="{{ .SubmitURL }}">
 		<input type="email" placeholder="Email" name="email" required>
 		<input type="password" placeholder="Password" name="password" required>
@@ -58,7 +58,7 @@ func (f *Forms) loginGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f.renderForm(w, r, LoginTmpl, nil)
+	f.renderForm(w, r, LoginTmpl, LoginTitle, nil)
 }
 
 func (*Forms) loginRedirect(w http.ResponseWriter, r *http.Request, u *url.URL, tkn string) {
@@ -79,7 +79,7 @@ func (f *Forms) loginPost(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		clog.Warn(ctx, "Parseform", "err", err)
 		fl := &Flash{ErrFlashLvl, "Malformed form data"}
-		f.renderForm(w, r, LoginTmpl, fl, http.StatusBadRequest)
+		f.renderForm(w, r, LoginTmpl, LoginTitle, fl, http.StatusBadRequest)
 		return
 	}
 
@@ -104,7 +104,7 @@ func (f *Forms) loginPost(w http.ResponseWriter, r *http.Request) {
 	if len(missing) > 0 {
 		clog.Warn(ctx, "Missing form data", "missing", missing)
 		fl := &Flash{ErrFlashLvl, fmt.Sprintf("Missing form data: %s", strings.Join(missing, " and "))}
-		f.renderForm(w, r, LoginTmpl, fl, http.StatusBadRequest)
+		f.renderForm(w, r, LoginTmpl, LoginTitle, fl, http.StatusBadRequest)
 		return
 	}
 
@@ -131,7 +131,7 @@ func (f *Forms) loginPost(w http.ResponseWriter, r *http.Request) {
 		flash, sc = &Flash{ErrFlashLvl, "Wrong email or password"}, http.StatusUnauthorized
 	}
 
-	f.renderForm(w, r, LoginTmpl, flash, sc)
+	f.renderForm(w, r, LoginTmpl, LoginTitle, flash, sc)
 }
 
 // LoginHander returns the handler taking care of login GET and POST requests.

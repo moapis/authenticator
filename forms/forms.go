@@ -18,6 +18,13 @@ const (
 	AllowedMethods = http.MethodGet + " " + http.MethodPost
 )
 
+// Titles passed to templates
+var (
+	LoginTitle   = "Please login"
+	ResetPWTitle = "Reset password"
+	SetPWTitle   = "Set new password"
+)
+
 // Flash message targets the user with info, warning or error message
 type Flash struct {
 	Lvl FlashLvl
@@ -36,6 +43,7 @@ const (
 
 // FormData is passed to the form templates
 type FormData struct {
+	Title     string
 	Flash     *Flash
 	SubmitURL string
 	Data      interface{} // As set on the Forms object
@@ -102,11 +110,12 @@ func (f *Forms) template(tn TemplateName) *template.Template {
 	return defaultTmpl[tn]
 }
 
-func (f *Forms) renderForm(w http.ResponseWriter, r *http.Request, tn TemplateName, flash *Flash, status ...int) {
+func (f *Forms) renderForm(w http.ResponseWriter, r *http.Request, tn TemplateName, title string, flash *Flash, status ...int) {
 	buf := resPool.Get()
 	defer resPool.Put(buf)
 
 	data := &FormData{
+		Title:     title,
 		Flash:     flash,
 		SubmitURL: r.URL.String(),
 		Data:      f.Data,
