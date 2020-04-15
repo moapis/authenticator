@@ -1,10 +1,18 @@
 {{ define "flash" -}}
-<p>{{ .Lvl }}: {{ .Msg }}</p>
+{{ $class := .Lvl -}}
+{{ if eq .Lvl "error"}}{{ $class = "danger" }}{{ end -}}
+
+<div class="alert alert-{{ $class }}" role="alert">
+    <strong class="text-capitalize">{{ .Lvl }}!</strong> {{ .Msg }}.
+</div>
 {{- end }}
 
 {{ define "form_start" -}}
 <body class="hold-transition login-page">
     <div class="login-box">
+        {{- if .Flash }}
+        {{ template "flash" .Flash }}
+        {{ end -}}
         <div class="login-logo">
             <b> {{ .Data.SiteName }}</b>
         </div>
@@ -59,7 +67,6 @@
 </form>
 <p><a href="{{ .Nav.Reset }}">Reset your password</a></p>
 {{ template "form_end" . }}
-{{- if .Flash }}{{ template "flash" .Flash }}{{ end }}
 {{ template "footer" . }}
 {{- end }}
 
@@ -73,7 +80,6 @@
 </form>
 <p><a href="{{ .Nav.Reset }}">Request a new reset link</a></p>
 {{ template "form_end" . }}
-{{- if .Flash }}{{ template "flash" .Flash }}{{ end }}
 {{ template "footer" . }}
 {{- end }}
 
@@ -86,6 +92,5 @@
     {{ template "button" "Submit" }}
 </form>
 {{ template "form_end" . }}
-{{- if .Flash }}{{ template "flash" .Flash }}{{ end }}
 {{ template "footer" . }}
 {{- end }}
