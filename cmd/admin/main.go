@@ -659,7 +659,7 @@ func main() {
 	mwc := &middleware.Client{
 		Verificator:   verificator,
 		LoginURL:      conf.LoginURL,
-		ServerName:    conf.ServerAddress,
+		ServerAddress: conf.ServerAddress,
 		RefreshWithin: 12 * time.Hour,
 	}
 

@@ -64,7 +64,7 @@ type Client struct {
 
 	// Scheme, hostname and optionaly port number of this host.
 	// It is used for redirecting back to this server after login.
-	ServerName    string
+	ServerAddress string
 	RefreshWithin time.Duration
 }
 
@@ -91,7 +91,7 @@ func (c *Client) loginRedirect(ctx context.Context, w http.ResponseWriter, r *ht
 
 	http.Redirect(w, r,
 		// http://serv.com/login?redirect=http://here.com/path?foo=bar
-		fmt.Sprintf("%s?%s=%s%s%s", lu, rk, c.ServerName, url.Path, qs),
+		fmt.Sprintf("%s?%s=%s%s%s", lu, rk, c.ServerAddress, url.Path, qs),
 		http.StatusSeeOther,
 	)
 }
