@@ -75,14 +75,13 @@ type listEntry struct {
 
 const (
 	listDate      = "_2 jan 06 15:04"
-	authPrefix    = "/\U0001F355/"
-	indexRedirect = authPrefix + "users/"
+	indexRedirect = "/users/"
 )
 
 func userActions(id int) []action {
 	return []action{
-		{"reset password", fmt.Sprintf("%susers/reset/%d", authPrefix, id), http.MethodPut},
-		{"delete", fmt.Sprintf("%susers/delete/%d", authPrefix, id), http.MethodDelete},
+		{"reset password", fmt.Sprintf("/users/reset/%d", id), http.MethodPut},
+		{"delete", fmt.Sprintf("/users/delete/%d", id), http.MethodDelete},
 	}
 }
 
@@ -119,7 +118,7 @@ func groupList(ctx context.Context, exec boil.ContextExecutor) (*listContents, e
 			Created: g.CreatedAt.Format(time.RFC3339),
 			Updated: g.CreatedAt.Format(time.RFC3339),
 			Actions: []action{
-				{"delete", fmt.Sprintf("%sgroups/delete/%d", authPrefix, g.ID), http.MethodDelete},
+				{"delete", fmt.Sprintf("/groups/delete/%d", g.ID), http.MethodDelete},
 			},
 		}
 	}
@@ -140,7 +139,7 @@ func audienceList(ctx context.Context, exec boil.ContextExecutor) (*listContents
 			Created: a.CreatedAt.Format(time.RFC3339),
 			Updated: a.CreatedAt.Format(time.RFC3339),
 			Actions: []action{
-				{"delete", fmt.Sprintf("%saudiences/delete/%d", authPrefix, a.ID), http.MethodDelete},
+				{"delete", fmt.Sprintf("/audiences/delete/%d", a.ID), http.MethodDelete},
 			},
 		}
 	}
@@ -372,7 +371,7 @@ func newEntityFormHandler(w http.ResponseWriter, r *http.Request) {
 		Panel: true,
 		BreadCrumbs: []breadCrumb{
 			{"Home", "/"},
-			{plural, fmt.Sprintf("%s%s/", authPrefix, vars["resource"])},
+			{plural, fmt.Sprintf("/%s/", vars["resource"])},
 			{"New", ""},
 		},
 		Content: struct{ Name string }{single},
@@ -435,7 +434,7 @@ func newRelation(w http.ResponseWriter, r *http.Request, entry *logrus.Entry, re
 		return
 	}
 	entry.Info("New relation")
-	http.Redirect(w, r, fmt.Sprintf("%s%s/%d/", authPrefix, relation, id), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/%s/%d/", relation, id), http.StatusSeeOther)
 }
 
 func newGroupPostHandler(w http.ResponseWriter, r *http.Request) {
@@ -461,7 +460,7 @@ func newUserPostHandler(w http.ResponseWriter, r *http.Request) {
 		Email: data["email"],
 		Name:  data["name"],
 		Url: &auth.CallBackUrl{
-			BaseUrl:  fmt.Sprintf("%s/password", conf.Name),
+			BaseUrl:  fmt.Sprintf("%s/password", conf.ServerAddress),
 			TokenKey: "token",
 		},
 	})
@@ -480,7 +479,7 @@ func newUserPostHandler(w http.ResponseWriter, r *http.Request) {
 	entry = entry.WithField("reply", *reply)
 
 	entry.Info("New user")
-	http.Redirect(w, r, fmt.Sprintf("%s%s/%d/", authPrefix, "users", reply.UserId), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/%s/%d/", "users", reply.UserId), http.StatusSeeOther)
 }
 
 const (
@@ -637,23 +636,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	r := mux.NewRouter()
-	r.Use(catchMW)
-	r.Use(contextMW)
-	r.Handle("/", http.RedirectHandler(indexRedirect, http.StatusMovedPermanently))
-	r.Handle("/users/", http.RedirectHandler(indexRedirect, http.StatusMovedPermanently))
-
-	fs := http.FileServer(http.Dir(conf.AdminLTE))
-	r.PathPrefix("/dist/").Handler(fs)
-	r.PathPrefix("/plugins/").Handler(fs)
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-
-	r.Path("/login").Methods(http.MethodGet).HandlerFunc(loginFormHandler)
-	r.Path("/login").Methods(http.MethodPost).HandlerFunc(loginPostHandler)
-
-	r.Path("/password").Methods(http.MethodGet).HandlerFunc(passwordFormHandler)
-	r.Path("/password").Methods(http.MethodPost).HandlerFunc(passwordPostHandler)
-
 	entry := log.WithField("address", conf.AuthServer.String())
 	entry.Info("Start gRPC Dail")
 
@@ -676,24 +658,35 @@ func main() {
 
 	mwc := &middleware.Client{
 		Verificator:   verificator,
+		LoginURL:      conf.LoginURL,
+		ServerName:    conf.ServerAddress,
 		RefreshWithin: 12 * time.Hour,
 	}
 
-	auth := r.PathPrefix(authPrefix).Subrouter()
-	auth.Use(mwc.Middleware)
-	auth.HandleFunc("/{resource}/", listHandler)
+	r := mux.NewRouter()
+	r.Use(catchMW)
+	r.Use(contextMW)
+	r.Use(mwc.Middleware)
+	r.Handle("/", http.RedirectHandler(indexRedirect, http.StatusMovedPermanently))
 
-	auth.HandleFunc("/users/{id}/", userHandler)
-	auth.Path("/users/{id}/{relation}/").Methods(http.MethodGet).HandlerFunc(listAvailableRelationsHandler)
-	auth.Path("/users/{id}/{relation}/{rid}").Methods(http.MethodPut).HandlerFunc(setUserRelationHandler)
-	auth.Path("/users/{id}/remove/{relation}/{rid}").Methods(http.MethodPut).HandlerFunc(removeUserRelationHandler)
+	fs := http.FileServer(http.Dir(conf.AdminLTE))
+	r.PathPrefix("/dist/").Handler(fs)
+	r.PathPrefix("/plugins/").Handler(fs)
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
-	auth.Path("/{resource}/delete/{id}").Methods(http.MethodDelete).HandlerFunc(deleteHandler)
+	r.HandleFunc("/{resource}/", listHandler)
 
-	auth.Path("/new/{resource}").Methods(http.MethodGet).HandlerFunc(newEntityFormHandler)
-	auth.Path("/new/audiences").Methods(http.MethodPost).HandlerFunc(newAudiencePostHandler)
-	auth.Path("/new/groups").Methods(http.MethodPost).HandlerFunc(newGroupPostHandler)
-	auth.Path("/new/users").Methods(http.MethodPost).HandlerFunc(newUserPostHandler)
+	r.HandleFunc("/users/{id}/", userHandler)
+	r.Path("/users/{id}/{relation}/").Methods(http.MethodGet).HandlerFunc(listAvailableRelationsHandler)
+	r.Path("/users/{id}/{relation}/{rid}").Methods(http.MethodPut).HandlerFunc(setUserRelationHandler)
+	r.Path("/users/{id}/remove/{relation}/{rid}").Methods(http.MethodPut).HandlerFunc(removeUserRelationHandler)
+
+	r.Path("/{resource}/delete/{id}").Methods(http.MethodDelete).HandlerFunc(deleteHandler)
+
+	r.Path("/new/{resource}").Methods(http.MethodGet).HandlerFunc(newEntityFormHandler)
+	r.Path("/new/audiences").Methods(http.MethodPost).HandlerFunc(newAudiencePostHandler)
+	r.Path("/new/groups").Methods(http.MethodPost).HandlerFunc(newGroupPostHandler)
+	r.Path("/new/users").Methods(http.MethodPost).HandlerFunc(newUserPostHandler)
 
 	srv := &http.Server{
 		Handler:      r,

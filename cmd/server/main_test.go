@@ -189,6 +189,8 @@ func TestMain(m *testing.M) {
 		log.WithError(err).Fatal("configure()")
 	}
 
+	testConfig.Port = 9999 // Avoid conflict with running instance
+
 	var cancel context.CancelFunc
 	testCtx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 

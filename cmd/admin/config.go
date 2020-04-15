@@ -65,18 +65,19 @@ func (acs AuthServerConfig) String() string {
 
 // ServerConfig is a collection on config
 type ServerConfig struct {
-	Address     string           `json:"address"`     // HTTP listen Address
-	Port        uint16           `json:"port"`        // HTTP listen Port
-	Name        string           `json:"name"`        // Domain name for this server, used for callbacks
-	AdminLTE    string           `json:"adminlte"`    // Path to AdminLTE root
-	Templates   string           `json:"templates"`   // Path to template directory
-	LogLevel    LogLevel         `json:"loglevel"`    // LogLevel used for logrus
-	TLS         *TLSConfig       `json:"tls"`         // TLS will be disabled when nil
-	AuthServer  AuthServerConfig `json:"authserver"`  // Config for the gRPC client connection
-	Audiences   []string         `json:"audiences"`   // Accepted audiences from JWT
-	MultiDB     multidb.Config   `json:"multidb"`     // Imported from multidb
-	PG          *pg.Config       `json:"pg"`          // PG is later embedded in multidb
-	SQLRoutines int              `json:"sqlroutines"` // Amount of Go-routines for non-master queries
+	Address       string           `json:"address"`        // HTTP listen Address
+	Port          uint16           `json:"port"`           // HTTP listen Port
+	ServerAddress string           `json:"server_address"` // Public address of this server
+	AdminLTE      string           `json:"adminlte"`       // Path to AdminLTE root
+	Templates     string           `json:"templates"`      // Path to template directory
+	LogLevel      LogLevel         `json:"loglevel"`       // LogLevel used for logrus
+	TLS           *TLSConfig       `json:"tls"`            // TLS will be disabled when nil
+	AuthServer    AuthServerConfig `json:"authserver"`     // Config for the gRPC client connection
+	LoginURL      string           `json:"login_path"`     // Path to login form
+	Audiences     []string         `json:"audiences"`      // Accepted audiences from JWT
+	MultiDB       multidb.Config   `json:"multidb"`        // Imported from multidb
+	PG            *pg.Config       `json:"pg"`             // PG is later embedded in multidb
+	SQLRoutines   int              `json:"sqlroutines"`    // Amount of Go-routines for non-master queries
 }
 
 func (c *ServerConfig) writeOut(filename string) error {
@@ -89,14 +90,15 @@ func (c *ServerConfig) writeOut(filename string) error {
 
 // Default confing
 var Default = ServerConfig{
-	Address:    "127.0.0.1",
-	Port:       1234,
-	Name:       "http://localhost:1234",
-	AdminLTE:   "AdminLTE",
-	Templates:  "templates",
-	LogLevel:   DebugLevel,
-	TLS:        nil,
-	AuthServer: AuthServerConfig{"127.0.0.1", 8765},
+	Address:       "127.0.0.1",
+	Port:          1234,
+	ServerAddress: "http://localhost:1234",
+	AdminLTE:      "AdminLTE",
+	Templates:     "templates",
+	LogLevel:      DebugLevel,
+	TLS:           nil,
+	AuthServer:    AuthServerConfig{"127.0.0.1", 8765},
+	LoginURL:      "http://localhost:1235/login",
 	MultiDB: multidb.Config{
 		StatsLen:      100,
 		MaxFails:      10,

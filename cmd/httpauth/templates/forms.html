@@ -1,0 +1,96 @@
+{{ define "flash" -}}
+{{ $class := .Lvl -}}
+{{ if eq .Lvl "error"}}{{ $class = "danger" }}{{ end -}}
+
+<div class="alert alert-{{ $class }}" role="alert">
+    <strong class="text-capitalize">{{ .Lvl }}!</strong> {{ .Msg }}.
+</div>
+{{- end }}
+
+{{ define "form_start" -}}
+<body class="hold-transition login-page">
+    <div class="login-box">
+        {{- if .Flash }}
+        {{ template "flash" .Flash }}
+        {{ end -}}
+        <div class="login-logo">
+            <b> {{ .Data.SiteName }}</b>
+        </div>
+        <div class="card">
+            <div class="card-body login-card-body">
+                {{- end }}
+                {{ define "form_end" -}}
+            </div>
+        </div>
+    </div>
+</body>
+{{- end }}
+
+{{ define "email_form" -}}
+<div class="input-group mb-3">
+    <input type="email" class="form-control" placeholder="Email" name="email" required>
+    <div class="input-group-append">
+        <div class="input-group-text">
+            <span class="fas fa-envelope"></span>
+        </div>
+    </div>
+</div>
+{{- end }}
+
+{{ define "password_form" -}}
+<div class="input-group mb-3">
+    <input type="password" class="form-control" placeholder="Password" name="password" required>
+    <div class="input-group-append">
+        <div class="input-group-text">
+            <span class="fas fa-lock"></span>
+        </div>
+    </div>
+</div>
+{{- end }}
+
+{{ define "button" -}}
+<div class="row">
+    <div class="col">
+        <button type="submit" class="btn btn-primary btn-block">{{ . }}</button>
+    </div>
+</div>
+{{- end }}
+
+{{ define "login" -}}
+{{ template "header" . }}
+{{ template "form_start" . }}
+<p class="login-box-msg">Sign in to start your session</p>
+<form method="post">
+    {{ template "email_form" }}
+    {{ template "password_form" }}
+    {{ template "button" "Sign In" }}
+</form>
+<p><a href="{{ .Nav.Reset }}">Reset your password</a></p>
+{{ template "form_end" . }}
+{{ template "footer" . }}
+{{- end }}
+
+{{ define "setpw" -}}
+{{ template "header" . }}
+{{ template "form_start" . }}
+<p class="login-box-msg">Submit a new password</p>
+<form method="post">
+    {{ template "password_form" }}
+    {{ template "button" "Set password" }}
+</form>
+<p><a href="{{ .Nav.Reset }}">Request a new reset link</a></p>
+{{ template "form_end" . }}
+{{ template "footer" . }}
+{{- end }}
+
+{{ define "reset" -}}
+{{ template "header" . }}
+{{ template "form_start" . }}
+<p class="login-box-msg">Request a password reset link</p>
+<form method="post">
+    {{ template "email_form" }}
+    {{ template "button" "Submit" }}
+</form>
+{{ template "form_end" . }}
+{{ template "footer" . }}
+{{- end }}

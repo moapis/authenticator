@@ -1,0 +1,20 @@
+{{ define "reset" }}
+<html>
+    <body>
+        <h1>Hi, {{ .Name }}</h1>
+        <p>
+            A password reset for your e-mail address {{ .Email }} has been requested.
+            Please click <a href="{{ .URL }}">this link</a> to set a new password.
+        </p>
+        <p>
+            If the above link does not work,
+            please copy the following URL into your brower's address bar:<br>
+            <pre>{{ .URL }}</pre>
+        </p>
+        <p>
+            If you didn't request a new password, you can safely ingore this message.
+        </p>
+    </body>
+</html>
+
+{{ end }}

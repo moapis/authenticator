@@ -1,0 +1,8 @@
+{{ define "error" -}}
+{{ template "header" . }}
+<body>
+    <h1>{{ .StatusCode }} {{ .StatusText }}</h1>
+    <p>{{ .Message }}</p>
+</body>
+{{ template "footer" . }}
+{{- end }}

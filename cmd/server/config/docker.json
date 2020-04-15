@@ -1,9 +1,5 @@
 {
   "address": "",
-  "authserver": {
-    "Host": "auth",
-    "Port": 8765
-  },
   "pg": {
     "nodes": [
       {

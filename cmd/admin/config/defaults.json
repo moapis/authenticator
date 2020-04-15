@@ -1,7 +1,7 @@
 {
   "address": "127.0.0.1",
   "port": 1234,
-  "name": "http://localhost:1234",
+  "server_address": "http://localhost:1234",
   "adminlte": "AdminLTE",
   "templates": "templates",
   "loglevel": "debug",
@@ -10,6 +10,7 @@
     "Host": "127.0.0.1",
     "Port": 8765
   },
+  "login_path": "http://localhost:1235/login",
   "audiences": null,
   "multidb": {
     "statslen": 100,

@@ -5,17 +5,18 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"fmt"
+	"html/template"
 	"io"
-	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	auth "github.com/moapis/authenticator"
 	"github.com/moapis/authenticator/models"
 	"github.com/moapis/mailer"
@@ -85,6 +86,7 @@ func (s *authServer) privateKey() privateKey {
 }
 
 const (
+	errMissingEmail       = "Missing email"
 	errMissingEmailOrName = "Missing email or name"
 	errMissingPW          = "Missing password"
 	errMissingToken       = "JWT token missing"
@@ -97,23 +99,27 @@ const (
 	errMailer             = "Failed to send verification mail"
 )
 
-func callBackURL(cb *auth.CallBackUrl, token string) string {
-	buf := bytes.NewBufferString(cb.GetBaseUrl())
-	if buf.Len() > 0 {
-		buf.WriteByte('?')
+func callBackURL(cb *auth.CallBackUrl, token string) template.URL {
+	b := new(strings.Builder)
+
+	b.WriteString(cb.GetBaseUrl())
+	if b.Len() > 0 {
+		b.WriteByte('?')
 	}
 
 	tokenKey := cb.GetTokenKey()
 	if tokenKey == "" {
 		tokenKey = "token"
 	}
-	values := url.Values{tokenKey: {token}}
-	for k, ss := range cb.GetParams() {
-		values[k] = ss.GetSlice()
-	}
-	buf.WriteString(values.Encode())
+	fmt.Fprintf(b, "%s=%s", tokenKey, token)
 
-	return buf.String()
+	for k, ss := range cb.GetParams() {
+		for _, v := range ss.GetSlice() {
+			fmt.Fprintf(b, "&%s=%s", k, v)
+		}
+	}
+
+	return template.URL(b.String())
 }
 
 const (
@@ -257,4 +263,44 @@ func (s *authServer) GetPubKey(ctx context.Context, k *auth.KeyID) (*auth.Public
 	}
 	defer rt.done()
 	return rt.getPubKey(int(k.GetKid()))
+}
+
+const (
+	pwResetSubject = "Password reset link"
+)
+
+func (s *authServer) ResetUserPW(ctx context.Context, ue *auth.UserEmail) (*empty.Empty, error) {
+	rt, err := s.newTx(ctx, "ResetUserPW", false)
+	if err != nil {
+		return nil, err
+	}
+	defer rt.done()
+
+	email := ue.GetEmail()
+	if email == "" {
+		rt.log.Warn(errMissingEmail)
+		return nil, status.Error(codes.InvalidArgument, errMissingEmail)
+	}
+
+	user, err := rt.findUserByValue("email", ue.GetEmail())
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "User not found")
+	}
+	reply, err := rt.authReply(user.Name, time.Now(), nil, s.passwordAudience())
+	if err != nil {
+		return nil, err
+	}
+	if err := rt.sendMail(
+		"reset", mailData{
+			user, pwResetSubject,
+			callBackURL(
+				ue.GetUrl(),
+				reply.GetJwt(),
+			),
+		},
+	); err != nil {
+		return nil, err
+	}
+
+	return &empty.Empty{}, nil
 }

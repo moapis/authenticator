@@ -10,7 +10,7 @@ COPY cmd/admin/AdminLTE/dist /AdminLTE/dist
 COPY cmd/admin/AdminLTE/plugins /AdminLTE/plugins
 COPY cmd/admin/static/ /static
 COPY cmd/admin/templates/ /templates
-COPY docker.json /docker.json
+COPY cmd/admin/config/docker.json /docker.json
 
 COPY --from=build /go/src/github.com/moapis/authenticator/cmd/admin/admin /admin
 

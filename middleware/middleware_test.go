@@ -73,7 +73,9 @@ func Test_getJwt(t *testing.T) {
 }
 
 func TestClient_loginRedirect(t *testing.T) {
-	client := Client{}
+	client := Client{
+		ServerName: "http://example.com",
+	}
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		client.loginRedirect(context.Background(), w, r, nil)
@@ -156,6 +158,7 @@ func init() {
 			Client:    authenticator.NewAuthenticatorClient(cc),
 			Audiences: []string{"authenticator"},
 		},
+		ServerName: "http://example.com",
 	}
 
 	ar, err := testClient.Verificator.Client.AuthenticatePwUser(

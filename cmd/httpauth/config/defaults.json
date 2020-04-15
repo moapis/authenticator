@@ -1,0 +1,16 @@
+{
+  "address": "127.0.0.1",
+  "port": 1235,
+  "timeout": 10000000000,
+  "server_address": "http://localhost:1235",
+  "static": "static",
+  "template_glob": "templates/*.html",
+  "data": {
+    "SiteName": "Authenticator"
+  },
+  "tls": null,
+  "authserver": {
+    "Host": "127.0.0.1",
+    "Port": 8765
+  }
+}

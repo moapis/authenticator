@@ -1,0 +1,8 @@
+{
+  "address": "",
+  "server_address": "http://localhost:8080",
+  "authserver": {
+    "Host": "auth",
+    "Port": 8765
+  }
+}

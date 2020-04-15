@@ -8,6 +8,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"html/template"
 	"time"
 
 	"github.com/friendsofgo/errors"
@@ -418,7 +419,8 @@ func (rt *requestTx) getPubKey(kid int) (*auth.PublicKey, error) {
 
 type mailData struct {
 	*models.User
-	Subject, URL string
+	Subject string
+	URL     template.URL
 }
 
 func (rt *requestTx) sendMail(template string, data mailData) error {
