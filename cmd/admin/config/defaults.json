@@ -1,7 +1,7 @@
 {
   "address": "127.0.0.1",
   "port": 1234,
-  "name": "http://localhost:1234",
+  "server_address": "http://localhost:1234",
   "adminlte": "AdminLTE",
   "templates": "templates",
   "loglevel": "debug",

@@ -1,10 +1,11 @@
 {
   "address": "",
+  "server_address": "http://localhost:8081",
   "authserver": {
     "Host": "auth",
     "Port": 8765
   },
-  "login_path": "http://localhost:1235/login",
+  "login_path": "http://localhost:8080/login",
   "pg": {
     "nodes": [
       {

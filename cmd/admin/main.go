@@ -460,7 +460,7 @@ func newUserPostHandler(w http.ResponseWriter, r *http.Request) {
 		Email: data["email"],
 		Name:  data["name"],
 		Url: &auth.CallBackUrl{
-			BaseUrl:  fmt.Sprintf("%s/password", conf.Name),
+			BaseUrl:  fmt.Sprintf("%s/password", conf.ServerAddress),
 			TokenKey: "token",
 		},
 	})
@@ -659,7 +659,7 @@ func main() {
 	mwc := &middleware.Client{
 		Verificator:   verificator,
 		LoginURL:      conf.LoginURL,
-		ServerName:    conf.Name,
+		ServerName:    conf.ServerAddress,
 		RefreshWithin: 12 * time.Hour,
 	}
 
