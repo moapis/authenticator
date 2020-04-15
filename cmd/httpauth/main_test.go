@@ -7,9 +7,13 @@ package main
 import (
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/inconshreveable/log15"
+	clog "github.com/usrpro/clog15"
 )
 
 func TestServerConfig_listen(t *testing.T) {
@@ -157,4 +161,29 @@ func Test_run(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestServerConfig_middleware(t *testing.T) {
+	c := ServerConfig{Timeout: 5 * time.Second}
+	n := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		if _, ok := ctx.Deadline(); !ok {
+			t.Error("Context Deadline not set")
+		}
+
+		if _, ok := ctx.Value(reqID).(string); !ok {
+			t.Error("RequestID not set in context")
+		}
+
+		if _, ok := ctx.Value(clog.CtxLogger).(log15.Logger); !ok {
+			t.Error("Logger not set in context")
+		}
+	})
+
+	h := c.middleware(n)
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "http://example.com/login", nil)
+
+	h.ServeHTTP(w, r)
 }

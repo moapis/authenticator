@@ -17,9 +17,11 @@ import (
 	"time"
 
 	"github.com/inconshreveable/log15"
+	"github.com/inconshreveable/log15/ext"
 	auth "github.com/moapis/authenticator"
 	"github.com/moapis/authenticator/forms"
 	"github.com/moapis/ehtml"
+	clog "github.com/usrpro/clog15"
 )
 
 func (c *ServerConfig) listen(sc chan os.Signal, h http.Handler) error {
@@ -66,6 +68,27 @@ func fatalRun(err error) int {
 	return 1
 }
 
+type reqIDKey struct{}
+
+var reqID reqIDKey
+
+func (c *ServerConfig) middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), c.Timeout)
+		defer cancel()
+
+		start := time.Now()
+		id := ext.RandId(5)
+
+		ctx = clog.NewLogger(ctx, "id", id, "uri", r.URL.Path)
+		r = r.WithContext(context.WithValue(ctx, reqID, id))
+
+		next.ServeHTTP(w, r)
+
+		clog.Info(ctx, r.Method, "t", time.Now().Sub(start))
+	})
+}
+
 var configFiles = flag.String("config", "", "Comma separated list of JSON config files")
 
 func run(dc *ServerConfig) int {
@@ -104,7 +127,7 @@ func run(dc *ServerConfig) int {
 	mux.Handle(forms.DefaultResetPWPath, f.ResetPWHandler())
 	mux.Handle(forms.DefaultLoginPath, f.LoginHander())
 
-	if err = conf.listen(make(chan os.Signal, 1), mux); !errors.Is(err, http.ErrServerClosed) {
+	if err = conf.listen(make(chan os.Signal, 1), conf.middleware(mux)); !errors.Is(err, http.ErrServerClosed) {
 		return fatalRun(err)
 	}
 
