@@ -41,10 +41,32 @@ const (
 	ErrFlashLvl  FlashLvl = "error"
 )
 
+// Navigation links to other forms
+type Navigation struct {
+	Login, Reset, Set template.URL
+}
+
+func navigation(r *http.Request, p *Paths) Navigation {
+	if r.URL.RawQuery == "" {
+		return Navigation{
+			Login: template.URL(p.login()),
+			Reset: template.URL(p.resetPW()),
+			Set:   template.URL(p.setPW()),
+		}
+	}
+
+	return Navigation{
+		Login: template.URL(fmt.Sprintf("%s?%s", p.login(), r.URL.RawQuery)),
+		Reset: template.URL(fmt.Sprintf("%s?%s", p.resetPW(), r.URL.RawQuery)),
+		Set:   template.URL(fmt.Sprintf("%s?%s", p.setPW(), r.URL.RawQuery)),
+	}
+}
+
 // FormData is passed to the form templates
 type FormData struct {
 	Title     string
 	Flash     *Flash
+	Nav       Navigation
 	SubmitURL string
 	Data      interface{} // As set on the Forms object
 }
@@ -117,6 +139,7 @@ func (f *Forms) renderForm(w http.ResponseWriter, r *http.Request, tn TemplateNa
 	data := &FormData{
 		Title:     title,
 		Flash:     flash,
+		Nav:       navigation(r, f.Paths),
 		SubmitURL: r.URL.String(),
 		Data:      f.Data,
 	}

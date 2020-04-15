@@ -33,6 +33,7 @@ const DefaultLoginTmpl = `{{ define "login" -}}
 	{{- if .Flash }}
 	<p>{{ .Flash.Lvl }}: {{ .Flash.Msg }}</p>
 	{{- end }}
+	<p><a href="{{ .Nav.Reset }}">Password reset</a></p>
 </body>
 </html>
 {{- end -}}

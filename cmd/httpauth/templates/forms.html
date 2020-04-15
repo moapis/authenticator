@@ -57,6 +57,7 @@
     {{ template "password_form" }}
     {{ template "button" "Sign In" }}
 </form>
+<p><a href="{{ .Nav.Reset }}">Reset your password</a></p>
 {{ template "form_end" . }}
 {{- if .Flash }}{{ template "flash" .Flash }}{{ end }}
 {{ template "footer" . }}
@@ -70,6 +71,7 @@
     {{ template "password_form" }}
     {{ template "button" "Set password" }}
 </form>
+<p><a href="{{ .Nav.Reset }}">Request a new reset link</a></p>
 {{ template "form_end" . }}
 {{- if .Flash }}{{ template "flash" .Flash }}{{ end }}
 {{ template "footer" . }}

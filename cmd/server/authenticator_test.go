@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"crypto/ed25519"
+	"html/template"
 	"io"
 	"reflect"
 	"strings"
@@ -723,7 +724,7 @@ func Test_callBackURL(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want string
+		want template.URL
 	}{
 		{
 			"Only token",
@@ -751,19 +752,32 @@ func Test_callBackURL(t *testing.T) {
 					BaseUrl:  "http://example.com",
 					TokenKey: "key",
 					Params: map[string]*auth.StringSlice{
-						"foo":   {Slice: []string{"bar"}},
 						"hello": {Slice: []string{"world", "mars"}},
 					},
 				},
 				"foobar",
 			},
-			"http://example.com?foo=bar&hello=world&hello=mars&key=foobar",
+			"http://example.com?key=foobar&hello=world&hello=mars",
+		},
+		{
+			"With redirect",
+			args{
+				&auth.CallBackUrl{
+					BaseUrl:  "http://example.com",
+					TokenKey: "key",
+					Params: map[string]*auth.StringSlice{
+						"redirect": {Slice: []string{"http://redirect.to/here"}},
+					},
+				},
+				"foobar",
+			},
+			"http://example.com?key=foobar&redirect=http://redirect.to/here",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := callBackURL(tt.args.cb, tt.args.token); got != tt.want {
-				t.Errorf("callBackURL() = %v, want %v", got, tt.want)
+				t.Errorf("callBackURL() =\n%v\nwant\n%v", got, tt.want)
 			}
 		})
 	}

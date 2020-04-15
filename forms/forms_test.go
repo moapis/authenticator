@@ -16,6 +16,42 @@ import (
 	"github.com/moapis/ehtml"
 )
 
+func Test_navigation(t *testing.T) {
+	const query = "?redirect=http://example.com/foo?hello=world"
+
+	tests := []struct {
+		name string
+		r    *http.Request
+		want Navigation
+	}{
+		{
+			"Without query vars",
+			httptest.NewRequest("GET", "/login", nil),
+			Navigation{
+				Login: DefaultLoginPath,
+				Reset: DefaultResetPWPath,
+				Set:   DefaultSetPWPath,
+			},
+		},
+		{
+			"With query vars",
+			httptest.NewRequest("GET", "/login"+query, nil),
+			Navigation{
+				Login: DefaultLoginPath + query,
+				Reset: DefaultResetPWPath + query,
+				Set:   DefaultSetPWPath + query,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := navigation(tt.r, &Paths{}); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("navigation() =\n%v\nwant\n%v", got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_bufferPool(t *testing.T) {
 	buf := resPool.Get()
 	if buf == nil {
@@ -33,6 +69,7 @@ func Test_bufferPool(t *testing.T) {
 func TestForms_template(t *testing.T) {
 	data := &FormData{
 		Title:     LoginTitle,
+		Nav:       navigation(httptest.NewRequest("GET", "/login?redirect=http://example.com/foo?hello=world", nil), &Paths{}),
 		SubmitURL: "/login?redirect=http://example.com/foo?hello=world",
 	}
 

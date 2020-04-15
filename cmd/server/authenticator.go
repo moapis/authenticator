@@ -5,14 +5,14 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"fmt"
+	"html/template"
 	"io"
-	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -99,23 +99,27 @@ const (
 	errMailer             = "Failed to send verification mail"
 )
 
-func callBackURL(cb *auth.CallBackUrl, token string) string {
-	buf := bytes.NewBufferString(cb.GetBaseUrl())
-	if buf.Len() > 0 {
-		buf.WriteByte('?')
+func callBackURL(cb *auth.CallBackUrl, token string) template.URL {
+	b := new(strings.Builder)
+
+	b.WriteString(cb.GetBaseUrl())
+	if b.Len() > 0 {
+		b.WriteByte('?')
 	}
 
 	tokenKey := cb.GetTokenKey()
 	if tokenKey == "" {
 		tokenKey = "token"
 	}
-	values := url.Values{tokenKey: {token}}
-	for k, ss := range cb.GetParams() {
-		values[k] = ss.GetSlice()
-	}
-	buf.WriteString(values.Encode())
+	fmt.Fprintf(b, "%s=%s", tokenKey, token)
 
-	return buf.String()
+	for k, ss := range cb.GetParams() {
+		for _, v := range ss.GetSlice() {
+			fmt.Fprintf(b, "&%s=%s", k, v)
+		}
+	}
+
+	return template.URL(b.String())
 }
 
 const (

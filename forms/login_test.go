@@ -28,6 +28,7 @@ const defaultLoginTmplOut = `<!DOCTYPE html>
 		<input type="password" placeholder="Password" name="password" required>
 		<button type="submit">Sign In</button>
 	</form>
+	<p><a href="/reset-password?redirect=http://example.com/foo?hello=world">Password reset</a></p>
 </body>
 </html>`
 
@@ -125,6 +126,7 @@ const loginFlashOut = `<!DOCTYPE html>
 		<button type="submit">Sign In</button>
 	</form>
 	<p>%s</p>
+	<p><a href="/reset-password?redirect=http://example.com/foo?hello=world">Password reset</a></p>
 </body>
 </html>`
 
