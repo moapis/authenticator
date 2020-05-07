@@ -131,6 +131,8 @@ var (
 	validTkn   string
 )
 
+const testUser = "admin@localhost"
+
 func init() {
 	var cc *grpc.ClientConn
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
@@ -163,7 +165,7 @@ func init() {
 
 	ar, err := testClient.Verificator.Client.AuthenticatePwUser(
 		ctx, &authenticator.UserPassword{
-			User:     &authenticator.UserPassword_Email{Email: "admin@localhost"},
+			User:     &authenticator.UserPassword_Email{Email: testUser},
 			Password: "admin",
 		},
 	)
@@ -291,6 +293,16 @@ func TestClient_isGroupMember(t *testing.T) {
 
 func TestClient_Middleware(t *testing.T) {
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		claims, ok := r.Context().Value(ClaimsKey).(Claims)
+		if !ok {
+			t.Errorf("Claims in context %v type %T", r.Context().Value(ClaimsKey), r.Context().Value(ClaimsKey))
+		}
+
+		if claims.Subject != "admin" {
+			t.Errorf("Claims.subject = %s, want: %s", claims.Subject, testUser)
+			t.Log(*claims.Claims)
+		}
+
 		w.Write([]byte("OK"))
 	})
 

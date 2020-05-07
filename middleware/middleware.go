@@ -16,6 +16,7 @@ import (
 
 	"github.com/moapis/authenticator"
 	"github.com/moapis/authenticator/verify"
+	"github.com/pascaldekloe/jwt"
 	log "github.com/usrpro/clog15"
 )
 
@@ -160,8 +161,19 @@ func (c *Client) isGroupMember(set map[string]interface{}) error {
 	return errGroup
 }
 
+// Claims is added to the request context
+type Claims struct {
+	*jwt.Claims
+}
+
+type claimsKeyType struct{}
+
+// ClaimsKey is under which key Claims will be stored in the request Context.
+var ClaimsKey claimsKeyType
+
 // Middleware checks for a valid authentication token, named "jwt", in url or cookie.
 // A token in the URL is copied to a newly set cookie in the response headers.
+// The claims from the token added to the request context under "ClaimsKey" and type "Claims"
 //
 // If the token is missing, invalid, expired
 // or user is not member of the correct group and audience,
@@ -215,6 +227,6 @@ func (c *Client) Middleware(next http.Handler) http.Handler {
 			c.newCookie(w, r, tkn, claims.Expires.Time())
 		}
 
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ClaimsKey, Claims{claims})))
 	})
 }
