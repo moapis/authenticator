@@ -1083,8 +1083,10 @@ func Test_requestTx_checkUserExists(t *testing.T) {
 				t.Errorf("requestTx.checkUserExists() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("requestTx.checkUserExists() = %v, want %v", got, tt.want)
+			if got != nil {
+				if got.Email != tt.want.Email || got.Name != tt.want.Name {
+					t.Errorf("requestTx.checkUserExists() = %v, want %v", got, tt.want)
+				}
 			}
 		})
 	}

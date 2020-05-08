@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/friendsofgo/errors v0.9.2
 	github.com/gofrs/uuid v3.2.0+incompatible // indirect
-	github.com/golang/protobuf v1.4.0
+	github.com/golang/protobuf v1.4.1
 	github.com/gorilla/mux v1.7.4
 	github.com/inconshreveable/log15 v0.0.0-20200109203555-b30bc20e4fd1
 	github.com/kat-co/vala v0.0.0-20170210184112-42e1d8b61f12
@@ -30,5 +30,6 @@ require (
 	golang.org/x/sys v0.0.0-20200413165638-669c56c373c4 // indirect
 	google.golang.org/genproto v0.0.0-20200413115906-b5235f65be36 // indirect
 	google.golang.org/grpc v1.28.1
+	google.golang.org/protobuf v1.22.0
 	gopkg.in/ini.v1 v1.55.0 // indirect
 )

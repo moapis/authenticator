@@ -6,6 +6,8 @@ syntax = "proto3";
 
 package authenticator;
 
+option go_package = "github.com/moapis/authenticator";
+
 import "google/protobuf/empty.proto";
 
 service Authenticator {
