@@ -19,7 +19,7 @@ import (
 	"github.com/moapis/multidb"
 	"github.com/pascaldekloe/jwt"
 	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/sqlboiler/boil"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"golang.org/x/crypto/argon2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

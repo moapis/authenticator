@@ -15,7 +15,7 @@ import (
 	"github.com/moapis/multidb"
 	pg "github.com/moapis/multidb/drivers/postgresql"
 	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/sqlboiler/boil"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
 var (

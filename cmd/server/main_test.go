@@ -18,7 +18,7 @@ import (
 	"github.com/moapis/multidb"
 	migrate "github.com/rubenv/sql-migrate"
 	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/sqlboiler/boil"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"golang.org/x/crypto/argon2"
 )
 

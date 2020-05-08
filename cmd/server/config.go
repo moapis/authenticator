@@ -25,7 +25,7 @@ import (
 	"github.com/moapis/multidb"
 	pg "github.com/moapis/multidb/drivers/postgresql"
 	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/sqlboiler/boil"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"golang.org/x/crypto/argon2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -107,8 +107,8 @@ var Default = ServerConfig{
 		},
 		Params: pg.Params{
 			DBname:          "authenticator_test",
-			User:            "postgres",
-			Password:        "",
+			User:            "authenticator",
+			Password:        "default",
 			SSLmode:         "disable",
 			Connect_timeout: 30,
 		},

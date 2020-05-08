@@ -148,7 +148,7 @@ func (f *Forms) renderForm(w http.ResponseWriter, r *http.Request, tn TemplateNa
 
 	if err := f.template(tn).Execute(buf, data); err != nil {
 		clog.Error(ctx, "Template execution", "err", err)
-		if err := f.EP.Render(w, r, http.StatusInternalServerError, "Template execution error", f.Data); err != nil {
+		if err := f.EP.Render(w, &ehtml.Data{Req: r, Code: http.StatusInternalServerError, Msg: "Template execution error"}); err != nil {
 			clog.Error(ctx, "During handling error", "err", err)
 		}
 		return

@@ -41,7 +41,7 @@ func (*testAuthenticatorServer) GetPubKey(ctx context.Context, req *auth.KeyID) 
 
 var testVerificator *Verificator
 
-const testAddr = "127.0.0.1:8765"
+const testAddr = "127.0.0.1:10000"
 
 func TestMain(m *testing.M) {
 	s := grpc.NewServer()

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	auth "github.com/moapis/authenticator"
+	"github.com/moapis/ehtml"
 	clog "github.com/usrpro/clog15"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -39,7 +40,7 @@ func (f *Forms) setPWGet(w http.ResponseWriter, r *http.Request) {
 
 	tkn := r.URL.Query().Get("jwt")
 	if tkn == "" {
-		if err := f.EP.Render(w, r, http.StatusBadRequest, "Missing token in URL", f.Data); err != nil {
+		if err := f.EP.Render(w, &ehtml.Data{Req: r, Code: http.StatusBadRequest, Msg: "Missing token in URL"}); err != nil {
 			clog.Error(ctx, "During handling error", "err", err)
 		}
 		return
@@ -53,10 +54,9 @@ func (f *Forms) setPWRedirect(w http.ResponseWriter, r *http.Request) {
 
 	rURL, err := f.getRedirect(r)
 	if err != nil {
-		if err := f.EP.Render(w, r, http.StatusOK,
-			"Password set succesfully. You can now close this window",
-			f.Data,
-		); err != nil {
+		if err := f.EP.Render(w, &ehtml.Data{Req: r, Code: http.StatusOK,
+			Msg: "Password set succesfully. You can now close this window",
+		}); err != nil {
 			clog.Error(ctx, "During handling error", "err", err)
 		}
 		return
@@ -82,7 +82,7 @@ func (f *Forms) setPWPost(w http.ResponseWriter, r *http.Request) {
 
 	tkn := r.URL.Query().Get("jwt")
 	if tkn == "" {
-		if err := f.EP.Render(w, r, http.StatusBadRequest, "Missing token in URL", f.Data); err != nil {
+		if err := f.EP.Render(w, &ehtml.Data{Req: r, Code: http.StatusBadRequest, Msg: "Missing token in URL"}); err != nil {
 			clog.Error(ctx, "During handling error", "err", err)
 		}
 		return
@@ -115,7 +115,7 @@ func (f *Forms) setPWPost(w http.ResponseWriter, r *http.Request) {
 		)
 	} else {
 		clog.Info(ctx, "ChangeUserPw gRPC call", "err", err)
-		if err := f.EP.Render(w, r, http.StatusUnauthorized, "Token verification failed, please request a new one.", f.Data); err != nil {
+		if err := f.EP.Render(w, &ehtml.Data{Req: r, Code: http.StatusUnauthorized, Msg: "Token verification failed, please request a new one."}); err != nil {
 			clog.Error(ctx, "During handling error", "err", err)
 		}
 	}

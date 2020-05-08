@@ -10,6 +10,7 @@ import (
 	"time"
 
 	auth "github.com/moapis/authenticator"
+	"github.com/moapis/ehtml"
 	clog "github.com/usrpro/clog15"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -53,7 +54,7 @@ func (f *Forms) loginGet(w http.ResponseWriter, r *http.Request) {
 	ctx := clog.AddArgs(r.Context(), "method", "loginGet")
 
 	if _, err := f.getRedirect(r); err != nil {
-		if err := f.EP.Render(w, r, http.StatusBadRequest, err.Error(), f.Data); err != nil {
+		if err := f.EP.Render(w, &ehtml.Data{Req: r, Code: http.StatusBadRequest, Msg: err.Error()}); err != nil {
 			clog.Error(ctx, "During handling error", "err", err)
 		}
 		return
@@ -86,7 +87,7 @@ func (f *Forms) loginPost(w http.ResponseWriter, r *http.Request) {
 
 	rURL, err := f.getRedirect(r)
 	if err != nil {
-		if err := f.EP.Render(w, r, http.StatusBadRequest, err.Error(), f.Data); err != nil {
+		if err := f.EP.Render(w, &ehtml.Data{Req: r, Code: http.StatusBadRequest, Msg: err.Error()}); err != nil {
 			clog.Error(ctx, "During handling error", "err", err)
 		}
 		return

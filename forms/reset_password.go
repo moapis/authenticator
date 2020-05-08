@@ -6,6 +6,7 @@ import (
 	"time"
 
 	auth "github.com/moapis/authenticator"
+	"github.com/moapis/ehtml"
 	clog "github.com/usrpro/clog15"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -63,7 +64,7 @@ func (f *Forms) resetPWPost(w http.ResponseWriter, r *http.Request) {
 		Url:   f.Paths.callbackURL(r.URL.Query(), f.Paths.setPW()),
 	})
 	if err == nil {
-		f.EP.Render(w, r, http.StatusOK, "Password request link sent", f.Data)
+		f.EP.Render(w, &ehtml.Data{Req: r, Code: http.StatusOK, Msg: "Password request link sent"})
 		return
 	}
 

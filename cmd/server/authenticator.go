@@ -22,7 +22,7 @@ import (
 	"github.com/moapis/mailer"
 	"github.com/moapis/multidb"
 	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/sqlboiler/boil"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
