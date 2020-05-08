@@ -251,7 +251,7 @@ func Test_authServer_AuthenticatePwUser(t *testing.T) {
 			args{
 				testCtx,
 				&auth.UserPassword{
-					User:     &auth.UserPassword_Email{Email: "one@group.com"},
+					Email:    "one@group.com",
 					Password: "oneGroup",
 				},
 			},
@@ -280,7 +280,7 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 		KeyID: "10",
 		Registered: jwt.Registered{
 			Issuer:    "localhost",
-			Subject:   testUsers["oneGroup"].Name,
+			Subject:   testUsers["oneGroup"].Email,
 			Audiences: []string{"passwords@localhost"},
 			Expires:   jwt.NewNumericTime(time.Now().Add(24 * time.Hour)),
 			Issued:    jwt.NewNumericTime(time.Now()),
@@ -366,7 +366,7 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 			args{
 				testCtx,
 				&auth.NewUserPassword{
-					User:        &auth.NewUserPassword_Email{Email: "one@group.com"},
+					Email:       "one@group.com",
 					Credential:  &auth.NewUserPassword_OldPassword{OldPassword: "oneGroup"},
 					NewPassword: "oneGroup",
 				},
@@ -379,7 +379,7 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 			args{
 				testCtx,
 				&auth.NewUserPassword{
-					User:        &auth.NewUserPassword_Email{Email: "one@group.com"},
+					Email:       "one@group.com",
 					Credential:  &auth.NewUserPassword_OldPassword{OldPassword: "wrong"},
 					NewPassword: "oneGroup",
 				},
@@ -392,7 +392,7 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 			args{
 				testCtx,
 				&auth.NewUserPassword{
-					User:        &auth.NewUserPassword_Email{Email: "one@group.com"},
+					Email:       "one@group.com",
 					Credential:  &auth.NewUserPassword_OldPassword{OldPassword: "oneGroup"},
 					NewPassword: "",
 				},
@@ -405,7 +405,7 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 			args{
 				testCtx,
 				&auth.NewUserPassword{
-					User:        &auth.NewUserPassword_Email{Email: "one@group.com"},
+					Email:       "one@group.com",
 					Credential:  &auth.NewUserPassword_ResetToken{ResetToken: string(jwtKnown)},
 					NewPassword: "oneGroup",
 				},
@@ -418,7 +418,7 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 			args{
 				testCtx,
 				&auth.NewUserPassword{
-					User:        &auth.NewUserPassword_Email{Email: "one@group.com"},
+					Email:       "one@group.com",
 					Credential:  &auth.NewUserPassword_ResetToken{ResetToken: string(jwtUnKnown)},
 					NewPassword: "oneGroup",
 				},
@@ -431,7 +431,7 @@ func Test_authServer_ChangeUserPw(t *testing.T) {
 			args{
 				testCtx,
 				&auth.NewUserPassword{
-					User:        &auth.NewUserPassword_Email{Email: "one@group.com"},
+					Email:       "one@group.com",
 					Credential:  &auth.NewUserPassword_ResetToken{ResetToken: string(jwtWrongAud)},
 					NewPassword: "oneGroup",
 				},
@@ -487,12 +487,12 @@ func Test_authServer_CheckUserExists(t *testing.T) {
 			true,
 		},
 		{
-			"Existing name",
+			"Existing email",
 			args{
 				testCtx,
-				&auth.UserData{Name: "oneGroup"},
+				&auth.UserData{Email: "one@group.com"},
 			},
-			&auth.Exists{Name: true},
+			&auth.Exists{Email: true},
 			false,
 		},
 	}
@@ -518,7 +518,7 @@ func Test_authServer_RefreshToken(t *testing.T) {
 		KeyID: "10",
 		Registered: jwt.Registered{
 			Issuer:    "localhost",
-			Subject:   testUsers["allGroups"].Name,
+			Subject:   testUsers["allGroups"].Email,
 			Expires:   jwt.NewNumericTime(time.Now().Add(24 * time.Hour)),
 			Audiences: []string{"me", "and", "you"},
 			Issued:    jwt.NewNumericTime(time.Now()),

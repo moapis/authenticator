@@ -164,7 +164,7 @@ func (rt *requestTx) userAuthReply(user *models.User, issued time.Time) (*auth.A
 	}
 
 	return rt.authReply(
-		user.Name,
+		user.Email,
 		issued,
 		map[string]interface{}{
 			jwtUserID: user.ID,
@@ -269,9 +269,9 @@ func (rt *requestTx) setUserPassword(user *models.User, password string, read fu
 
 func (rt *requestTx) insertPwUser(email, name string) (*models.User, error) {
 	rt.log = rt.log.WithFields(logrus.Fields{"email": email, "name": name})
-	if email == "" || name == "" {
-		rt.log.WithError(errors.New(errMissingEmailOrName)).Warn("insertPWUser")
-		return nil, status.Error(codes.InvalidArgument, errMissingEmailOrName)
+	if email == "" {
+		rt.log.WithError(errors.New(errMissingEmail)).Warn("insertPWUser")
+		return nil, status.Error(codes.InvalidArgument, errMissingEmail)
 	}
 	rt.log.Debug("insertPwUser")
 
@@ -313,34 +313,31 @@ func (rt *requestTx) findUserByValue(key, value string, columns ...string) (*mod
 	return models.Users(qms...).One(rt.ctx, rt.tx)
 }
 
-func (rt *requestTx) findUserByEmailOrName(email, name string) (user *models.User, err error) {
-	rt.log = rt.log.WithFields(logrus.Fields{"email": email, "name": name})
+func (rt *requestTx) findUserByEmail(email string) (*models.User, error) {
+	rt.log = rt.log.WithFields(logrus.Fields{"email": email})
 
-	switch {
-	case email != "":
-		user, err = rt.findUserByValue(models.UserColumns.Email, email)
-	case name != "":
-		user, err = rt.findUserByValue(models.UserColumns.Name, name)
-	default:
-		rt.log.Warn(errors.New(errMissingEmailOrName))
-		return nil, status.Error(codes.InvalidArgument, errMissingEmailOrName)
+	if email == "" {
+		rt.log.Warn(errors.New(errMissingEmail))
+		return nil, status.Error(codes.InvalidArgument, errMissingEmail)
 	}
+
+	user, err := rt.findUserByValue(models.UserColumns.Email, email)
 	if err != nil {
-		return nil, rt.dbAuthError("findUserByEmailOrName", "user", err)
+		return nil, rt.dbAuthError("findUserByEmail", "user", err)
 	}
-	rt.log.WithField("user", user).Debug("findUserByEmailOrName")
+	rt.log.WithField("user", user).Debug("findUserByEmail")
 	return user, nil
 }
 
-func (rt *requestTx) authenticatePwUser(email, name, password string) (*models.User, error) {
-	rt.log = rt.log.WithFields(logrus.Fields{"email": email, "name": name, "passwordLen": len(password)})
-	// email and name presence are checked by findUserByEmailOrName
+func (rt *requestTx) authenticatePwUser(email, password string) (*models.User, error) {
+	rt.log = rt.log.WithFields(logrus.Fields{"email": email, "passwordLen": len(password)})
+	// email presence are checked by findUserByEmail
 	if password == "" {
 		rt.log.Warn(errMissingPW)
 		return nil, status.Error(codes.InvalidArgument, errMissingPW)
 	}
 
-	user, err := rt.findUserByEmailOrName(email, name)
+	user, err := rt.findUserByEmail(email)
 	if err != nil {
 		return nil, err
 	}
@@ -373,28 +370,21 @@ func (rt *requestTx) userExistsByValue(key, value string) (bool, error) {
 	}
 }
 
-func (rt *requestTx) checkUserExists(email, name string) (*auth.Exists, error) {
-	rt.log = rt.log.WithFields(logrus.Fields{"email": email, "name": name})
-	if email == "" && name == "" {
-		rt.log.Warn(errors.New(errMissingEmailOrName))
-		return nil, status.Error(codes.InvalidArgument, errMissingEmailOrName)
+func (rt *requestTx) checkUserExists(email string) (*auth.Exists, error) {
+	rt.log = rt.log.WithFields(logrus.Fields{"email": email})
+	if email == "" {
+		rt.log.Warn(errors.New(errMissingEmail))
+		return nil, status.Error(codes.InvalidArgument, errMissingEmail)
 	}
 	rt.log.Debug("checkUserExists")
 
 	exists := new(auth.Exists)
 	var err error
 
-	if email != "" {
-		if exists.Email, err = rt.userExistsByValue(models.UserColumns.Email, email); err != nil {
-			return nil, err
-		}
+	if exists.Email, err = rt.userExistsByValue(models.UserColumns.Email, email); err != nil {
+		return nil, err
 	}
 
-	if name != "" {
-		if exists.Name, err = rt.userExistsByValue(models.UserColumns.Name, name); err != nil {
-			return nil, err
-		}
-	}
 	rt.log.WithField("exists:", exists).Debug("checkUserExists")
 	return exists, nil
 }

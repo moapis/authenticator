@@ -165,7 +165,7 @@ func init() {
 
 	ar, err := testClient.Verificator.Client.AuthenticatePwUser(
 		ctx, &authenticator.UserPassword{
-			User:     &authenticator.UserPassword_Email{Email: testUser},
+			Email:    testUser,
 			Password: "admin",
 		},
 	)
@@ -298,7 +298,7 @@ func TestClient_Middleware(t *testing.T) {
 			t.Errorf("Claims in context %v type %T", r.Context().Value(ClaimsKey), r.Context().Value(ClaimsKey))
 		}
 
-		if claims.Subject != "admin" {
+		if claims.Subject != testUser {
 			t.Errorf("Claims.subject = %s, want: %s", claims.Subject, testUser)
 			t.Log(*claims.Claims)
 		}

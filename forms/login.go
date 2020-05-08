@@ -111,7 +111,7 @@ func (f *Forms) loginPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	reply, err := f.Client.AuthenticatePwUser(ctx, &auth.UserPassword{
-		User:     &auth.UserPassword_Email{Email: email},
+		Email:    email,
 		Password: password,
 	})
 	if err == nil {

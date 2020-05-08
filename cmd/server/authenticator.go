@@ -86,17 +86,16 @@ func (s *authServer) privateKey() privateKey {
 }
 
 const (
-	errMissingEmail       = "Missing email"
-	errMissingEmailOrName = "Missing email or name"
-	errMissingPW          = "Missing password"
-	errMissingToken       = "JWT token missing"
-	errExpiredToken       = "JWT expired"
-	errMissingUUID        = "UUID missing"
-	errMissingKeyID       = "Public key ID missing"
-	errKeyNotFound        = "Key ID not found"
-	errFatal              = "Fatal I/O error"
-	errDB                 = "Database error"
-	errMailer             = "Failed to send verification mail"
+	errMissingEmail = "Missing email"
+	errMissingPW    = "Missing password"
+	errMissingToken = "JWT token missing"
+	errExpiredToken = "JWT expired"
+	errMissingUUID  = "UUID missing"
+	errMissingKeyID = "Public key ID missing"
+	errKeyNotFound  = "Key ID not found"
+	errFatal        = "Fatal I/O error"
+	errDB           = "Database error"
+	errMailer       = "Failed to send verification mail"
 )
 
 func callBackURL(cb *auth.CallBackUrl, token string) template.URL {
@@ -167,7 +166,7 @@ func (s *authServer) AuthenticatePwUser(ctx context.Context, up *auth.UserPasswo
 	}
 	defer rt.done()
 
-	user, err := rt.authenticatePwUser(up.GetEmail(), up.GetName(), up.GetPassword())
+	user, err := rt.authenticatePwUser(up.GetEmail(), up.GetPassword())
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +193,7 @@ func (s *authServer) ChangeUserPw(ctx context.Context, up *auth.NewUserPassword)
 
 	var user *models.User
 	if old := up.GetOldPassword(); old != "" {
-		if user, err = rt.authenticatePwUser(up.GetEmail(), up.GetName(), old); err != nil {
+		if user, err = rt.authenticatePwUser(up.GetEmail(), old); err != nil {
 			return nil, err
 		}
 	} else {
@@ -206,7 +205,7 @@ func (s *authServer) ChangeUserPw(ctx context.Context, up *auth.NewUserPassword)
 			return nil, err
 		}
 
-		user, err = rt.findUserByEmailOrName("", claims.Subject)
+		user, err = rt.findUserByEmail(claims.Subject)
 		if err != nil {
 			return nil, err
 		}
@@ -227,7 +226,7 @@ func (s *authServer) CheckUserExists(ctx context.Context, ud *auth.UserData) (*a
 		return nil, err
 	}
 	defer rt.done()
-	return rt.checkUserExists(ud.GetEmail(), ud.GetName())
+	return rt.checkUserExists(ud.GetEmail())
 }
 
 func (s *authServer) RefreshToken(ctx context.Context, old *auth.AuthReply) (*auth.AuthReply, error) {
@@ -240,7 +239,7 @@ func (s *authServer) RefreshToken(ctx context.Context, old *auth.AuthReply) (*au
 	if err != nil {
 		return nil, err
 	}
-	user, err := rt.findUserByEmailOrName("", claims.Subject)
+	user, err := rt.findUserByEmail(claims.Subject)
 	if err != nil {
 		return nil, err
 	}
