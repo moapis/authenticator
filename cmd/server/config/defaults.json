@@ -17,7 +17,8 @@
     ],
     "params": {
       "dbname": "authenticator_test",
-      "user": "postgres",
+      "user": "authenticator",
+      "password": "default",
       "sslmode": "disable",
       "connect_timeout": 30
     }

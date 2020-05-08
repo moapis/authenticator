@@ -2,13 +2,19 @@
 
 development:
   dialect: postgres
-  datasource: host=localhost dbname=authenticator user=postgres sslmode=disable
+  datasource: host=localhost dbname=authenticator user=authenticator password=default sslmode=disable
   dir: .
   table: auth_migrations
 
 testing:
   dialect: postgres
-  datasource: host=localhost dbname=authenticator_test user=postgres sslmode=disable
+  datasource: host=localhost dbname=authenticator_test user=authenticator sslmode=disable
+  dir: .
+  table: auth_migrations
+
+travis:
+  dialect: postgres
+  datasource: host=localhost dbname=authenticator user=authenticator sslmode=disable
   dir: .
   table: auth_migrations
 

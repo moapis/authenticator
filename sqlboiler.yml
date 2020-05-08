@@ -2,6 +2,7 @@ psql:
   dbname: authenticator
   schema: public
   host: localhost
-  user: postgres
+  user: authenticator
+  pass: default
   schema: auth
   sslmode: disable

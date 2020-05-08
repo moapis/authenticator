@@ -2,6 +2,6 @@ psql:
     dbname: authenticator_test
     schema: public
     host: localhost
-    user: postgres
+    user: authenticator
     schema: auth
     sslmode: disable

@@ -10,19 +10,20 @@ services:
   - docker
 
 install:
-  - go mod vendor
   - go get -v github.com/rubenv/sql-migrate/sql-migrate
+  - go mod vendor
 
 before_script:
-  - psql -c 'create database authenticator_test;' -U postgres
-  - psql -c 'create database authenticator;' -U postgres
+  - createuser -s -U postgres authenticator
+  - createdb -U postgres -O authenticator authenticator
+  - createdb -U postgres -O authenticator authenticator_test
   - ls /home/travis/gopath/bin
   - (cd migrations && sql-migrate up -env="testing")
   - (cd migrations && sql-migrate up -env="development")
 
 script:
   - go test -race ./models -test.config="../sqlboiler_test.yml"
-  - go test -race -coverprofile=server.cov -covermode=atomic ./cmd/server
+  - go test -race -coverprofile=server.cov -covermode=atomic -config=config/travis.json ./cmd/server
   - go test -race -coverprofile=verify.cov -covermode=atomic ./verify
   - (cd cmd/server && go build && ./server -config config/development.json &)
   - go test -race -coverprofile=middle.cov -covermode=atomic ./middleware
