@@ -671,73 +671,6 @@ func Test_requestTx_dbAuthError(t *testing.T) {
 	}
 }
 
-func Test_requestTx_findUserByValue(t *testing.T) {
-	type args struct {
-		key     string
-		value   string
-		columns []string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *models.User
-		wantErr bool
-	}{
-		{
-			"Find all columns",
-			args{
-				models.UserColumns.Email,
-				"one@group.com",
-				nil,
-			},
-			testUsers["oneGroup"],
-			false,
-		},
-		{
-			"Name column",
-			args{
-				models.UserColumns.Email,
-				"one@group.com",
-				[]string{models.UserColumns.Name},
-			},
-			testUsers["oneGroup"],
-			false,
-		},
-		{
-			"Syntax error",
-			args{
-				"",
-				"one@group.com",
-				nil,
-			},
-			nil,
-			true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rt, err := tas.newTx(testCtx, "testing", false)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer rt.done()
-			got, err := rt.findUserByValue(tt.args.key, tt.args.value, tt.args.columns...)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("requestTx.findUserByValue() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if tt.want != nil {
-				if got == nil {
-					t.Fatalf("requestTx.findUserByValue() = %+v, want %+v", got, tt.want)
-				}
-				if tt.want.Name != got.Name {
-					t.Fatalf("requestTx.findUserByValue() = %+v, want %+v", got, tt.want)
-				}
-			}
-		})
-	}
-}
-
 func Test_requestTx_findUserByEmail(t *testing.T) {
 	type args struct {
 		email string
@@ -893,64 +826,6 @@ func Test_requestTx_authenticatePwUser(t *testing.T) {
 				if tt.want.Name != got.Name {
 					t.Fatalf("requestTx.authenticatePwUser() = %+v, want %+v", got, tt.want)
 				}
-			}
-		})
-	}
-}
-
-func Test_requestTx_userExistsByValue(t *testing.T) {
-	type args struct {
-		key   string
-		value string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    bool
-		wantErr bool
-	}{
-		{
-			"Existing user",
-			args{
-				models.UserColumns.Email,
-				"one@group.com",
-			},
-			true,
-			false,
-		},
-		{
-			"non-existing user",
-			args{
-				models.UserColumns.Email,
-				"no@body.com",
-			},
-			false,
-			false,
-		},
-		{
-			"error",
-			args{
-				"",
-				"no@body.com",
-			},
-			false,
-			true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rt, err := tas.newTx(testCtx, "testing", false)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer rt.done()
-			gotExists, err := rt.userExistsByValue(tt.args.key, tt.args.value)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("requestTx.userExistsByValue() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if gotExists != tt.want {
-				t.Errorf("requestTx.userExistsByValue() = %v, want %v", gotExists, tt.want)
 			}
 		})
 	}

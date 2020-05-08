@@ -281,7 +281,7 @@ func (s *authServer) ResetUserPW(ctx context.Context, ue *auth.UserEmail) (*empt
 		return nil, status.Error(codes.InvalidArgument, errMissingEmail)
 	}
 
-	user, err := rt.findUserByValue("email", ue.GetEmail())
+	user, err := rt.findUserByEmail(ue.GetEmail())
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "User not found")
 	}

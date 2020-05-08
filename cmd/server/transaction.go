@@ -302,17 +302,6 @@ func (rt *requestTx) dbAuthError(action, entry string, err error) error {
 	}
 }
 
-func (rt *requestTx) findUserByValue(key, value string, columns ...string) (*models.User, error) {
-	ll := rt.log.WithFields(logrus.Fields{key: value, "columns": columns})
-
-	qms := []qm.QueryMod{
-		qm.Select(columns...),
-		qm.Where(fmt.Sprintf("%s=$1", key), value),
-	}
-	ll.WithField("qms", qms).Debug("findUserByValue")
-	return models.Users(qms...).One(rt.ctx, rt.tx)
-}
-
 func (rt *requestTx) findUserByEmail(email string) (*models.User, error) {
 	rt.log = rt.log.WithFields(logrus.Fields{"email": email})
 
@@ -321,10 +310,11 @@ func (rt *requestTx) findUserByEmail(email string) (*models.User, error) {
 		return nil, status.Error(codes.InvalidArgument, errMissingEmail)
 	}
 
-	user, err := rt.findUserByValue(models.UserColumns.Email, email)
+	user, err := models.Users(models.UserWhere.Email.EQ(email)).One(rt.ctx, rt.tx)
 	if err != nil {
 		return nil, rt.dbAuthError("findUserByEmail", "user", err)
 	}
+
 	rt.log.WithField("user", user).Debug("findUserByEmail")
 	return user, nil
 }
@@ -356,20 +346,6 @@ func (rt *requestTx) authenticatePwUser(email, password string) (*models.User, e
 	return user, nil
 }
 
-func (rt *requestTx) userExistsByValue(key, value string) (bool, error) {
-	_, err := rt.findUserByValue(key, value, models.UserColumns.ID)
-	switch err {
-	case nil:
-		return true, nil
-	case sql.ErrNoRows:
-		rt.log.WithError(err).Debug("userExistsByValue")
-		return false, nil
-	default:
-		rt.log.WithError(err).Error("userExistsByValue")
-		return false, status.Error(codes.Internal, errDB)
-	}
-}
-
 func (rt *requestTx) checkUserExists(email string) (*auth.Exists, error) {
 	rt.log = rt.log.WithFields(logrus.Fields{"email": email})
 	if email == "" {
@@ -379,10 +355,17 @@ func (rt *requestTx) checkUserExists(email string) (*auth.Exists, error) {
 	rt.log.Debug("checkUserExists")
 
 	exists := new(auth.Exists)
-	var err error
 
-	if exists.Email, err = rt.userExistsByValue(models.UserColumns.Email, email); err != nil {
-		return nil, err
+	_, err := models.Users(models.UserWhere.Email.EQ(email)).One(rt.ctx, rt.tx)
+	switch err {
+	case nil:
+		exists.Email = true
+	case sql.ErrNoRows:
+		rt.log.WithError(err).Debug("checkUserExists")
+		exists.Email = false
+	default:
+		rt.log.WithError(err).Error("checkUserExists")
+		return nil, status.Error(codes.Internal, errDB)
 	}
 
 	rt.log.WithField("exists:", exists).Debug("checkUserExists")
