@@ -257,7 +257,7 @@ func Test_requestTx_userAuthReply(t *testing.T) {
 				time.Unix(123, 456),
 			},
 			&auth.AuthReply{
-				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiZ3JvdXBzIjpbXSwiaWF0IjoxMjMuMDAwMDAwNDU2LCJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJub0dyb3VwIiwidXNlcl9pZCI6MTAxfQ._i6WbC8-jTV-KTx955cCfJrrhabPB4XcXS5yr7x5a3-VXSyKuhO0HBMSd-pcPJqdCdZ0Y6gW51NEIvpi9h7sDw",
+				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiZ3JvdXBzIjpbXSwiaWF0IjoxMjMuMDAwMDAwNDU2LCJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJub0Bncm91cC5jb20iLCJ1c2VyX2lkIjoxMDF9.kon9MoxRtYYbQCTHBvbSlN1YNJtaQJHNr6LIf8HxaIuBYbZLxTdWDqFOO4DLI-opKeSGIn8RxuYH4CtjA3liAQ",
 			},
 			false,
 		},
@@ -268,7 +268,7 @@ func Test_requestTx_userAuthReply(t *testing.T) {
 				time.Unix(123, 456),
 			},
 			&auth.AuthReply{
-				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiZ3JvdXBzIjpbInB1YmxpYyJdLCJpYXQiOjEyMy4wMDAwMDA0NTYsImlzcyI6ImxvY2FsaG9zdCIsInN1YiI6Im9uZUdyb3VwIiwidXNlcl9pZCI6MTAyfQ.yWorv_npPiULypIFyWXnfn3KCkuWLwutc1VNi0HW06_QVVH5P7yh2o-JjhSdKp77h1jeisFcjEoFGg4mLLCZBw",
+				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiZ3JvdXBzIjpbInB1YmxpYyJdLCJpYXQiOjEyMy4wMDAwMDA0NTYsImlzcyI6ImxvY2FsaG9zdCIsInN1YiI6Im9uZUBncm91cC5jb20iLCJ1c2VyX2lkIjoxMDJ9.N0xGJpjch6ca0YmevnbDx-su1B-1TiWXAGxWs3YGHMrOm97XBTCANIfXmqEPqcnYHxksz7RZDhOSHZr5xFzKAw",
 			},
 			false,
 		},
@@ -279,7 +279,7 @@ func Test_requestTx_userAuthReply(t *testing.T) {
 				time.Unix(123, 456),
 			},
 			&auth.AuthReply{
-				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiZ3JvdXBzIjpbInB1YmxpYyIsInVzZXIiLCJhZG1pbiJdLCJpYXQiOjEyMy4wMDAwMDA0NTYsImlzcyI6ImxvY2FsaG9zdCIsInN1YiI6ImFsbEdyb3VwcyIsInVzZXJfaWQiOjEwM30.yXfAtIcOOflLk0KQDLkzl6k5iIdgW5s-grTez6mHRYVU7241RjYlRzWvBCySf_mMXTfYRXviooxVVV5rCI1MBg",
+				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJleHAiOjg2NTIzLjAwMDAwMDQ1NiwiZ3JvdXBzIjpbInB1YmxpYyIsInVzZXIiLCJhZG1pbiJdLCJpYXQiOjEyMy4wMDAwMDA0NTYsImlzcyI6ImxvY2FsaG9zdCIsInN1YiI6ImFsbEBncm91cHMuY29tIiwidXNlcl9pZCI6MTAzfQ.4_yt_9EavRLkKZLenr-NyPrtncYn3V_YjqJvng46XBIf608l2q9M10cUWL3BL-w4ZB6yxS28ljbEOSB5xwl8CA",
 			},
 			false,
 		},
@@ -290,7 +290,7 @@ func Test_requestTx_userAuthReply(t *testing.T) {
 				time.Unix(123, 456),
 			},
 			&auth.AuthReply{
-				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJhdWQiOlsiYXVkMSIsImF1ZDIiXSwiZXhwIjo4NjUyMy4wMDAwMDA0NTYsImdyb3VwcyI6W10sImlhdCI6MTIzLjAwMDAwMDQ1NiwiaXNzIjoibG9jYWxob3N0Iiwic3ViIjoiYWxsQXVkaWVuY2VzIiwidXNlcl9pZCI6MTA0fQ.9qHsNg1uy-AfdAai8558pWpo8iVnwxzGUju_nNKs8Hgpdl6NYFUfma2cJsehtIihS8GVPgU-s-JwATO-bNtvCg",
+				Jwt: "eyJhbGciOiJFZERTQSIsImtpZCI6IjEwIn0.eyJhdWQiOlsiYXVkMSIsImF1ZDIiXSwiZXhwIjo4NjUyMy4wMDAwMDA0NTYsImdyb3VwcyI6W10sImlhdCI6MTIzLjAwMDAwMDQ1NiwiaXNzIjoibG9jYWxob3N0Iiwic3ViIjoiYWxsQGF1ZGllbmNlcy5jb20iLCJ1c2VyX2lkIjoxMDR9.FIcQnam1XBnDh-Ux0nsLE5Ecr3FDV3mzEOhssThYEEsiL_YxT3ZcCoxmdzyz0HgwFCdNdho7v9Ell0yk64XGDg",
 			},
 			false,
 		},
@@ -671,77 +671,9 @@ func Test_requestTx_dbAuthError(t *testing.T) {
 	}
 }
 
-func Test_requestTx_findUserByValue(t *testing.T) {
-	type args struct {
-		key     string
-		value   string
-		columns []string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *models.User
-		wantErr bool
-	}{
-		{
-			"Find all columns",
-			args{
-				models.UserColumns.Email,
-				"one@group.com",
-				nil,
-			},
-			testUsers["oneGroup"],
-			false,
-		},
-		{
-			"Name column",
-			args{
-				models.UserColumns.Email,
-				"one@group.com",
-				[]string{models.UserColumns.Name},
-			},
-			testUsers["oneGroup"],
-			false,
-		},
-		{
-			"Syntax error",
-			args{
-				"",
-				"one@group.com",
-				nil,
-			},
-			nil,
-			true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rt, err := tas.newTx(testCtx, "testing", false)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer rt.done()
-			got, err := rt.findUserByValue(tt.args.key, tt.args.value, tt.args.columns...)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("requestTx.findUserByValue() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if tt.want != nil {
-				if got == nil {
-					t.Fatalf("requestTx.findUserByValue() = %+v, want %+v", got, tt.want)
-				}
-				if tt.want.Name != got.Name {
-					t.Fatalf("requestTx.findUserByValue() = %+v, want %+v", got, tt.want)
-				}
-			}
-		})
-	}
-}
-
-func Test_requestTx_findUserByEmailOrName(t *testing.T) {
+func Test_requestTx_findUserByEmail(t *testing.T) {
 	type args struct {
 		email string
-		name  string
 	}
 	tests := []struct {
 		name    string
@@ -758,14 +690,6 @@ func Test_requestTx_findUserByEmailOrName(t *testing.T) {
 			false,
 		},
 		{
-			"Find by name",
-			args{
-				name: "oneGroup",
-			},
-			testUsers["oneGroup"],
-			false,
-		},
-		{
 			"Missing name and email",
 			args{},
 			nil,
@@ -774,7 +698,7 @@ func Test_requestTx_findUserByEmailOrName(t *testing.T) {
 		{
 			"Not found",
 			args{
-				name: "spanac",
+				email: "spanac",
 			},
 			nil,
 			true,
@@ -787,17 +711,17 @@ func Test_requestTx_findUserByEmailOrName(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer rt.done()
-			got, err := rt.findUserByEmailOrName(tt.args.email, tt.args.name)
+			got, err := rt.findUserByEmail(tt.args.email)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("requestTx.findUserByEmailOrName() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("requestTx.findUserByEmail() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if tt.want != nil {
 				if got == nil {
-					t.Fatalf("requestTx.findUserByValue() = %+v, want %+v", got, tt.want)
+					t.Fatalf("requestTx.findUserByEmail() = %+v, want %+v", got, tt.want)
 				}
-				if tt.want.Name != got.Name {
-					t.Fatalf("requestTx.findUserByValue() = %+v, want %+v", got, tt.want)
+				if tt.want.Email != got.Email {
+					t.Fatalf("requestTx.findUserByEmail() = %+v, want %+v", got, tt.want)
 				}
 			}
 		})
@@ -816,7 +740,6 @@ func Test_requestTx_authenticatePwUser(t *testing.T) {
 
 	type args struct {
 		email    string
-		name     string
 		password string
 	}
 	tests := []struct {
@@ -828,7 +751,7 @@ func Test_requestTx_authenticatePwUser(t *testing.T) {
 		{
 			"Valid password",
 			args{
-				name:     "oneGroup",
+				email:    "one@group.com",
 				password: "oneGroup",
 			},
 			testUsers["oneGroup"],
@@ -837,7 +760,7 @@ func Test_requestTx_authenticatePwUser(t *testing.T) {
 		{
 			"Missing password",
 			args{
-				name: "oneGroup",
+				email: "one@group.com",
 			},
 			nil,
 			true,
@@ -862,7 +785,7 @@ func Test_requestTx_authenticatePwUser(t *testing.T) {
 		{
 			"Timeout",
 			args{
-				name:     "oneGroup",
+				email:    "one@group.com",
 				password: "oneGroup",
 			},
 			nil,
@@ -871,7 +794,7 @@ func Test_requestTx_authenticatePwUser(t *testing.T) {
 		{
 			"Wrong password",
 			args{
-				name:     "oneGroup",
+				email:    "one@group.com",
 				password: "foobar",
 			},
 			nil,
@@ -891,76 +814,18 @@ func Test_requestTx_authenticatePwUser(t *testing.T) {
 			}
 			defer rt.cancel()
 
-			got, err := rt.authenticatePwUser(tt.args.email, tt.args.name, tt.args.password)
+			got, err := rt.authenticatePwUser(tt.args.email, tt.args.password)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("requestTx.authenticatePwUser() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if tt.want != nil {
 				if got == nil {
-					t.Fatalf("requestTx.findUserByValue() = %+v, want %+v", got, tt.want)
+					t.Fatalf("requestTx.authenticatePwUser() = %+v, want %+v", got, tt.want)
 				}
 				if tt.want.Name != got.Name {
-					t.Fatalf("requestTx.findUserByValue() = %+v, want %+v", got, tt.want)
+					t.Fatalf("requestTx.authenticatePwUser() = %+v, want %+v", got, tt.want)
 				}
-			}
-		})
-	}
-}
-
-func Test_requestTx_userExistsByValue(t *testing.T) {
-	type args struct {
-		key   string
-		value string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    bool
-		wantErr bool
-	}{
-		{
-			"Existing user",
-			args{
-				models.UserColumns.Email,
-				"one@group.com",
-			},
-			true,
-			false,
-		},
-		{
-			"non-existing user",
-			args{
-				models.UserColumns.Email,
-				"no@body.com",
-			},
-			false,
-			false,
-		},
-		{
-			"error",
-			args{
-				"",
-				"no@body.com",
-			},
-			false,
-			true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rt, err := tas.newTx(testCtx, "testing", false)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer rt.done()
-			gotExists, err := rt.userExistsByValue(tt.args.key, tt.args.value)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("requestTx.userExistsByValue() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if gotExists != tt.want {
-				t.Errorf("requestTx.userExistsByValue() = %v, want %v", gotExists, tt.want)
 			}
 		})
 	}
@@ -969,7 +834,6 @@ func Test_requestTx_userExistsByValue(t *testing.T) {
 func Test_requestTx_checkUserExists(t *testing.T) {
 	type args struct {
 		email string
-		name  string
 	}
 	tests := []struct {
 		name    string
@@ -984,30 +848,6 @@ func Test_requestTx_checkUserExists(t *testing.T) {
 			},
 			&auth.Exists{
 				Email: true,
-				Name:  false,
-			},
-			false,
-		},
-		{
-			"Name exists",
-			args{
-				name: "oneGroup",
-			},
-			&auth.Exists{
-				Email: false,
-				Name:  true,
-			},
-			false,
-		},
-		{
-			"Both exist",
-			args{
-				email: "one@group.com",
-				name:  "noGroup",
-			},
-			&auth.Exists{
-				Email: true,
-				Name:  true,
 			},
 			false,
 		},
@@ -1015,43 +855,16 @@ func Test_requestTx_checkUserExists(t *testing.T) {
 			"E-mail does not exist",
 			args{
 				email: "no@body.com",
-				name:  "noGroup",
 			},
 			&auth.Exists{
 				Email: false,
-				Name:  true,
 			},
 			false,
 		},
 		{
-			"Name does not exist",
-			args{
-				email: "no@group.com",
-				name:  "noBody",
-			},
-			&auth.Exists{
-				Email: true,
-				Name:  false,
-			},
-			false,
-		},
-		{
-			"Neither exist",
-			args{
-				email: "no@body.com",
-				name:  "noBody",
-			},
-			&auth.Exists{
-				Email: false,
-				Name:  false,
-			},
-			false,
-		},
-		{
-			"Missing email and name",
+			"Missing email",
 			args{
 				email: "",
-				name:  "",
 			},
 			nil,
 			true,
@@ -1060,7 +873,6 @@ func Test_requestTx_checkUserExists(t *testing.T) {
 			"DBErr",
 			args{
 				email: "one@group.com",
-				name:  "noGroup",
 			},
 			nil,
 			true,
@@ -1078,13 +890,13 @@ func Test_requestTx_checkUserExists(t *testing.T) {
 				rt.done()
 			}
 
-			got, err := rt.checkUserExists(tt.args.email, tt.args.name)
+			got, err := rt.checkUserExists(tt.args.email)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("requestTx.checkUserExists() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != nil {
-				if got.Email != tt.want.Email || got.Name != tt.want.Name {
+				if got.Email != tt.want.Email {
 					t.Errorf("requestTx.checkUserExists() = %v, want %v", got, tt.want)
 				}
 			}

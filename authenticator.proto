@@ -54,7 +54,7 @@ service Authenticator {
 
 message UserData {
     string email = 1;
-    string name = 2;
+    reserved 2;
 }
 
 message StringSlice {
@@ -72,6 +72,7 @@ message CallBackUrl {
 
 message RegistrationData {
     string email = 1;
+    // Name is optional
     string name = 2;
     CallBackUrl url = 3;
 }
@@ -85,20 +86,16 @@ message AuthReply {
     string jwt = 1;
 }
 
-// UserPassword holds the name or e-mail of the user and its password.
+// UserPassword holds the e-mail of the user and its password.
 message UserPassword {
-    oneof user {
-        string email = 1;
-        string name = 2;
-    }
+    string email = 1;
+    reserved 2;
     string password = 3;
 }
 
 message NewUserPassword {
-    oneof user {
-        string email = 1;
-        string name = 2;
-    }
+    string email = 1;
+    reserved 2;
     oneof credential {
         string old_password = 3;
         string reset_token = 4;
@@ -112,7 +109,7 @@ message ChangePwReply {
 
 message Exists {
     bool email = 1;
-    bool name = 2;
+    reserved 2;
 }
 
 message PublicUser {

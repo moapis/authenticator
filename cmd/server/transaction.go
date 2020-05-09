@@ -164,7 +164,7 @@ func (rt *requestTx) userAuthReply(user *models.User, issued time.Time) (*auth.A
 	}
 
 	return rt.authReply(
-		user.Name,
+		user.Email,
 		issued,
 		map[string]interface{}{
 			jwtUserID: user.ID,
@@ -269,9 +269,9 @@ func (rt *requestTx) setUserPassword(user *models.User, password string, read fu
 
 func (rt *requestTx) insertPwUser(email, name string) (*models.User, error) {
 	rt.log = rt.log.WithFields(logrus.Fields{"email": email, "name": name})
-	if email == "" || name == "" {
-		rt.log.WithError(errors.New(errMissingEmailOrName)).Warn("insertPWUser")
-		return nil, status.Error(codes.InvalidArgument, errMissingEmailOrName)
+	if email == "" {
+		rt.log.WithError(errors.New(errMissingEmail)).Warn("insertPWUser")
+		return nil, status.Error(codes.InvalidArgument, errMissingEmail)
 	}
 	rt.log.Debug("insertPwUser")
 
@@ -302,45 +302,32 @@ func (rt *requestTx) dbAuthError(action, entry string, err error) error {
 	}
 }
 
-func (rt *requestTx) findUserByValue(key, value string, columns ...string) (*models.User, error) {
-	ll := rt.log.WithFields(logrus.Fields{key: value, "columns": columns})
+func (rt *requestTx) findUserByEmail(email string) (*models.User, error) {
+	rt.log = rt.log.WithFields(logrus.Fields{"email": email})
 
-	qms := []qm.QueryMod{
-		qm.Select(columns...),
-		qm.Where(fmt.Sprintf("%s=$1", key), value),
+	if email == "" {
+		rt.log.Warn(errors.New(errMissingEmail))
+		return nil, status.Error(codes.InvalidArgument, errMissingEmail)
 	}
-	ll.WithField("qms", qms).Debug("findUserByValue")
-	return models.Users(qms...).One(rt.ctx, rt.tx)
-}
 
-func (rt *requestTx) findUserByEmailOrName(email, name string) (user *models.User, err error) {
-	rt.log = rt.log.WithFields(logrus.Fields{"email": email, "name": name})
-
-	switch {
-	case email != "":
-		user, err = rt.findUserByValue(models.UserColumns.Email, email)
-	case name != "":
-		user, err = rt.findUserByValue(models.UserColumns.Name, name)
-	default:
-		rt.log.Warn(errors.New(errMissingEmailOrName))
-		return nil, status.Error(codes.InvalidArgument, errMissingEmailOrName)
-	}
+	user, err := models.Users(models.UserWhere.Email.EQ(email)).One(rt.ctx, rt.tx)
 	if err != nil {
-		return nil, rt.dbAuthError("findUserByEmailOrName", "user", err)
+		return nil, rt.dbAuthError("findUserByEmail", "user", err)
 	}
-	rt.log.WithField("user", user).Debug("findUserByEmailOrName")
+
+	rt.log.WithField("user", user).Debug("findUserByEmail")
 	return user, nil
 }
 
-func (rt *requestTx) authenticatePwUser(email, name, password string) (*models.User, error) {
-	rt.log = rt.log.WithFields(logrus.Fields{"email": email, "name": name, "passwordLen": len(password)})
-	// email and name presence are checked by findUserByEmailOrName
+func (rt *requestTx) authenticatePwUser(email, password string) (*models.User, error) {
+	rt.log = rt.log.WithFields(logrus.Fields{"email": email, "passwordLen": len(password)})
+	// email presence are checked by findUserByEmail
 	if password == "" {
 		rt.log.Warn(errMissingPW)
 		return nil, status.Error(codes.InvalidArgument, errMissingPW)
 	}
 
-	user, err := rt.findUserByEmailOrName(email, name)
+	user, err := rt.findUserByEmail(email)
 	if err != nil {
 		return nil, err
 	}
@@ -359,42 +346,28 @@ func (rt *requestTx) authenticatePwUser(email, name, password string) (*models.U
 	return user, nil
 }
 
-func (rt *requestTx) userExistsByValue(key, value string) (bool, error) {
-	_, err := rt.findUserByValue(key, value, models.UserColumns.ID)
-	switch err {
-	case nil:
-		return true, nil
-	case sql.ErrNoRows:
-		rt.log.WithError(err).Debug("userExistsByValue")
-		return false, nil
-	default:
-		rt.log.WithError(err).Error("userExistsByValue")
-		return false, status.Error(codes.Internal, errDB)
-	}
-}
-
-func (rt *requestTx) checkUserExists(email, name string) (*auth.Exists, error) {
-	rt.log = rt.log.WithFields(logrus.Fields{"email": email, "name": name})
-	if email == "" && name == "" {
-		rt.log.Warn(errors.New(errMissingEmailOrName))
-		return nil, status.Error(codes.InvalidArgument, errMissingEmailOrName)
+func (rt *requestTx) checkUserExists(email string) (*auth.Exists, error) {
+	rt.log = rt.log.WithFields(logrus.Fields{"email": email})
+	if email == "" {
+		rt.log.Warn(errors.New(errMissingEmail))
+		return nil, status.Error(codes.InvalidArgument, errMissingEmail)
 	}
 	rt.log.Debug("checkUserExists")
 
 	exists := new(auth.Exists)
-	var err error
 
-	if email != "" {
-		if exists.Email, err = rt.userExistsByValue(models.UserColumns.Email, email); err != nil {
-			return nil, err
-		}
+	_, err := models.Users(models.UserWhere.Email.EQ(email)).One(rt.ctx, rt.tx)
+	switch err {
+	case nil:
+		exists.Email = true
+	case sql.ErrNoRows:
+		rt.log.WithError(err).Debug("checkUserExists")
+		exists.Email = false
+	default:
+		rt.log.WithError(err).Error("checkUserExists")
+		return nil, status.Error(codes.Internal, errDB)
 	}
 
-	if name != "" {
-		if exists.Name, err = rt.userExistsByValue(models.UserColumns.Name, name); err != nil {
-			return nil, err
-		}
-	}
 	rt.log.WithField("exists:", exists).Debug("checkUserExists")
 	return exists, nil
 }
