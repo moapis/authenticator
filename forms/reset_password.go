@@ -64,7 +64,9 @@ func (f *Forms) resetPWPost(w http.ResponseWriter, r *http.Request) {
 		Url:   f.Paths.callbackURL(r.URL.Query(), f.Paths.setPW()),
 	})
 	if err == nil {
-		f.EP.Render(w, &ehtml.Data{Req: r, Code: http.StatusOK, Msg: "Password request link sent"})
+		if err = f.EP.Render(w, &ehtml.Data{Req: r, Code: http.StatusOK, Msg: "Password request link sent"}); err != nil {
+			clog.Error(ctx, "EP.Render", "err", err)
+		}
 		return
 	}
 
