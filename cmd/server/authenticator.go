@@ -285,7 +285,7 @@ func (s *authServer) ResetUserPW(ctx context.Context, ue *auth.UserEmail) (*empt
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "User not found")
 	}
-	reply, err := rt.authReply(user.Name, time.Now(), nil, s.passwordAudience())
+	reply, err := rt.authReply(user.Email, time.Now(), nil, s.passwordAudience())
 	if err != nil {
 		return nil, err
 	}
