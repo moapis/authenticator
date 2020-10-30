@@ -49,5 +49,5 @@ The defaut user is "admin@localhost", password "admin", member of the group "pri
 The authenticator server uses gRPC through protocol buffers generation. To regenerate the gRPC definitions, run:
 
 ````
-protoc --go_out=plugins=grpc:$(go env GOPATH)/src authenticator.proto
+protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative authenticator.proto
 ````
