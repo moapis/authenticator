@@ -8,12 +8,12 @@ import (
 	"context"
 	"crypto/rand"
 	"database/sql"
+	"errors"
 	"fmt"
 	"reflect"
 	"testing"
 	"time"
 
-	"github.com/friendsofgo/errors"
 	auth "github.com/moapis/authenticator"
 	"github.com/moapis/authenticator/models"
 	"github.com/moapis/multidb"

@@ -7,11 +7,11 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"html/template"
 	"time"
 
-	"github.com/friendsofgo/errors"
 	"golang.org/x/crypto/argon2"
 
 	auth "github.com/moapis/authenticator"
