@@ -8,11 +8,11 @@ My intentions to where to develop an opensource drop-in solution for authenticat
 
 Therefore I don't see any merrit continuing this project anymore. Thanks for those few stars and if you need something better, be be sure to checkout ZITADEL and their open-source or commercial offerings!
 
-A stand-alone gRPC based authentication API. Easily integrate authentication into any custom project. Authenticator takes care of user credential storage and checking. It generates JSON Web tokens for users, which easily can be verified by other servers in your ecosystem using performant and secure EdDSA public key cryptography.
-
 ----
 
 # Authenticator
+
+A stand-alone gRPC based authentication API. Easily integrate authentication into any custom project. Authenticator takes care of user credential storage and checking. It generates JSON Web tokens for users, which easily can be verified by other servers in your ecosystem using performant and secure EdDSA public key cryptography.
 
 ### Benefits:
 
