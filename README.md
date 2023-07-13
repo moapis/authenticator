@@ -3,9 +3,16 @@
 [![GoDoc](https://godoc.org/github.com/moapis/authenticator?status.svg)](https://godoc.org/github.com/moapis/authenticator)
 [![Go Report Card](https://goreportcard.com/badge/github.com/moapis/authenticator)](https://goreportcard.com/report/github.com/moapis/authenticator)
 
-# Authenticator
+## Archived
+My intentions to where to develop an opensource drop-in solution for authentication. As I was searching to evolve this project to implement more standards than just JWTs, (like OAuth2, OpenID connect etc), I came across this wonderfull product that did already did most off this and have a roadmap with everything I could possbily dream of this project ever becomming: https://github.com/zitadel/zitadel. As they are a company with a good team there was no way I was ever going to catch up with their development speed alone. Hence, I decided to join them :).
+
+Therefore I don't see any merrit continuing this project anymore. Thanks for those few stars and if you need something better, be be sure to checkout ZITADEL and their open-source or commercial offerings!
 
 A stand-alone gRPC based authentication API. Easily integrate authentication into any custom project. Authenticator takes care of user credential storage and checking. It generates JSON Web tokens for users, which easily can be verified by other servers in your ecosystem using performant and secure EdDSA public key cryptography.
+
+----
+
+# Authenticator
 
 ### Benefits:
 
